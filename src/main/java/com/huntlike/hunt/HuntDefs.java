@@ -26,6 +26,8 @@ public final class HuntDefs {
 	public static final int LIGHT_BLUE = 0x8FD3FF;
 	public static final int PINK = 0xFF8AD8;
 	public static final int BLUE = 0x5555FF;
+	/** Experience orb green. */
+	public static final int XP_GREEN = 0x80FF20;
 
 	public static final String[] RANK_TITLES = {"Prey", "Scout", "Tracker", "Stalker", "Trapper", "Pursuer", "Warden",
 			"Predator", "Apex Hunter", "Dread Hunter", "Slayer"};
@@ -125,6 +127,28 @@ public final class HuntDefs {
 					List.of(new Unlock(KORO_NEXT, DARK_PURPLE))));
 
 	public static final List<Hunt> HUNTS = List.of(ANIMAL);
+
+	/** A Gear-tab trade for Hunt armor or a Hunt weapon. */
+	public record GearTrade(String name, int rank, String cost) {
+	}
+
+	public static final List<GearTrade> ANIMAL_ARMOR = List.of(
+			new GearTrade("Rotten Armor", 2,
+					"Leather helmet, chestplate, leggings and boots + 32 Oak Logs + 32 Oak Leaves + 4 Decent Quality Mystery Meat"),
+			new GearTrade("Carrion Armor", 4,
+					"Rotten Armor + 4 Decent Quality Mystery Meat + 2 Thick Hide + 16 Leather + 16 Bones"),
+			new GearTrade("Ecocide Armor", 6,
+					"Carrion Armor + 2 High Quality Mystery Meat + 2 Thick Hide + 32 Oak Logs + 4 Diamonds"));
+
+	public static final List<GearTrade> ANIMAL_WEAPONS = List.of(
+			new GearTrade("Skin Knife [Genesis]", 1, "Iron Sword + 5 Low Quality Mystery Meat"),
+			new GearTrade("Meat Cutter [Act I]", 3, "Skin Knife + 2 Decent Quality Mystery Meat + 5 Iron Ingots"),
+			new GearTrade("Limb Severer [Act II]", 5, "Meat Cutter + 1 High Quality Mystery Meat + 2 Diamonds"),
+			new GearTrade("Bone Breaker [Act III]", 7, "Limb Severer + 1 Large Femur + 8 Soul Sand"),
+			new GearTrade("Bone Pulverizer [Apotheosis]", 9, "Bone Breaker + 1 Large Femur + 12 Bone Meal + 8 Obsidian"));
+
+	/** Ranks that unlock each chapter of the soul's questline (Koro for Animal). */
+	public static final int[] QUESTLINE_RANKS = {3, 6, 9, 10};
 
 	public static Hunt hunt(String id) {
 		for (Hunt hunt : HUNTS) {

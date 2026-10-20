@@ -58,6 +58,11 @@ public class HuntMenuScreen extends Screen {
 	private int questTier = 1;
 	private int rankView;
 	private int abilityScroll;
+	/** Gear tab page: 0 Armor, 1 Misc, 2 Weapons. */
+	private int gearPage = 1;
+	private int gearScroll;
+	/** The token trade button (x, y, w, h) from the last frame, or null. */
+	private int[] tokenButton;
 	private boolean cancelArmed;
 
 	// Layout, recomputed each frame.
@@ -280,6 +285,9 @@ public class HuntMenuScreen extends Screen {
 		boolean affordable = progress.tokens >= tier.tokenCost();
 		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(tier.tokenCost()), WHITE))
 				.append(colored(" [" + progress.tokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
+		y += 10;
+		g.text(this.font, colored("Experience: ", TEXT_GRAY).append(colored(tier.xp() + " XP", HuntDefs.XP_GREEN)),
+				px + 6, y, WHITE, false);
 		y += 12;
 
 		if (!unlocked) {
@@ -455,31 +463,117 @@ public class HuntMenuScreen extends Screen {
 
 	// ---------------------------------------------------------------- Gear tab
 
+	private static final String[] GEAR_PAGES = {"Armor", "Misc", "Weapons"};
+
 	private void drawGear(GuiGraphicsExtractor g, int mouseX, int mouseY) {
 		panelBox(g);
 		Hunt hunt = hunt();
 		int cx = px + pw / 2;
 		int y = py + 5;
 		g.centeredText(this.font, colored(hunt.name() + " Gear", hunt.color()), cx, y, WHITE);
-		y += 16;
-		sprite(g, "panel_dark", px + 4, y - 3, pw - 8, 55);
-		g.text(this.font, colored(hunt.name() + " Ritual Tokens", WHITE), px + 8, y, WHITE, false);
-		y += 11;
+		y += 14;
+		// Page switcher: "Armor  <  Misc  >  Weapons", wrapping around.
+		String prev = GEAR_PAGES[(gearPage + 2) % 3];
+		String next = GEAR_PAGES[(gearPage + 1) % 3];
+		String current = GEAR_PAGES[gearPage];
+		int curW = this.font.width(current);
+		g.centeredText(this.font, colored(current, WHITE), cx, y, WHITE);
+		g.text(this.font, colored("<", TEXT_GRAY), cx - curW / 2 - 12, y, WHITE, false);
+		g.text(this.font, colored(">", TEXT_GRAY), cx + curW / 2 + 7, y, WHITE, false);
+		g.text(this.font, colored(prev, TEXT_DIM), cx - curW / 2 - 18 - this.font.width(prev), y, WHITE, false);
+		g.text(this.font, colored(next, TEXT_DIM), cx + curW / 2 + 18, y, WHITE, false);
+		hits.add(new Hit(px, y - 2, cx - curW / 2 - 4 - px, 12, () -> changeGearPage(-1)));
+		hits.add(new Hit(cx + curW / 2 + 4, y - 2, px + pw - (cx + curW / 2 + 4), 12, () -> changeGearPage(1)));
+		y += 15;
+
+		tokenButton = null;
+		switch (gearPage) {
+			case 1 -> drawGearMisc(g, hunt, y, mouseX, mouseY);
+			case 0 -> drawGearTrades(g, HuntDefs.ANIMAL_ARMOR, y, mouseX, mouseY);
+			default -> drawGearTrades(g, HuntDefs.ANIMAL_WEAPONS, y, mouseX, mouseY);
+		}
+	}
+
+	private void drawGearMisc(GuiGraphicsExtractor g, Hunt hunt, int y, int mouseX, int mouseY) {
+		int cx = px + pw / 2;
+		sprite(g, "panel_dark", px + 4, y, pw - 8, 52);
+		g.text(this.font, colored(hunt.name() + " Ritual Tokens", WHITE), px + 8, y + 4, WHITE, false);
 		g.text(this.font, colored("Balance: ", TEXT_GRAY).append(colored(String.valueOf(progress().tokens), HuntDefs.LIME)),
-				px + 8, y, WHITE, false);
-		y += 12;
-		boolean hover = button(g, px + 8, y, pw - 16, 16, Component.literal("Buy 64 Tokens [10 Oak Logs]"), true, mouseX, mouseY,
-				null);
+				px + 8, y + 15, WHITE, false);
+		tokenButton = new int[] {px + 8, y + 28, pw - 16, 16};
+		boolean hover = button(g, px + 8, y + 28, pw - 16, 16, Component.literal("Buy 64 Tokens [10 Oak Logs]"), true, mouseX,
+				mouseY, null);
 		if (hover) {
 			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 10 Oak Logs -> 64 Tokens", WHITE),
 					colored("Shift-click: 100 Oak Logs -> 640 Tokens", TEXT_GRAY)), mouseX, mouseY);
 		}
-		y += 30;
-		for (FormattedCharSequence line : this.font.split(
-				colored("Hunt Weapons, Hunt Armor and Koro arrive in a later version.", TEXT_DIM), pw - 12)) {
-			g.text(this.font, line, px + 6, y, WHITE, false);
-			y += 9;
+		y += 58;
+		sprite(g, "panel_dark", px + 4, y, pw - 8, 44);
+		g.centeredText(this.font, colored("Questline - Spiritual Talk", WHITE), cx, y + 6, WHITE);
+		int nextRank = HuntDefs.QUESTLINE_RANKS[0];
+		boolean unlocked = progress().rank() >= nextRank;
+		Component label = Component.literal("[Click] - Spirit Rank Required: [" + HuntDefs.ROMAN[nextRank] + "]");
+		boolean hoverTalk = button(g, px + 8, y + 20, pw - 16, 16, label, false, mouseX, mouseY, null);
+		if (hoverTalk) {
+			g.setComponentTooltipForNextFrame(this.font, List.of(
+					colored(unlocked ? "Koro's questline arrives in a later version." : "Unlocks at " + hunt.rankName(nextRank)
+							+ " (Rank " + HuntDefs.ROMAN[nextRank] + ")", TEXT_GRAY)), mouseX, mouseY);
 		}
+	}
+
+	private void drawGearTrades(GuiGraphicsExtractor g, List<HuntDefs.GearTrade> trades, int y, int mouseX, int mouseY) {
+		int listX = px + 4;
+		int listW = pw - 8;
+		int listTop = y;
+		int listH = py + ph - 4 - y;
+		int rank = progress().rank();
+		// Lay out every trade, then draw the visible part with scrolling.
+		List<List<FormattedCharSequence>> costs = new ArrayList<>();
+		int total = 0;
+		for (HuntDefs.GearTrade trade : trades) {
+			List<FormattedCharSequence> lines = this.font.split(colored(trade.cost(), TEXT_GRAY), listW - 10);
+			costs.add(lines);
+			total += entryHeight(lines.size()) + 4;
+		}
+		int maxScroll = Math.max(0, total - listH);
+		gearScroll = Math.max(0, Math.min(gearScroll, maxScroll));
+		g.enableScissor(listX, listTop, listX + listW, listTop + listH);
+		int ey = listTop - gearScroll;
+		for (int i = 0; i < trades.size(); i++) {
+			HuntDefs.GearTrade trade = trades.get(i);
+			List<FormattedCharSequence> lines = costs.get(i);
+			int h = entryHeight(lines.size());
+			sprite(g, "panel_dark", listX, ey, listW, h);
+			boolean unlocked = rank >= trade.rank();
+			g.text(this.font, colored(trade.name(), unlocked ? HuntDefs.GOLD : 0x8A8A8A), listX + 5, ey + 4, WHITE, false);
+			int ly = ey + 15;
+			for (FormattedCharSequence line : lines) {
+				g.text(this.font, line, listX + 5, ly, WHITE, false);
+				ly += 9;
+			}
+			Component label = unlocked ? Component.literal("[Click] - Buy (coming in v0.4)")
+					: Component.literal("Rank Required: [" + HuntDefs.ROMAN[trade.rank()] + "]");
+			boolean visible = ey + h > listTop && ey < listTop + listH;
+			if (visible) {
+				button(g, listX + 4, ly + 2, listW - 8, 14, label, false, mouseX, mouseY, null);
+			}
+			ey += h + 4;
+		}
+		g.disableScissor();
+		if (maxScroll > 0) {
+			int barH = Math.max(8, listH * listH / total);
+			int barY = listTop + (listH - barH) * gearScroll / maxScroll;
+			g.fill(px + pw - 3, barY, px + pw - 1, barY + barH, 0xFF8A8A8A);
+		}
+	}
+
+	private static int entryHeight(int costLines) {
+		return 15 + costLines * 9 + 20;
+	}
+
+	private void changeGearPage(int direction) {
+		gearPage = (gearPage + direction + 3) % 3;
+		gearScroll = 0;
 	}
 
 	// ---------------------------------------------------------------- Ranks tab
@@ -575,6 +669,8 @@ public class HuntMenuScreen extends Screen {
 		abilityScroll = 0;
 		rankView = progress().rank();
 		questTier = Math.min(questTier, hunt().tiers().size());
+		gearPage = 1;
+		gearScroll = 0;
 	}
 
 	private void changeHunt(int direction) {
@@ -631,6 +727,8 @@ public class HuntMenuScreen extends Screen {
 				changeTier(-1);
 			} else if (panelOpen && tab == 2) {
 				changeRank(-1);
+			} else if (panelOpen && tab == 1) {
+				changeGearPage(-1);
 			}
 			return true;
 		}
@@ -639,6 +737,8 @@ public class HuntMenuScreen extends Screen {
 				changeTier(1);
 			} else if (panelOpen && tab == 2) {
 				changeRank(1);
+			} else if (panelOpen && tab == 1) {
+				changeGearPage(1);
 			}
 			return true;
 		}
@@ -664,7 +764,8 @@ public class HuntMenuScreen extends Screen {
 			double my = event.y();
 			boolean shift = (event.modifiers() & InputConstants.MOD_SHIFT) != 0;
 			// The token trade reads Shift, so it is handled here.
-			if (tab == 1 && panelOpen && mx >= px + 8 && mx < px + pw - 8 && my >= py + 44 && my < py + 60) {
+			int[] tb = tokenButton;
+			if (tab == 1 && panelOpen && tb != null && mx >= tb[0] && mx < tb[0] + tb[2] && my >= tb[1] && my < tb[1] + tb[3]) {
 				ClientPlayNetworking.send(new HuntPayloads.Action("buy_tokens", hunt().id(), shift ? 1 : 0));
 				return true;
 			}
@@ -687,6 +788,10 @@ public class HuntMenuScreen extends Screen {
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
 		if (panelOpen && tab == 0 && !questPanelShowing() && mouseX >= px && mouseX < px + pw) {
 			abilityScroll -= (int) Math.round(scrollY * 9);
+			return true;
+		}
+		if (panelOpen && tab == 1 && mouseX >= px && mouseX < px + pw) {
+			gearScroll -= (int) Math.round(scrollY * 12);
 			return true;
 		}
 		if (mouseX < px) {

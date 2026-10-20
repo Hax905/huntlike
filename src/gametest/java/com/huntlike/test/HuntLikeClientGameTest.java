@@ -59,6 +59,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(3);
 			context.takeScreenshot("06-gear");
+			context.getInput().pressKey(InputConstants.KEY_A);
+			context.waitTicks(3);
+			context.takeScreenshot("06b-gear-armor");
+			context.getInput().pressKey(InputConstants.KEY_A);
+			context.waitTicks(3);
+			context.takeScreenshot("06c-gear-weapons");
 
 			// Start a Tier I quest with Enter on the boss card.
 			context.setScreen(() -> new HuntMenuScreen(0));

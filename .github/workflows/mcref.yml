@@ -2,7 +2,12 @@
 # to the temporary "mc-ref" branch, for reference while writing code.
 
 name: mcref
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      cleanup:
+        description: 'Delete the mc-ref branch instead'
+        default: 'false'
 
 permissions:
   contents: write
@@ -11,6 +16,12 @@ jobs:
   dump:
     runs-on: ubuntu-24.04
     steps:
+      - name: cleanup
+        if: ${{ inputs.cleanup == 'true' }}
+        run: |
+          git init -q /tmp/c && cd /tmp/c
+          git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" --delete mc-ref || true
+          exit 1
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
@@ -36,6 +47,10 @@ jobs:
             done < /tmp/pkgs.txt
           done < /tmp/jars.txt
           find /tmp/out -name "*.txt" | wc -l
+          mkdir -p /tmp/out/vanilla-data
+          for jar in $(grep -E "minecraft-(common|clientOnly)" /tmp/jars.txt); do
+            (cd /tmp/out/vanilla-data && unzip -q -o "$jar" 'data/minecraft/advancement/story/*' 'data/minecraft/advancement/husbandry/root.json' 'data/minecraft/tags/entity_type/*' 'data/minecraft/recipe/bread.json' 'assets/minecraft/lang/en_us.json' 'assets/minecraft/items/egg.json' || true)
+          done
       - name: push
         run: |
           cd /tmp/out

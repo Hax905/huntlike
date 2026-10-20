@@ -29,7 +29,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("time set day");
 			singleplayer.getServer().runCommand("gamerule doDaylightCycle false");
-			singleplayer.getServer().runCommand("huntlike tokens add 64");
+			addProgress(singleplayer, 0, 64);
 			context.waitTicks(10);
 
 			// Open the menu the way the altar does: from the server.
@@ -109,7 +109,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					&& data.progress("animal").bossKills[0] == 1);
 			context.takeScreenshot("11-quest-complete");
 
-			singleplayer.getServer().runCommand("huntlike xp add 200");
+			addProgress(singleplayer, 200, 0);
 			context.waitTicks(10);
 			context.setScreen(() -> new HuntMenuScreen(2));
 			context.waitTicks(3);
@@ -127,6 +127,17 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	private static ServerPlayer player(MinecraftServer server) {
 		return server.getPlayerList().getPlayers().get(0);
+	}
+
+	private static void addProgress(TestSingleplayerContext singleplayer, int xp, int tokens) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.progress("animal").xp += xp;
+			data.progress("animal").tokens += tokens;
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
+		});
 	}
 
 	private static void check(TestSingleplayerContext singleplayer, String what, java.util.function.Predicate<HuntData> test) {

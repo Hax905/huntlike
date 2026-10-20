@@ -70,6 +70,16 @@ public final class BossAbilities {
 		STATES.remove(boss);
 	}
 
+	/** Whether this herd animal belongs to a fight that is still running. */
+	public static boolean isTrackedHerd(Entity entity) {
+		for (State state : STATES.values()) {
+			if (state.herd.contains(entity.getUUID())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static boolean isHerd(Entity entity) {
 		return entity.entityTags().contains(HERD_TAG);
 	}
@@ -225,8 +235,8 @@ public final class BossAbilities {
 				wolf.setPersistentAngerTarget(EntityReference.of(owner));
 				wolf.setTimeToRemainAngry(20L * 60 * 10);
 			}
-			level.addFreshEntity(mob);
 			state.herd.add(mob.getUUID());
+			level.addFreshEntity(mob);
 			level.sendParticles(ParticleTypes.CLOUD, mob.getX(), mob.getY() + 0.5, mob.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
 		}
 		play(level, owner, SoundEvents.EVOKER_CAST_SPELL, 0.7F);

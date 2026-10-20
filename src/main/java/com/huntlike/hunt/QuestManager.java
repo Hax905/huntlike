@@ -429,7 +429,7 @@ public final class QuestManager {
 			if (quest == null || !quest.bossUuid.equals(entity.getUUID().toString())) {
 				entity.discard();
 			}
-		} else if (BossAbilities.isHerd(entity)) {
+		} else if (BossAbilities.isHerd(entity) && !BossAbilities.isTrackedHerd(entity)) {
 			// Herd animals only live during their boss fight.
 			entity.discard();
 		} else if (SpiritLure.isLured(entity)) {

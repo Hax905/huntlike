@@ -25,6 +25,7 @@ public final class HuntDefs {
 	public static final int GRAY = 0xAAAAAA;
 	public static final int LIGHT_BLUE = 0x8FD3FF;
 	public static final int PINK = 0xFF8AD8;
+	public static final int BLUE = 0x5555FF;
 
 	public static final String[] RANK_TITLES = {"Prey", "Scout", "Tracker", "Stalker", "Trapper", "Pursuer", "Warden",
 			"Predator", "Apex Hunter", "Dread Hunter", "Slayer"};
@@ -39,8 +40,12 @@ public final class HuntDefs {
 		}
 	}
 
-	/** A boss drop, with its chance as numerator / denominator (1/1 = guaranteed). */
-	public record Drop(String id, Item item, int minCount, int maxCount, int chanceNum, int chanceDen) {
+	/**
+	 * A boss drop, with its chance as numerator / denominator (1/1 = guaranteed).
+	 * dropClass picks the chat message: 0 none (guaranteed), 1 Lucky, 2 Good, 3 GREAT, 4 FANTASTIC.
+	 * Several drops of a Hunt may share a class.
+	 */
+	public record Drop(String id, Item item, int minCount, int maxCount, int chanceNum, int chanceDen, int dropClass) {
 		public boolean guaranteed() {
 			return chanceNum >= chanceDen;
 		}
@@ -88,7 +93,7 @@ public final class HuntDefs {
 	public static final Ability APEX_INSTINCT = new Ability("Apex Instinct",
 			"After being wounded many times, survival instincts consume the canine body, increasing speed and damage.");
 
-	private static final String KORO_FIRST = "A soul from the unknown territories is here to talk! [Shop]";
+	private static final String KORO_FIRST = "A soul from the unknown territories is here to talk! [Gear]";
 	private static final String KORO_NEXT = "The soul of Koro thinks you are ready for his next quest!";
 
 	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME,
@@ -145,18 +150,18 @@ public final class HuntDefs {
 		int t = tier.number();
 		boolean five = t == 5;
 		java.util.ArrayList<Drop> list = new java.util.ArrayList<>();
-		list.add(new Drop("low_quality_mystery_meat", ModItems.LOW_QUALITY_MYSTERY_MEAT, t * 2, t * 3, 1, 1));
+		list.add(new Drop("low_quality_mystery_meat", ModItems.LOW_QUALITY_MYSTERY_MEAT, t * 2, t * 3, 1, 1, 0));
 		if (t >= 2) {
-			list.add(new Drop("thick_hide", ModItems.THICK_HIDE, 1, 1, 1, five ? 5 : 10));
+			list.add(new Drop("thick_hide", ModItems.THICK_HIDE, 1, 1, 1, five ? 5 : 10, 1));
 		}
 		if (t >= 3) {
-			list.add(new Drop("large_femur", ModItems.LARGE_FEMUR, 1, 1, five ? 2 : 1, 25));
+			list.add(new Drop("large_femur", ModItems.LARGE_FEMUR, 1, 1, five ? 2 : 1, 25, 2));
 		}
 		if (t >= 4) {
-			list.add(new Drop("golden_moss", ModItems.GOLDEN_MOSS, 1, 1, 1, five ? 25 : 50));
+			list.add(new Drop("golden_moss", ModItems.GOLDEN_MOSS, 1, 1, 1, five ? 25 : 50, 3));
 		}
 		if (t >= 5) {
-			list.add(new Drop("spiritual_catalyst", ModItems.SPIRITUAL_CATALYST, 1, 1, 1, 100));
+			list.add(new Drop("spiritual_catalyst", ModItems.SPIRITUAL_CATALYST, 1, 1, 1, 100, 4));
 		}
 		return list;
 	}

@@ -228,7 +228,7 @@ public final class QuestManager {
 				give(owner, data, hunt, drop, count);
 			} else if (random.nextInt(drop.chanceDen()) < drop.chanceNum()) {
 				give(owner, data, hunt, drop, drop.minCount());
-				owner.sendSystemMessage(Messages.rareDrop(new ItemStack(drop.item()).getStyledHoverName()));
+				owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 				playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
 			}
 		}
@@ -244,7 +244,7 @@ public final class QuestManager {
 			for (Drop drop : HuntDefs.drops(tier)) {
 				if (!drop.guaranteed() && random.nextInt(drop.chanceDen() * 2) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
-					helper.sendSystemMessage(Messages.rareDrop(new ItemStack(drop.item()).getStyledHoverName()));
+					helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 					playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
 				}
 			}

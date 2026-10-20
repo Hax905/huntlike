@@ -77,8 +77,13 @@ public final class Messages {
 				.append(c(" [" + HuntDefs.ROMAN[level] + "]", HuntDefs.GOLD));
 	}
 
-	public static Component rareDrop(Component itemName) {
-		return c("RARE DROP! ", HuntDefs.GOLD).append(itemName);
+	private static final String[] DROP_LABELS = {"", "Lucky drop! ", "Good drop! ", "GREAT DROP! ", "FANTASTIC DROP! "};
+	private static final int[] DROP_COLORS = {0xFFFFFF, HuntDefs.LIME, HuntDefs.BLUE, HuntDefs.GOLD, HuntDefs.PINK};
+
+	/** Drop message by drop class: 1 Lucky (lime), 2 Good (blue), 3 GREAT (gold), 4 FANTASTIC (pink). */
+	public static Component rareDrop(int dropClass, Component itemName) {
+		int i = Math.max(1, Math.min(4, dropClass));
+		return c(DROP_LABELS[i], DROP_COLORS[i]).append(itemName);
 	}
 
 	public static Component error(String text) {

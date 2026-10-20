@@ -42,19 +42,14 @@ public class HuntMenuScreen extends Screen {
 	private static final int MAX_H = 236;
 	private static final int TAB_H = 20;
 
-	private static final int FRAME = 0xFF2B2B2B;
-	private static final int TAB = 0xFF353535;
-	private static final int TAB_SELECTED = 0xFF4A4A4A;
 	private static final int WHITE = 0xFFFFFFFF;
-	private static final int BLACK = 0xFF000000;
-	private static final int PANEL = 0xFF3C3C3C;
-	private static final int PANEL_DARK = 0xFF2E2E2E;
-	private static final int BUTTON = 0xFF555555;
-	private static final int BUTTON_HOVER = 0xFF6A6A6A;
-	private static final int BUTTON_OFF = 0xFF3A3A3A;
+	private static final int TAB_TEXT = 0xFF404040;
+	private static final int RAIL = 0xFFC6C6C6;
+	private static final Identifier BUTTON_SPRITE = Identifier.withDefaultNamespace("widget/button");
+	private static final Identifier BUTTON_HIGHLIGHTED = Identifier.withDefaultNamespace("widget/button_highlighted");
+	private static final Identifier BUTTON_DISABLED = Identifier.withDefaultNamespace("widget/button_disabled");
 	private static final int TEXT_GRAY = 0xFFAAAAAA;
 	private static final int TEXT_DIM = 0xFF6F6F6F;
-	private static final int BAR = 0xFFAA0000;
 
 	private int tab;
 	/** False: the Hunt rail only. True: the selected Hunt's panel is open. */
@@ -159,10 +154,10 @@ public class HuntMenuScreen extends Screen {
 		pw = iw - 100;
 		ph = ih - 16;
 
-		drawTabs(g, mouseX, mouseY);
-		g.fill(left, top, left + W, top + H, FRAME);
-		g.fill(ix - 2, iy - 2, ix + iw + 2, iy + ih + 2, WHITE);
-		g.fill(ix, iy, ix + iw, iy + ih, BLACK);
+		drawTabs(g, mouseX, mouseY, false);
+		sprite(g, "window", left, top, W, H);
+		drawTabs(g, mouseX, mouseY, true);
+		sprite(g, "content", ix - 2, iy - 2, iw + 4, ih + 4);
 		drawRail(g, mouseX, mouseY);
 
 		boolean questRunning = activeQuest() != null;
@@ -179,16 +174,27 @@ public class HuntMenuScreen extends Screen {
 		}
 	}
 
-	private void drawTabs(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+	/** Unselected tabs are drawn behind the window, the selected tab in front so it joins the window. */
+	private void drawTabs(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean selectedPass) {
 		int tabW = W / 3;
 		for (int i = 0; i < 3; i++) {
+			boolean selected = i == tab;
+			if (selected != selectedPass) {
+				continue;
+			}
 			int x = left + i * tabW;
 			int y = top - TAB_H;
-			boolean selected = i == tab;
-			g.fill(x + 1, y, x + tabW - 1, top, selected ? TAB_SELECTED : TAB);
-			g.centeredText(this.font, Component.literal(TABS[i]), x + tabW / 2, y + 6, selected ? WHITE : TEXT_GRAY);
-			int index = i;
-			hits.add(new Hit(x, y, tabW, TAB_H, () -> switchTab(index)));
+			if (selected) {
+				sprite(g, "tab_selected", x, y, tabW, TAB_H + 4);
+			} else {
+				sprite(g, "tab", x + 1, y + 2, tabW - 2, TAB_H);
+			}
+			Component label = Component.literal(TABS[i]);
+			g.text(this.font, label, x + (tabW - this.font.width(label)) / 2, y + (selected ? 7 : 8), TAB_TEXT, false);
+			if (!selectedPass) {
+				int index = i;
+				hits.add(new Hit(x, y, tabW, TAB_H, () -> switchTab(index)));
+			}
 		}
 	}
 
@@ -199,7 +205,7 @@ public class HuntMenuScreen extends Screen {
 		for (int y = iy; y < iy + ih; y++) {
 			double t = Math.abs(y - cy) / (double) (ih / 2);
 			int x = (int) Math.round(cx - 12 * t);
-			g.fill(x - 1, y, x + 1, y + 1, WHITE);
+			g.fill(x - 1, y, x + 1, y + 1, RAIL);
 		}
 		for (int offset = -1; offset <= 1; offset++) {
 			int index = huntIndex + offset;
@@ -211,8 +217,7 @@ public class HuntMenuScreen extends Screen {
 			int x0 = cx - size / 2;
 			int y0 = sy - size / 2;
 			boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
-			g.fill(x0 - 1, y0 - 1, x0 + size + 1, y0 + size + 1, hover ? 0xFF8A8A8A : 0xFF6E6E6E);
-			g.fill(x0, y0, x0 + size, y0 + size, 0xFF555555);
+			sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
 			g.blit(RenderPipelines.GUI_TEXTURED, ANKH, x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6, 128, 128, 128, 128);
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));
@@ -225,7 +230,7 @@ public class HuntMenuScreen extends Screen {
 	}
 
 	private void panelBox(GuiGraphicsExtractor g) {
-		g.fill(px, py, px + pw, py + ph, PANEL);
+		sprite(g, "panel", px, py, pw, ph);
 	}
 
 	/** Draws a button, registers its click and returns whether the mouse is over it. */
@@ -233,12 +238,17 @@ public class HuntMenuScreen extends Screen {
 			int mouseX, int mouseY, Runnable action) {
 		boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
 		buttonCenters.put(label.getString(), new int[] {x + w / 2, y + h / 2});
-		g.fill(x, y, x + w, y + h, !enabled ? BUTTON_OFF : hover ? BUTTON_HOVER : BUTTON);
-		g.centeredText(this.font, label, x + w / 2, y + (h - 8) / 2, enabled ? WHITE : TEXT_DIM);
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, !enabled ? BUTTON_DISABLED : hover ? BUTTON_HIGHLIGHTED : BUTTON_SPRITE, x, y, w, h);
+		g.centeredText(this.font, label, x + w / 2, y + (h - 8) / 2, enabled ? WHITE : 0xFFA0A0A0);
 		if (enabled && action != null) {
 			hits.add(new Hit(x, y, w, h, action));
 		}
 		return hover;
+	}
+
+	/** Draws one of HuntLike's GUI sprites (assets/huntlike/textures/gui/sprites/menu/<name>.png). */
+	private static void sprite(GuiGraphicsExtractor g, String name, int x, int y, int w, int h) {
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/" + name), x, y, w, h);
 	}
 
 	private static MutableComponent colored(String text, int rgb) {
@@ -316,7 +326,7 @@ public class HuntMenuScreen extends Screen {
 		if (h < 20) {
 			return;
 		}
-		g.fill(x, y, x + w, y + h, PANEL_DARK);
+		sprite(g, "panel_dark", x, y, w, h);
 		g.text(this.font, colored("Abilities", WHITE), x + 4, y + 3, WHITE, false);
 		List<FormattedCharSequence> lines = new ArrayList<>();
 		List<Integer> colors = new ArrayList<>();
@@ -376,8 +386,11 @@ public class HuntMenuScreen extends Screen {
 			int seconds = ClientHuntState.bossTicksLeft / 20;
 			label = colored(String.format("Boss alive - %d:%02d left", seconds / 60, seconds % 60), WHITE);
 		}
-		g.fill(barX, y, barX + barW, y + 12, 0xFF1E1E1E);
-		g.fill(barX, y, barX + Math.round(barW * fill), y + 12, BAR);
+		sprite(g, "bar_background", barX, y, barW, 12);
+		int filled = Math.round(barW * fill);
+		if (filled > 0) {
+			sprite(g, "bar_quota", barX, y, filled, 12);
+		}
 		g.centeredText(this.font, label, cx, y + 2, WHITE);
 		y += 15;
 		if (ClientHuntState.peaceful) {
@@ -449,7 +462,7 @@ public class HuntMenuScreen extends Screen {
 		int y = py + 5;
 		g.centeredText(this.font, colored(hunt.name() + " Gear", hunt.color()), cx, y, WHITE);
 		y += 16;
-		g.fill(px + 4, y - 3, px + pw - 4, y + 52, PANEL_DARK);
+		sprite(g, "panel_dark", px + 4, y - 3, pw - 8, 55);
 		g.text(this.font, colored(hunt.name() + " Ritual Tokens", WHITE), px + 8, y, WHITE, false);
 		y += 11;
 		g.text(this.font, colored("Balance: ", TEXT_GRAY).append(colored(String.valueOf(progress().tokens), HuntDefs.LIME)),
@@ -482,7 +495,7 @@ public class HuntMenuScreen extends Screen {
 
 		// Header box: "Hunt Type - Rank - RN".
 		int headerH = 24;
-		g.fill(px, py, px + pw, py + headerH, PANEL);
+		sprite(g, "panel", px, py, pw, headerH);
 		Component header = colored(hunt.name(), hunt.color())
 				.append(colored(" - " + HuntDefs.RANK_TITLES[rankView] + " - " + HuntDefs.ROMAN[rankView],
 						snapshot ? TEXT_GRAY : WHITE));
@@ -499,7 +512,7 @@ public class HuntMenuScreen extends Screen {
 		// Unlock list.
 		int listY = py + headerH + 4;
 		int listH = ph - headerH - 4 - 20;
-		g.fill(px, listY, px + pw, listY + listH, PANEL);
+		sprite(g, "panel", px, listY, pw, listH);
 		int y = listY + 5;
 		if (snapshot) {
 			g.text(this.font, colored("Next Rank: " + HuntDefs.RANK_XP[rankView] + " XP", HuntDefs.GOLD), px + 6, y, WHITE, false);
@@ -538,8 +551,11 @@ public class HuntMenuScreen extends Screen {
 		int next = rank >= HuntDefs.MAX_RANK ? HuntDefs.RANK_XP[HuntDefs.MAX_RANK] : HuntDefs.RANK_XP[rank + 1];
 		int prev = HuntDefs.RANK_XP[rank];
 		float fill = rank >= HuntDefs.MAX_RANK ? 1.0F : (progress.xp - prev) / (float) Math.max(1, next - prev);
-		g.fill(px, barY, px + pw, barY + 12, 0xFF1E1E1E);
-		g.fill(px, barY, px + Math.round(pw * Math.max(0, Math.min(1, fill))), barY + 12, 0xFF2E8B2E);
+		sprite(g, "bar_background", px, barY, pw, 12);
+		int xpFilled = Math.round(pw * Math.max(0, Math.min(1, fill)));
+		if (xpFilled > 0) {
+			sprite(g, "bar_xp", px, barY, xpFilled, 12);
+		}
 		String xpText = rank >= HuntDefs.MAX_RANK ? progress.xp + " XP (Max Rank)" : progress.xp + " / " + next + " XP";
 		g.centeredText(this.font, colored(xpText, WHITE), cx, barY + 2, WHITE);
 	}

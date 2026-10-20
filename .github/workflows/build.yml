@@ -36,6 +36,10 @@ jobs:
           (sleep 150; echo "stop") | timeout 420 ./gradlew runServer --console=plain > server.log 2>&1 || true
           grep -E "Done \(|ERROR|Exception|huntlike" server.log | head -80
           grep -q "Done (" server.log
+      - name: client game test
+        run: |
+          set -o pipefail
+          ./gradlew runProductionClientGameTest --console=plain 2>&1 | tee client.log
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -46,6 +50,9 @@ jobs:
         run: |
           mkdir -p /tmp/log && cp build.log /tmp/log/build.log || echo "no log" > /tmp/log/build.log
           cp server.log /tmp/log/server.log || true
+          cp client.log /tmp/log/client.log || true
+          mkdir -p /tmp/log/screenshots && find . -path ./.gradle -prune -o -name "*.png" -path "*screenshots*" -print -exec cp {} /tmp/log/screenshots/ \; || true
+          find . -path ./.gradle -prune -o -name "latest.log" -print -exec cp {} /tmp/log/client-latest.log \; || true
           echo "${{ job.status }} ${{ github.sha }}" > /tmp/log/status.txt
           cd /tmp/log
           git init -q -b ci-log

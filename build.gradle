@@ -30,6 +30,23 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "huntlike-test"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true // By setting this to true, you agree to the Minecraft EULA (https://aka.ms/MinecraftEULA).
+	}
+}
+
+// Runs the client game tests in a production-like client, with a virtual screen on CI.
+tasks.register("runProductionClientGameTest", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+	jvmArgs.add("-Dfabric.client.gametest")
+	jvmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
+	useXVFB = true
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version

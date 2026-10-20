@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
+import com.huntlike.hunt.BossAbilities;
 import com.huntlike.hunt.BossController;
 
 /** Hunt bosses never drop their vanilla loot; HuntLike hands out their drops itself. */
@@ -16,7 +17,8 @@ import com.huntlike.hunt.BossController;
 public abstract class LivingEntityMixin {
 	@Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
 	private void huntlike$skipBossLoot(ServerLevel level, DamageSource source, CallbackInfo ci) {
-		if (BossController.isBoss((LivingEntity) (Object) this)) {
+		LivingEntity self = (LivingEntity) (Object) this;
+		if (BossController.isBoss(self) || BossAbilities.isHerd(self)) {
 			ci.cancel();
 		}
 	}

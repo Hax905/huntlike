@@ -145,8 +145,112 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("13-boss-card-defeated");
 			hover(context, "Lore");
 			context.takeScreenshot("14-lore-tooltip");
+			context.setScreen(() -> null);
+			tierFive(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
+	}
+
+	/** Tier V: Herd Call, its immunity, Soul Strike, Apex Instinct and the Lunge. */
+	private static void tierFive(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		addProgress(singleplayer, 10500, 32);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(100.0);
+			player.setHealth(100.0F);
+		});
+		context.waitTicks(10);
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("start", "animal", 5)));
+		context.waitTicks(10);
+		check(singleplayer, "tier V started", data -> data.quest != null && data.quest.tier == 5);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			ServerLevel level = player.level();
+			for (int i = 0; i < 12; i++) {
+				Chicken chicken = EntityTypes.CHICKEN.create(level, EntitySpawnReason.COMMAND);
+				chicken.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0.0F, 0.0F);
+				level.addFreshEntity(chicken);
+				chicken.hurtServer(level, level.damageSources().playerAttack(player), 100.0F);
+			}
+		});
+		context.waitTicks(80);
+		check(singleplayer, "tier V boss spawned", data -> data.quest != null && data.quest.phase == HuntData.PHASE_BOSS);
+
+		// 240 -> below 180: Herd Call clamps at 180 and calls 6 wolves.
+		hitBoss(singleplayer, 70.0F);
+		context.waitTicks(5);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+			int herd = player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64), com.huntlike.hunt.BossAbilities::isHerd).size();
+			HuntLike.LOGGER.info("[test] after herd call: boss health {} herd {}", boss.getHealth(), herd);
+			if (herd != 6 || boss.getHealth() < 175) {
+				throw new AssertionError("Herd Call failed");
+			}
+			float before = boss.getHealth();
+			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 50.0F);
+			HuntLike.LOGGER.info("[test] immune while herd lives: {}", boss.getHealth() >= before);
+			if (boss.getHealth() < before) {
+				throw new AssertionError("Boss not immune during Herd Call");
+			}
+		});
+		context.getInput().lookAt(new net.minecraft.core.BlockPos(3, -60, 0));
+		context.waitTicks(10);
+		context.takeScreenshot("15-herd-call");
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (Mob mob : player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64), com.huntlike.hunt.BossAbilities::isHerd)) {
+				mob.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
+			}
+		});
+		context.waitTicks(10);
+
+		// Below 120: Soul Strike for 18 true damage.
+		float healthBefore = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		hitBoss(singleplayer, 65.0F);
+		context.waitTicks(15);
+		float healthAfter = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		HuntLike.LOGGER.info("[test] Soul Strike: player health {} -> {}", healthBefore, healthAfter);
+		if (healthBefore - healthAfter < 17.0F) {
+			throw new AssertionError("Soul Strike did not land");
+		}
+
+		// Below 96: Apex Instinct heals to 108.
+		hitBoss(singleplayer, 30.0F);
+		context.waitTicks(15);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+			HuntLike.LOGGER.info("[test] Apex Instinct: boss health {}", boss.getHealth());
+			if (boss.getHealth() < 107.0F) {
+				throw new AssertionError("Apex Instinct did not heal");
+			}
+		});
+		context.waitTicks(20);
+		context.takeScreenshot("16-apex-instinct");
+
+		// Let a Lunge happen, then finish the fight.
+		float beforeLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		context.waitTicks(220);
+		float afterLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		HuntLike.LOGGER.info("[test] health over 11 s of Tier V fighting: {} -> {}", beforeLunge, afterLunge);
+		context.takeScreenshot("17-tier5-fight");
+		hitBoss(singleplayer, 1000.0F);
+		context.waitTicks(20);
+		check(singleplayer, "tier V complete", data -> data.quest == null && data.progress("animal").bossKills[4] == 1);
+		context.takeScreenshot("18-tier5-complete");
+	}
+
+	private static void hitBoss(TestSingleplayerContext singleplayer, float amount) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+			if (boss == null) {
+				throw new AssertionError("Boss not found");
+			}
+			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), amount);
+		});
 	}
 
 	private static ServerPlayer player(MinecraftServer server) {

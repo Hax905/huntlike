@@ -429,6 +429,9 @@ public final class QuestManager {
 			if (quest == null || !quest.bossUuid.equals(entity.getUUID().toString())) {
 				entity.discard();
 			}
+		} else if (BossAbilities.isHerd(entity)) {
+			// Herd animals only live during their boss fight.
+			entity.discard();
 		} else if (SpiritLure.isLured(entity)) {
 			UUID owner = SpiritLure.ownerOf(entity);
 			ServerPlayer player = owner == null ? null : level.getServer().getPlayerList().getPlayer(owner);

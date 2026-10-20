@@ -75,6 +75,8 @@ public final class BossController {
 		if (boss != null) {
 			HELPERS.remove(boss.getUUID());
 			MELEE_COOLDOWN.remove(boss.getUUID());
+			BossAbilities.discardHerd(boss);
+			BossAbilities.forget(boss.getUUID());
 			boss.discard();
 		}
 	}
@@ -191,14 +193,14 @@ public final class BossController {
 		} else if (player.isAlive() && !player.isSpectator() && !player.isCreative()) {
 			double reach = boss.getBbWidth() / 2.0 + 1.6;
 			if (boss.distanceTo(player) <= reach) {
-				player.hurtServer(level, level.damageSources().mobAttack(boss), tier.melee());
+				player.hurtServer(level, level.damageSources().mobAttack(boss), tier.melee() * BossAbilities.meleeMultiplier(boss));
 				MELEE_COOLDOWN.put(boss.getUUID(), 20);
 			}
 		}
 
 		if (elapsed % 20 == 0) {
-			// Regeneration: health equal to the tier, every second.
-			boss.heal(tier.regen());
+			// Regeneration: health equal to the tier every second (6 in Apex Instinct, none while the herd lives).
+			boss.heal(BossAbilities.regen(boss, tier));
 			// Egg Blaster: one fast egg every second.
 			if (boss.hasLineOfSight(player) && !player.isSpectator()) {
 				BossEgg egg = new BossEgg(level, boss, tier.eggDamage());
@@ -211,6 +213,9 @@ public final class BossController {
 						1.0F, 1.4F);
 			}
 		}
+
+		BossAbilities.tickLunge(boss, player, tier, elapsed);
+		BossAbilities.tickHerd(boss, player, elapsed);
 
 		// Aura in the tier's color.
 		if (elapsed % 4 == 0) {
@@ -225,18 +230,38 @@ public final class BossController {
 		if (!isBoss(entity)) {
 			return true;
 		}
+		if (entity instanceof Mob mob && BossAbilities.herdAlive(mob)) {
+			return false;
+		}
 		return !(source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypeTags.IS_DROWNING) || source.is(DamageTypes.IN_WALL));
 	}
 
 	public static void afterDamage(LivingEntity entity, DamageSource source, float baseDamage, float damageTaken, boolean blocked) {
-		if (isBoss(entity) && source.getEntity() instanceof ServerPlayer player) {
+		if (!isBoss(entity) || !(entity instanceof Mob boss) || !entity.isAlive()) {
+			return;
+		}
+		if (source.getEntity() instanceof ServerPlayer player) {
 			HELPERS.computeIfAbsent(entity.getUUID(), id -> new HashSet<>()).add(player.getUUID());
 		}
+		UUID ownerId = ownerOf(entity);
+		if (ownerId == null || !(entity.level() instanceof ServerLevel level)) {
+			return;
+		}
+		ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+		if (owner == null || QuestManager.data(owner).quest == null) {
+			return;
+		}
+		HuntData.Quest quest = QuestManager.data(owner).quest;
+		BossAbilities.afterDamage(boss, owner, HuntDefs.hunt(quest.hunt).tier(quest.tier));
 	}
 
 	public static void onBossDeath(LivingEntity entity) {
 		Set<UUID> helpers = HELPERS.remove(entity.getUUID());
 		MELEE_COOLDOWN.remove(entity.getUUID());
+		if (entity instanceof Mob mob) {
+			BossAbilities.discardHerd(mob);
+		}
+		BossAbilities.forget(entity.getUUID());
 		UUID ownerId = ownerOf(entity);
 		if (ownerId == null || !(entity.level() instanceof ServerLevel level)) {
 			return;

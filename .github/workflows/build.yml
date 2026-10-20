@@ -29,6 +29,13 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew build --console=plain 2>&1 | tee build.log
+      - name: server smoke test
+        run: |
+          mkdir -p run && echo "eula=true" > run/eula.txt
+          printf 'online-mode=false\nlevel-type=minecraft\\:flat\nspawn-protection=0\n' > run/server.properties
+          (sleep 150; echo "stop") | timeout 420 ./gradlew runServer --console=plain > server.log 2>&1 || true
+          grep -E "Done \(|ERROR|Exception|huntlike" server.log | head -80
+          grep -q "Done (" server.log
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -38,6 +45,7 @@ jobs:
         if: always()
         run: |
           mkdir -p /tmp/log && cp build.log /tmp/log/build.log || echo "no log" > /tmp/log/build.log
+          cp server.log /tmp/log/server.log || true
           echo "${{ job.status }} ${{ github.sha }}" > /tmp/log/status.txt
           cd /tmp/log
           git init -q -b ci-log

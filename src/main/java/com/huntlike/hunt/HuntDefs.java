@@ -3,6 +3,7 @@ package com.huntlike.hunt;
 import java.util.List;
 
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 
@@ -92,15 +93,15 @@ public final class HuntDefs {
 
 	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME,
 			List.of(
-					new Tier(1, "Sylviornis", "The Giant Galliforme", EntityType.CHICKEN, 1.5F, 50, 1, 1, 0.25F, 4, 2, 5, 0,
+					new Tier(1, "Sylviornis", "The Giant Galliforme", EntityTypes.CHICKEN, 1.5F, 50, 1, 1, 0.25F, 4, 2, 5, 0,
 							List.of(EGG_BLASTER), "lore.huntlike.animal.1"),
-					new Tier(2, "Hylochoerus", "The Aberrant Souleater", EntityType.PIG, 1.25F, 80, 1, 2, 0.5F, 6, 4, 20, 2,
+					new Tier(2, "Hylochoerus", "The Aberrant Souleater", EntityTypes.PIG, 1.25F, 80, 1, 2, 0.5F, 6, 4, 20, 2,
 							List.of(EGG_BLASTER, SOUL_STRIKE), "lore.huntlike.animal.2"),
-					new Tier(3, "Ovis Ammon", "The Horned Creation", EntityType.SHEEP, 1.25F, 120, 2, 3, 1.0F, 8, 8, 75, 4,
+					new Tier(3, "Ovis Ammon", "The Horned Creation", EntityTypes.SHEEP, 1.25F, 120, 2, 3, 1.0F, 8, 8, 75, 4,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE), "lore.huntlike.animal.3"),
-					new Tier(4, "Aurochs", "The Animal Mother", EntityType.COW, 1.25F, 170, 2, 4, 2.0F, 10, 16, 250, 6,
+					new Tier(4, "Aurochs", "The Animal Mother", EntityTypes.COW, 1.25F, 170, 2, 4, 2.0F, 10, 16, 250, 6,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL), "lore.huntlike.animal.4"),
-					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", EntityType.WOLF, 2.0F, 240, 3, 5, 2.0F, 12, 32, 800, 8,
+					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", EntityTypes.WOLF, 2.0F, 240, 3, 5, 2.0F, 12, 32, 800, 8,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL, APEX_INSTINCT),
 							"lore.huntlike.animal.5")),
 			List.of(

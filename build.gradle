@@ -40,12 +40,6 @@ fabricApi {
 	}
 }
 
-// Runs the client game tests in a production-like client, with a virtual screen on CI.
-tasks.register("runProductionClientGameTest", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
-	jvmArgs.add("-Dfabric.client.gametest")
-	jvmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
-	useXVFB = true
-}
 
 processResources {
 	def version = project.version

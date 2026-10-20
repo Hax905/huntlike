@@ -39,7 +39,7 @@ jobs:
       - name: client game test
         run: |
           set -o pipefail
-          ./gradlew runProductionClientGameTest --console=plain 2>&1 | tee client.log
+          timeout 900 xvfb-run -a -s '-screen 0 1280x720x24' ./gradlew runClientGameTest --console=plain 2>&1 | tee client.log
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:

@@ -43,9 +43,13 @@ jobs:
           __GLX_VENDOR_LIBRARY_NAME: mesa
         run: |
           set -o pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils mesa-vulkan-drivers libvulkan1 libegl1 > /dev/null
-          (Xvfb :99 -screen 0 1280x720x24 +extension GLX &) ; sleep 2
-          { DISPLAY=:99 glxinfo -B 2>&1 | head -30; DISPLAY=:99 timeout 900 ./gradlew runClientGameTest --console=plain 2>&1; } | tee client.log
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils mesa-vulkan-drivers libvulkan1 libegl1 vulkan-tools > /dev/null
+          cat > /tmp/run-client.sh <<'SCRIPT'
+          glxinfo -B 2>&1 | head -30 || true
+          vulkaninfo --summary 2>&1 | head -40 || true
+          timeout 900 ./gradlew runClientGameTest --console=plain 2>&1
+          SCRIPT
+          xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX" bash /tmp/run-client.sh | tee client.log
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:

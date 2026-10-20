@@ -3,7 +3,7 @@ package com.huntlike.client.screen;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -581,25 +581,25 @@ public class HuntMenuScreen extends Screen {
 	@Override
 	public boolean keyPressed(KeyEvent event) {
 		int key = event.key();
-		if (key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_BACKSPACE) {
+		if (key == InputConstants.KEY_ESCAPE || key == InputConstants.KEY_BACKSPACE) {
 			if (panelOpen && !questPanelShowing()) {
 				panelOpen = false;
 				return true;
 			}
-			if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (key == InputConstants.KEY_ESCAPE) {
 				this.onClose();
 			}
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_W || key == GLFW.GLFW_KEY_UP) {
+		if (key == InputConstants.KEY_W || key == InputConstants.KEY_UP) {
 			changeHunt(-1);
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_S || key == GLFW.GLFW_KEY_DOWN) {
+		if (key == InputConstants.KEY_S || key == InputConstants.KEY_DOWN) {
 			changeHunt(1);
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_A || key == GLFW.GLFW_KEY_LEFT) {
+		if (key == InputConstants.KEY_A || key == InputConstants.KEY_LEFT) {
 			if (panelOpen && tab == 0 && !questPanelShowing()) {
 				changeTier(-1);
 			} else if (panelOpen && tab == 2) {
@@ -607,7 +607,7 @@ public class HuntMenuScreen extends Screen {
 			}
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_D || key == GLFW.GLFW_KEY_RIGHT) {
+		if (key == InputConstants.KEY_D || key == InputConstants.KEY_RIGHT) {
 			if (panelOpen && tab == 0 && !questPanelShowing()) {
 				changeTier(1);
 			} else if (panelOpen && tab == 2) {
@@ -615,7 +615,7 @@ public class HuntMenuScreen extends Screen {
 			}
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+		if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 			if (!panelOpen && !questPanelShowing()) {
 				openPanel();
 			} else if (tab == 0 && !questPanelShowing()) {
@@ -632,10 +632,10 @@ public class HuntMenuScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			double mx = event.x();
 			double my = event.y();
-			boolean shift = (event.modifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+			boolean shift = (event.modifiers() & InputConstants.MOD_SHIFT) != 0;
 			// The token trade reads Shift, so it is handled here.
 			if (tab == 1 && panelOpen && mx >= px + 8 && mx < px + pw - 8 && my >= py + 44 && my < py + 60) {
 				ClientPlayNetworking.send(new HuntPayloads.Action("buy_tokens", hunt().id(), shift ? 1 : 0));

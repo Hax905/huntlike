@@ -17,7 +17,7 @@ public class HuntLikeClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.Sync.TYPE,
 				(payload, context) -> ClientHuntState.update(payload.tag()));
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.OpenMenu.TYPE,
-				(payload, context) -> context.client().setScreen(new HuntMenuScreen(payload.tab())));
+				(payload, context) -> context.client().gui.setScreen(new HuntMenuScreen(payload.tab())));
 		EntityRendererRegistry.register(ModEntities.BOSS_EGG, ThrownItemRenderer::new);
 	}
 }

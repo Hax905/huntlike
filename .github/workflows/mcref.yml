@@ -21,7 +21,7 @@ jobs:
         run: |
           mkdir -p /tmp/out
           find ~/.gradle "$GITHUB_WORKSPACE/.gradle" -name "*.jar" 2>/dev/null | grep -v -- "-sources" | sort > /tmp/out/all-jars.txt
-          grep -i -E "minecraft|fabric" /tmp/out/all-jars.txt | grep -v -E "fabric-loom|loader|mixin|tiny|mapping|intermediary" > /tmp/jars.txt || true
+          grep -i -E "minecraft|fabric" /tmp/out/all-jars.txt | grep -v -E "fabric-loom|loader|mixin|tiny|mapping|intermediary|unpick|mercury|stitch|class-tweaker" > /tmp/jars.txt || true
           cp /tmp/jars.txt /tmp/out/used-jars.txt
           : > /tmp/seen.txt
           while read -r jar; do
@@ -32,7 +32,7 @@ jobs:
             while read -r pkg; do
               mkdir -p "/tmp/out/$(dirname "$pkg")"
               grep -E "^${pkg}/[^/]+$" /tmp/cls.txt | tr '/' '.' > /tmp/pc.txt
-              javap -protected -cp "$jar" @/tmp/pc.txt >> "/tmp/out/${pkg}.txt" 2>/dev/null || true
+              xargs -a /tmp/pc.txt -d '\n' javap -protected -cp "$jar" >> "/tmp/out/${pkg}.txt" 2>>/tmp/out/javap-errors.txt || true
             done < /tmp/pkgs.txt
           done < /tmp/jars.txt
           find /tmp/out -name "*.txt" | wc -l

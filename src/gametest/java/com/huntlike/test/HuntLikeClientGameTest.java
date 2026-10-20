@@ -83,6 +83,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				}
 			});
 			context.waitTicks(80);
+			context.getInput().lookAt(new net.minecraft.core.BlockPos(3, -60, 0));
+			context.waitTicks(5);
 			check(singleplayer, "boss spawned", data -> data.quest != null && data.quest.phase == HuntData.PHASE_BOSS);
 			context.takeScreenshot("08-boss-spawned");
 
@@ -94,6 +96,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 			// Let the boss fight for a few seconds, then kill it as the player.
 			context.waitTicks(60);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = player(server);
+				Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+				if (boss != null) {
+					HuntLike.LOGGER.info("[test] Boss at {} health {}, player health {}", boss.blockPosition(), boss.getHealth(), player.getHealth());
+				}
+			});
 			context.takeScreenshot("10-boss-fight");
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = player(server);
@@ -119,6 +128,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new HuntMenuScreen(0));
 			context.waitTicks(3);
 			context.getInput().pressKey(InputConstants.KEY_RETURN);
+			context.waitTicks(3);
+			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(3);
 			context.takeScreenshot("13-boss-card-defeated");
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");

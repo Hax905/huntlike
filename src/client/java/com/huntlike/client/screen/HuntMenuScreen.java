@@ -39,7 +39,7 @@ public class HuntMenuScreen extends Screen {
 	private static final String[] TABS = {"Quests", "Gear", "Ranks"};
 
 	private static final int W = 300;
-	private static final int H = 196;
+	private static final int MAX_H = 236;
 	private static final int TAB_H = 20;
 
 	private static final int FRAME = 0xFF2B2B2B;
@@ -66,6 +66,7 @@ public class HuntMenuScreen extends Screen {
 	private boolean cancelArmed;
 
 	// Layout, recomputed each frame.
+	private int H = MAX_H;
 	private int left;
 	private int top;
 	private int ix;
@@ -138,6 +139,7 @@ public class HuntMenuScreen extends Screen {
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
 		super.extractRenderState(g, mouseX, mouseY, delta);
 		hits.clear();
+		H = Math.max(180, Math.min(MAX_H, this.height - TAB_H - 8));
 		left = (this.width - W) / 2;
 		top = (this.height - H - TAB_H) / 2 + TAB_H;
 		ix = left + 8;
@@ -246,16 +248,16 @@ public class HuntMenuScreen extends Screen {
 		int y = py + 5;
 
 		g.centeredText(this.font, colored(hunt.name() + " Hunt", hunt.color()), cx, y, WHITE);
-		y += 12;
+		y += 11;
 		g.centeredText(this.font, colored("<  ", TEXT_GRAY).append(colored("Tier " + tier.roman(), tier.color()))
 				.append(colored("  >", TEXT_GRAY)), cx, y, WHITE);
 		hits.add(new Hit(cx - 40, y - 2, 20, 12, () -> changeTier(-1)));
 		hits.add(new Hit(cx + 20, y - 2, 20, 12, () -> changeTier(1)));
-		y += 13;
+		y += 12;
 		g.centeredText(this.font, colored(tier.bossName(), tier.color()), cx, y, WHITE);
 		y += 10;
 		g.centeredText(this.font, colored(tier.bossTitle(), TEXT_GRAY), cx, y, WHITE);
-		y += 13;
+		y += 12;
 		boolean affordable = progress.tokens >= tier.tokenCost();
 		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(tier.tokenCost()), WHITE))
 				.append(colored(" [" + progress.tokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
@@ -273,7 +275,7 @@ public class HuntMenuScreen extends Screen {
 			y += 10;
 			g.text(this.font, colored("Regeneration: ", TEXT_GRAY).append(colored(tier.regen() + "/s", HuntDefs.LIME)),
 					px + 6, y, WHITE, false);
-			y += 13;
+			y += 12;
 			drawAbilities(g, tier, px + 4, y, pw - 8, py + ph - 26 - y);
 		}
 

@@ -341,10 +341,14 @@ public final class QuestManager {
 		if (!(source.getEntity() instanceof ServerPlayer killer)) {
 			return;
 		}
+		HuntData data = data(killer);
 		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(100) == 0) {
+			HuntData.Progress progress = data.progress("animal");
+			progress.dropsSeen.add("soul_stone");
+			progress.dropCounts.merge("soul_stone", 1, Integer::sum);
+			save(killer, data);
 			giveStack(killer, new ItemStack(ModItems.SOUL_STONE));
 		}
-		HuntData data = data(killer);
 		Quest quest = data.quest;
 		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !quest.hunt.equals("animal") || isPeaceful(killer)) {
 			return;

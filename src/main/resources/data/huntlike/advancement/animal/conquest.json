@@ -1,0 +1,24 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:bone"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.conquest.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.conquest.description"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

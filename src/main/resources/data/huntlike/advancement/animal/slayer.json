@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/tier5",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:alpha_altar"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.slayer.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.slayer.description"
+    },
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/tier3",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:beef"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.tier4.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.tier4.description"
+    },
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

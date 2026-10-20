@@ -15,14 +15,15 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 
 import com.huntlike.HuntLike;
+import com.huntlike.block.AlphaAltarBlock;
 
 /** Every HuntLike block. */
 public final class ModBlocks {
 	private ModBlocks() {
 	}
 
-	/** Opens the Hunt menu (menu comes in a later version). */
-	public static final Block ALPHA_ALTAR = register("alpha_altar", Block::new,
+	/** Opens the Hunt menu. */
+	public static final Block ALPHA_ALTAR = register("alpha_altar", AlphaAltarBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.SAND).strength(3.0F, 1200.0F).sound(SoundType.BONE_BLOCK)
 					.requiresCorrectToolForDrops().lightLevel(state -> 7),
 			Rarity.RARE);

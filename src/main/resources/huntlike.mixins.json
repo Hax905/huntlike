@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "com.huntlike.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"LivingEntityMixin",
+		"MobAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

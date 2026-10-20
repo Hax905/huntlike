@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/tier4",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:bone_block"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.tier5.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.tier5.description"
+    },
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

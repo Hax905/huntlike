@@ -1,0 +1,33 @@
+{
+  "criteria": {
+    "altar": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "huntlike:alpha_altar"
+          }
+        ]
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:alpha_altar"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.root.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.root.description"
+    },
+    "background": "minecraft:gui/advancements/backgrounds/husbandry",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "altar"
+    ]
+  ]
+}

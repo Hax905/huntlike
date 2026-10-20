@@ -7,7 +7,11 @@ import net.minecraft.resources.Identifier;
 
 import net.fabricmc.api.ModInitializer;
 
+import com.huntlike.command.HuntCommand;
+import com.huntlike.entity.ModEntities;
+import com.huntlike.hunt.QuestManager;
 import com.huntlike.loot.ModLoot;
+import com.huntlike.network.HuntPayloads;
 import com.huntlike.registry.ModBlocks;
 import com.huntlike.registry.ModCreativeTab;
 import com.huntlike.registry.ModItems;
@@ -23,6 +27,10 @@ public class HuntLike implements ModInitializer {
 		ModBlocks.initialize();
 		ModCreativeTab.initialize();
 		ModLoot.initialize();
+		ModEntities.initialize();
+		HuntPayloads.initialize();
+		QuestManager.initialize();
+		HuntCommand.initialize();
 		LOGGER.info("HuntLike loaded. The Alpha Altar is listening...");
 	}
 

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "huntlike:high_quality_mystery_meat"
+  ],
+  "result": {
+    "count": 9,
+    "id": "huntlike:decent_quality_mystery_meat"
+  }
+}

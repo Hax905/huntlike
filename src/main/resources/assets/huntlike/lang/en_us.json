@@ -1,0 +1,23 @@
+{
+  "itemGroup.huntlike": "HuntLike",
+  "block.huntlike.alpha_altar": "Alpha Altar",
+  "block.huntlike.alpha_altar.desc": "A carefully crafted altar that seems to communicate with an otherworldly presence...",
+  "block.huntlike.soul_monolith": "Soul Monolith",
+  "block.huntlike.soul_monolith.desc": "Nearby players gain Resistance I. Creepers keep their distance.",
+  "item.huntlike.low_quality_mystery_meat": "Low Quality Mystery Meat",
+  "item.huntlike.low_quality_mystery_meat.desc": "Feels like plastic.",
+  "item.huntlike.decent_quality_mystery_meat": "Decent Quality Mystery Meat",
+  "item.huntlike.decent_quality_mystery_meat.desc": "Not worth eating.",
+  "item.huntlike.high_quality_mystery_meat": "High Quality Mystery Meat",
+  "item.huntlike.high_quality_mystery_meat.desc": "Temptation makes you want to grab a bite, but not knowing the origin of the meat makes you regret the thought.",
+  "item.huntlike.thick_hide": "Thick Hide",
+  "item.huntlike.thick_hide.desc": "Leather wouldn't compare.",
+  "item.huntlike.large_femur": "Large Femur",
+  "item.huntlike.large_femur.desc": "Of a §ohumerus§r§7 size!",
+  "item.huntlike.golden_moss": "Golden Moss",
+  "item.huntlike.golden_moss.desc": "The smell of the moss is comforting. If you sit in silence and close your eyes, the moss will utter words of reassurance.",
+  "item.huntlike.spiritual_catalyst": "Spiritual Catalyst",
+  "item.huntlike.spiritual_catalyst.desc": "You feel a presence inside the crystal.",
+  "item.huntlike.soul_stone": "Soul Stone",
+  "item.huntlike.soul_stone.desc": "A completely smooth round stone that reflects memories of the animal's life."
+}

@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "huntlike",
+	"version": "${version}",
+	"name": "HuntLike",
+	"description": "Hunt the Alphas: start Hunting Quests at the Alpha Altar, slay boss spirits and earn your Rank.",
+	"authors": [
+		"Hax905"
+	],
+	"contact": {
+		"sources": "https://github.com/Hax905/huntlike"
+	},
+	"license": "All-Rights-Reserved",
+	"icon": "assets/huntlike/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.huntlike.HuntLike"
+		],
+		"client": [
+			"com.huntlike.client.HuntLikeClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

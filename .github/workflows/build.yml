@@ -1,10 +1,14 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
+# Builds the mod on every push to main and on pull requests.
+# If the build fails, the full log is pushed to the "ci-log" branch so it can be read with git.
 
 name: build
-on: [pull_request, push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,9 +26,22 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
-        run: ./gradlew build
+        run: |
+          set -o pipefail
+          ./gradlew build --console=plain 2>&1 | tee build.log
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
           name: Artifacts
           path: build/libs/
+      - name: publish build log
+        if: always()
+        run: |
+          mkdir -p /tmp/log && cp build.log /tmp/log/build.log || echo "no log" > /tmp/log/build.log
+          echo "${{ job.status }} ${{ github.sha }}" > /tmp/log/status.txt
+          cd /tmp/log
+          git init -q -b ci-log
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Build log for ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log

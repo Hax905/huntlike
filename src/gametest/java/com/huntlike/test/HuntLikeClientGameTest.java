@@ -87,11 +87,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.waitTicks(5);
 			check(singleplayer, "boss spawned", data -> data.quest != null && data.quest.phase == HuntData.PHASE_BOSS);
 			context.takeScreenshot("08-boss-spawned");
+			boolean glowing = context.computeOnClient(client -> {
+				for (net.minecraft.world.entity.Entity entity : client.level.entitiesForRendering()) {
+					if (entity.getId() == com.huntlike.client.ClientHuntState.bossEntityId) {
+						return client.shouldEntityAppearGlowing(entity);
+					}
+				}
+				return false;
+			});
+			HuntLike.LOGGER.info("[test] boss glows for owner: {} (boss id {})", glowing, com.huntlike.client.ClientHuntState.bossEntityId);
 
 			singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
 			context.waitForScreen(HuntMenuScreen.class);
 			context.waitTicks(5);
 			context.takeScreenshot("09-active-quest-boss");
+			hover(context, "Drops");
+			context.takeScreenshot("09b-drops-tooltip");
 			context.setScreen(() -> null);
 
 			// Let the boss fight for a few seconds, then kill it as the player.
@@ -132,12 +143,30 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(3);
 			context.takeScreenshot("13-boss-card-defeated");
+			hover(context, "Lore");
+			context.takeScreenshot("14-lore-tooltip");
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
 
 	private static ServerPlayer player(MinecraftServer server) {
 		return server.getPlayerList().getPlayers().get(0);
+	}
+
+	private static void hover(ClientGameTestContext context, String button) {
+		double[] pos = context.computeOnClient(client -> {
+			if (client.gui.screen() instanceof HuntMenuScreen screen && screen.buttonCenter(button) != null) {
+				int[] center = screen.buttonCenter(button);
+				double scale = client.getWindow().getGuiScale();
+				return new double[] {center[0] * scale, center[1] * scale};
+			}
+			return null;
+		});
+		if (pos == null) {
+			throw new AssertionError("Button not found: " + button);
+		}
+		context.getInput().setCursorPos(pos[0], pos[1]);
+		context.waitTicks(3);
 	}
 
 	private static void addProgress(TestSingleplayerContext singleplayer, int xp, int tokens) {

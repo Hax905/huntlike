@@ -78,6 +78,9 @@ public class HuntMenuScreen extends Screen {
 	private int pw;
 	private int ph;
 
+	/** Center of each labelled button drawn last frame, for automated tests. */
+	private final java.util.Map<String, int[]> buttonCenters = new java.util.HashMap<>();
+
 	/** Clickable areas registered while drawing, checked on click. */
 	private final List<Hit> hits = new ArrayList<>();
 
@@ -103,6 +106,11 @@ public class HuntMenuScreen extends Screen {
 	@Override
 	protected void init() {
 		ClientPlayNetworking.send(new HuntPayloads.Action("refresh", hunt().id(), 0));
+	}
+
+	/** GUI coordinates of a button's center from the last frame, or null. Used by automated tests. */
+	public int[] buttonCenter(String label) {
+		return buttonCenters.get(label);
 	}
 
 	@Override
@@ -224,6 +232,7 @@ public class HuntMenuScreen extends Screen {
 	private boolean button(GuiGraphicsExtractor g, int x, int y, int w, int h, Component label, boolean enabled,
 			int mouseX, int mouseY, Runnable action) {
 		boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
+		buttonCenters.put(label.getString(), new int[] {x + w / 2, y + h / 2});
 		g.fill(x, y, x + w, y + h, !enabled ? BUTTON_OFF : hover ? BUTTON_HOVER : BUTTON);
 		g.centeredText(this.font, label, x + w / 2, y + (h - 8) / 2, enabled ? WHITE : TEXT_DIM);
 		if (enabled && action != null) {

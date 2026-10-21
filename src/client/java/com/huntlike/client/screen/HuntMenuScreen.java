@@ -38,7 +38,7 @@ public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
 	private static final String[] TABS = {"Quests", "Gear", "Ranks"};
 
-	private static final int W = 300;
+	private static final int W = 316;
 	private static final int MAX_H = 236;
 	private static final int TAB_H = 20;
 

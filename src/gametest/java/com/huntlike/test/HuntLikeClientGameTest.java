@@ -170,6 +170,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		addProgress(singleplayer, 10500, 32);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			for (int i = 0; i < 4; i++) {
+				data.progress("animal").bossKills[i] = Math.max(1, data.progress("animal").bossKills[i]);
+			}
+			player.setAttached(QuestManager.DATA, data);
 			player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(100.0);
 			player.setHealth(100.0F);
 		});

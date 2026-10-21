@@ -83,7 +83,13 @@ public final class Messages {
 	/** Drop message by drop class: 1 Lucky (lime), 2 Good (blue), 3 GREAT (gold), 4 FANTASTIC (pink). */
 	public static Component rareDrop(int dropClass, Component itemName) {
 		int i = Math.max(1, Math.min(4, dropClass));
-		return c(DROP_LABELS[i], DROP_COLORS[i]).append(itemName);
+		int color = DROP_COLORS[i];
+		return Component.empty().withStyle(style -> style.withBold(true))
+				.append(c("ABC", color).withStyle(style -> style.withObfuscated(true)))
+				.append(c(" " + DROP_LABELS[i], color))
+				.append(itemName.copy())
+				.append(c(" ", color))
+				.append(c("ABC", color).withStyle(style -> style.withObfuscated(true)));
 	}
 
 	public static Component error(String text) {

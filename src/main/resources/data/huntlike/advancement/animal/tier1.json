@@ -14,7 +14,8 @@
     },
     "description": {
       "translate": "advancements.huntlike.animal.tier1.description"
-    }
+    },
+    "hidden": true
   },
   "requirements": [
     [

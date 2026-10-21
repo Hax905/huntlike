@@ -15,6 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.Weighted;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -37,6 +39,9 @@ public final class SpiritLure {
 	public static final double CAP_RADIUS = 48.0;
 	private static final int HINT_DELAY = 20 * 30;
 
+	/** Lured spawns since the quota last moved; capped so animals don't pile up forever. */
+	public static final int SPAWNS_PER_KILL = 3;
+	private static final Map<UUID, Integer> SPAWNS_SINCE_KILL = new HashMap<>();
 	private static final Map<UUID, Integer> TIMERS = new HashMap<>();
 	private static final Map<UUID, String> HINT_PLACE = new HashMap<>();
 	private static final Map<UUID, Integer> HINT_TICKS = new HashMap<>();
@@ -56,10 +61,17 @@ public final class SpiritLure {
 
 	public static void reset(ServerPlayer player) {
 		TIMERS.put(player.getUUID(), 0);
+		SPAWNS_SINCE_KILL.put(player.getUUID(), 0);
+	}
+
+	/** A kill counted toward the quota: the lure may spawn again. */
+	public static void onQuotaKill(ServerPlayer player) {
+		SPAWNS_SINCE_KILL.put(player.getUUID(), 0);
 	}
 
 	public static void forget(ServerPlayer player) {
 		TIMERS.remove(player.getUUID());
+		SPAWNS_SINCE_KILL.remove(player.getUUID());
 		HINT_PLACE.remove(player.getUUID());
 		HINT_TICKS.remove(player.getUUID());
 	}
@@ -127,7 +139,7 @@ public final class SpiritLure {
 			return;
 		}
 		TIMERS.put(id, 0);
-		if (!overworld) {
+		if (!overworld || SPAWNS_SINCE_KILL.getOrDefault(id, 0) >= SPAWNS_PER_KILL) {
 			return;
 		}
 		int nearby = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(CAP_RADIUS), m -> isLuredBy(m, player)).size();
@@ -163,6 +175,10 @@ public final class SpiritLure {
 				mob.setBaby(false);
 			}
 			entity.addTag(LURED_TAG);
+			if (entity instanceof Mob glowing) {
+				glowing.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20 * 5, 0, false, false));
+			}
+			SPAWNS_SINCE_KILL.merge(id, 1, Integer::sum);
 			entity.addTag(BossController.OWNER_PREFIX + id);
 			level.sendParticles(new DustParticleOptions(hunt.color(), 1.5F), entity.getX(), entity.getY() + 0.5, entity.getZ(),
 					20, 0.4, 0.5, 0.4, 0.0);

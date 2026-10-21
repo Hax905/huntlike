@@ -145,7 +145,7 @@ public final class QuestManager {
 		inventory.setChanged();
 		data.progress(hunt.id()).tokens += tokens;
 		save(player, data);
-		playSound(player, SoundEvents.VILLAGER_TRADE, 1.0F);
+		playSound(player, SoundEvents.WOOD_PLACE, 1.0F);
 	}
 
 	// ---------------------------------------------------------------- quest lifecycle
@@ -166,6 +166,10 @@ public final class QuestManager {
 		Progress progress = data.progress(hunt.id());
 		if (progress.rank() < tier.unlockRank()) {
 			player.sendSystemMessage(Messages.error("This tier unlocks at " + hunt.rankName(tier.unlockRank()) + "."));
+			return;
+		}
+		if (tierNumber > 1 && progress.bossKills[tierNumber - 2] == 0) {
+			player.sendSystemMessage(Messages.error("Defeat " + hunt.tier(tierNumber - 1).bossName() + " first."));
 			return;
 		}
 		if (progress.tokens < tier.tokenCost()) {
@@ -354,6 +358,7 @@ public final class QuestManager {
 			return;
 		}
 		quest.kills = Math.min(quest.quota, quest.kills + 1);
+		SpiritLure.onQuotaKill(killer);
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		killer.sendSystemMessage(Messages.quota(hunt, quest.kills, quest.quota), true);
 		if (quest.kills >= quest.quota) {

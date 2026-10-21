@@ -38,8 +38,8 @@ public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
 	private static final String[] TABS = {"Quests", "Gear", "Ranks"};
 
-	private static final int W = 316;
-	private static final int MAX_H = 236;
+	private static final int W = 360;
+	private static final int MAX_H = 256;
 	private static final int TAB_H = 20;
 
 	private static final int WHITE = 0xFFFFFFFF;
@@ -130,11 +130,21 @@ public class HuntMenuScreen extends Screen {
 		int rank = progress().rank();
 		int best = 1;
 		for (Tier tier : hunt().tiers()) {
-			if (rank >= tier.unlockRank()) {
+			if (tierOpen(tier)) {
 				best = tier.number();
 			}
 		}
 		return best;
+	}
+
+	/** A tier can be started once its Rank is reached and the previous tier's boss has been defeated. */
+	private boolean tierOpen(Tier tier) {
+		HuntData.Progress progress = progress();
+		return progress.rank() >= tier.unlockRank() && previousDefeated(tier);
+	}
+
+	private boolean previousDefeated(Tier tier) {
+		return tier.number() == 1 || progress().bossKills[tier.number() - 2] > 0;
 	}
 
 	private HuntData.Quest activeQuest() {
@@ -163,6 +173,7 @@ public class HuntMenuScreen extends Screen {
 		sprite(g, "window", left, top, W, H);
 		drawTabs(g, mouseX, mouseY, true);
 		sprite(g, "content", ix - 2, iy - 2, iw + 4, ih + 4);
+		sprite(g, "portal", ix, iy, iw, ih);
 		drawRail(g, mouseX, mouseY);
 
 		boolean questRunning = activeQuest() != null;
@@ -267,7 +278,7 @@ public class HuntMenuScreen extends Screen {
 		Hunt hunt = hunt();
 		Tier tier = hunt.tier(questTier);
 		HuntData.Progress progress = progress();
-		boolean unlocked = progress.rank() >= tier.unlockRank();
+		boolean unlocked = tierOpen(tier);
 		int cx = px + pw / 2;
 		int y = py + 5;
 
@@ -291,8 +302,14 @@ public class HuntMenuScreen extends Screen {
 		y += 12;
 
 		if (!unlocked) {
-			g.text(this.font, colored("Unlocks at " + hunt.rankName(tier.unlockRank()) + " (Rank "
-					+ HuntDefs.ROMAN[tier.unlockRank()] + ")", HuntDefs.RED), px + 6, y, WHITE, false);
+			String lock = progress.rank() < tier.unlockRank()
+					? "Unlocks at " + hunt.rankName(tier.unlockRank()) + " (Rank " + HuntDefs.ROMAN[tier.unlockRank()] + ")"
+					: "Defeat " + hunt.tier(tier.number() - 1).bossName() + " (Tier " + HuntDefs.ROMAN[tier.number() - 1]
+							+ ") to unlock";
+			for (FormattedCharSequence line : this.font.split(colored(lock, HuntDefs.RED), pw - 12)) {
+				g.text(this.font, line, px + 6, y, WHITE, false);
+				y += 9;
+			}
 		} else {
 			g.text(this.font, colored("Health: ", TEXT_GRAY).append(colored(String.valueOf(tier.health()), HuntDefs.RED)),
 					px + 6, y, WHITE, false);
@@ -769,7 +786,7 @@ public class HuntMenuScreen extends Screen {
 			} else if (tab == 0 && !questPanelShowing()) {
 				Tier tier = hunt().tier(questTier);
 				HuntData.Progress progress = progress();
-				if (progress.rank() >= tier.unlockRank() && progress.tokens >= tier.tokenCost() && !ClientHuntState.peaceful) {
+				if (tierOpen(tier) && progress.tokens >= tier.tokenCost() && !ClientHuntState.peaceful) {
 					startQuest();
 				}
 			}

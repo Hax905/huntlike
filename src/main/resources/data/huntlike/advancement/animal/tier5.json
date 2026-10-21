@@ -15,7 +15,8 @@
     "description": {
       "translate": "advancements.huntlike.animal.tier5.description"
     },
-    "frame": "challenge"
+    "frame": "challenge",
+    "hidden": true
   },
   "requirements": [
     [

@@ -36,6 +36,10 @@ public final class ModCreativeTab {
 				output.accept(ModBlocks.SOUL_MONOLITH);
 				com.huntlike.gear.ModGear.WEAPONS.forEach(output::accept);
 				com.huntlike.gear.ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
+				output.accept(com.huntlike.gear.ModKoro.WOODEN_BELL);
+				output.accept(com.huntlike.gear.ModKoro.GOLDEN_BELL);
+				output.accept(com.huntlike.gear.ModKoro.MOSSY_BELL);
+				output.accept(com.huntlike.gear.ModKoro.KORO_WHAKAMATE);
 			})
 			.build();
 

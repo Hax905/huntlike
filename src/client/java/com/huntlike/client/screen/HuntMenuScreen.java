@@ -512,7 +512,7 @@ public class HuntMenuScreen extends Screen {
 		g.centeredText(this.font, colored("Questline - Spiritual Talk", WHITE), cx, y + 6, WHITE);
 		int nextRank = HuntDefs.QUESTLINE_RANKS[0];
 		boolean unlocked = progress().rank() >= nextRank;
-		Component label = Component.literal("[Click] - Spirit Rank Required: [" + HuntDefs.ROMAN[nextRank] + "]");
+		Component label = Component.literal("[Click] - Rank " + HuntDefs.ROMAN[nextRank] + " Required");
 		boolean hoverTalk = button(g, px + 8, y + 20, pw - 16, 16, label, false, mouseX, mouseY, null);
 		if (hoverTalk) {
 			g.setComponentTooltipForNextFrame(this.font, List.of(
@@ -523,48 +523,69 @@ public class HuntMenuScreen extends Screen {
 
 	private void drawGearTrades(GuiGraphicsExtractor g, List<HuntDefs.GearTrade> trades, int y, int mouseX, int mouseY) {
 		int listX = px + 4;
-		int listW = pw - 8;
+		int listW = pw - 14;
 		int listTop = y;
 		int listH = py + ph - 4 - y;
 		int rank = progress().rank();
-		// Lay out every trade, then draw the visible part with scrolling.
-		List<List<FormattedCharSequence>> costs = new ArrayList<>();
 		int total = 0;
 		for (HuntDefs.GearTrade trade : trades) {
-			List<FormattedCharSequence> lines = this.font.split(colored(trade.cost(), TEXT_GRAY), listW - 10);
-			costs.add(lines);
-			total += entryHeight(lines.size()) + 4;
+			total += entryHeight(trade.cost().size()) + 4;
 		}
-		int maxScroll = Math.max(0, total - listH);
+		int maxScroll = Math.max(0, total - 4 - listH);
 		gearScroll = Math.max(0, Math.min(gearScroll, maxScroll));
 		g.enableScissor(listX, listTop, listX + listW, listTop + listH);
 		int ey = listTop - gearScroll;
-		for (int i = 0; i < trades.size(); i++) {
-			HuntDefs.GearTrade trade = trades.get(i);
-			List<FormattedCharSequence> lines = costs.get(i);
-			int h = entryHeight(lines.size());
+		for (HuntDefs.GearTrade trade : trades) {
+			int h = entryHeight(trade.cost().size());
 			sprite(g, "panel_dark", listX, ey, listW, h);
 			boolean unlocked = rank >= trade.rank();
 			g.text(this.font, colored(trade.name(), unlocked ? HuntDefs.GOLD : 0x8A8A8A), listX + 5, ey + 4, WHITE, false);
 			int ly = ey + 15;
-			for (FormattedCharSequence line : lines) {
-				g.text(this.font, line, listX + 5, ly, WHITE, false);
+			for (HuntDefs.Cost cost : trade.cost()) {
+				boolean have = cost.item() != null && countInInventory(cost) >= cost.count();
+				String name = cost.item() != null ? new ItemStack(cost.item()).getHoverName().getString() : cost.label();
+				g.text(this.font, colored("- " + name + " x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED), listX + 5, ly, WHITE, false);
 				ly += 9;
 			}
-			Component label = unlocked ? Component.literal("[Click] - Buy (coming in v0.4)")
-					: Component.literal("Rank Required: [" + HuntDefs.ROMAN[trade.rank()] + "]");
-			boolean visible = ey + h > listTop && ey < listTop + listH;
-			if (visible) {
-				button(g, listX + 4, ly + 2, listW - 8, 14, label, false, mouseX, mouseY, null);
+			Component label = unlocked ? Component.literal("[Click] - Buy") : Component.literal("Rank Required: [?]");
+			if (ey + h > listTop && ey < listTop + listH) {
+				boolean hover = button(g, listX + 4, ly + 2, listW - 8, 14, label, false, mouseX, mouseY, null);
+				if (hover && unlocked && mouseY >= listTop && mouseY < listTop + listH) {
+					g.setComponentTooltipForNextFrame(this.font, List.of(colored("Buying arrives in v0.4.", TEXT_GRAY)), mouseX,
+							mouseY);
+				}
 			}
 			ey += h + 4;
 		}
 		g.disableScissor();
+
+		// Scroll bar: the track shows the whole list, the handle the part on screen.
+		int trackX = px + pw - 8;
+		g.fill(trackX, listTop, trackX + 4, listTop + listH, 0xFF1A1A1A);
 		if (maxScroll > 0) {
-			int barH = Math.max(8, listH * listH / total);
-			int barY = listTop + (listH - barH) * gearScroll / maxScroll;
-			g.fill(px + pw - 3, barY, px + pw - 1, barY + barH, 0xFF8A8A8A);
+			int handleH = Math.max(12, listH * listH / (listH + maxScroll));
+			int handleY = listTop + (listH - handleH) * gearScroll / maxScroll;
+			g.fill(trackX, handleY, trackX + 4, handleY + handleH, 0xFFC6C6C6);
+			g.fill(trackX + 3, handleY, trackX + 4, handleY + handleH, 0xFF8B8B8B);
+		} else {
+			g.fill(trackX, listTop, trackX + 4, listTop + listH, 0xFF555555);
 		}
+	}
+
+	/** How many of a cost item the player is carrying. */
+	private int countInInventory(HuntDefs.Cost cost) {
+		if (this.minecraft.player == null) {
+			return 0;
+		}
+		net.minecraft.world.entity.player.Inventory inventory = this.minecraft.player.getInventory();
+		int count = 0;
+		for (int i = 0; i < inventory.getContainerSize(); i++) {
+			ItemStack stack = inventory.getItem(i);
+			if (stack.is(cost.item())) {
+				count += stack.getCount();
+			}
+		}
+		return count;
 	}
 
 	private static int entryHeight(int costLines) {

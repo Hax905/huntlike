@@ -30,6 +30,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runCommand("time set day");
 			singleplayer.getServer().runCommand("gamerule doDaylightCycle false");
 			addProgress(singleplayer, 0, 64);
+			singleplayer.getServer().runOnServer(server -> QuestManager.giveStack(player(server),
+					new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_LOG, 32)));
 			context.waitTicks(10);
 
 			// Open the menu the way the altar does: from the server.
@@ -65,6 +67,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(3);
 			context.takeScreenshot("06c-gear-weapons");
+			double[] center = context.computeOnClient(client -> new double[] {
+					client.getWindow().getScreenWidth() * 0.62, client.getWindow().getScreenHeight() * 0.6});
+			context.getInput().setCursorPos(center[0], center[1]);
+			context.getInput().scroll(-10);
+			context.waitTicks(3);
+			context.takeScreenshot("06d-gear-weapons-scrolled");
 
 			// Start a Tier I quest with Enter on the boss card.
 			context.setScreen(() -> new HuntMenuScreen(0));

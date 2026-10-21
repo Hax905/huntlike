@@ -6,6 +6,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 
 import com.huntlike.registry.ModItems;
 
@@ -128,24 +129,43 @@ public final class HuntDefs {
 
 	public static final List<Hunt> HUNTS = List.of(ANIMAL);
 
+	/** One cost line: a vanilla or HuntLike item, or (item == null) a previous Hunt gear stage. */
+	public record Cost(String label, Item item, int count) {
+		static Cost of(Item item, int count) {
+			return new Cost(null, item, count);
+		}
+
+		static Cost gear(String label) {
+			return new Cost(label, null, 1);
+		}
+	}
+
 	/** A Gear-tab trade for Hunt armor or a Hunt weapon. */
-	public record GearTrade(String name, int rank, String cost) {
+	public record GearTrade(String name, int rank, List<Cost> cost) {
 	}
 
 	public static final List<GearTrade> ANIMAL_ARMOR = List.of(
-			new GearTrade("Rotten Armor", 2,
-					"Leather helmet, chestplate, leggings and boots + 32 Oak Logs + 32 Oak Leaves + 4 Decent Quality Mystery Meat"),
-			new GearTrade("Carrion Armor", 4,
-					"Rotten Armor + 4 Decent Quality Mystery Meat + 2 Thick Hide + 16 Leather + 16 Bones"),
-			new GearTrade("Ecocide Armor", 6,
-					"Carrion Armor + 2 High Quality Mystery Meat + 2 Thick Hide + 32 Oak Logs + 4 Diamonds"));
+			new GearTrade("Rotten Armor", 2, List.of(Cost.of(Items.LEATHER_HELMET, 1), Cost.of(Items.LEATHER_CHESTPLATE, 1),
+					Cost.of(Items.LEATHER_LEGGINGS, 1), Cost.of(Items.LEATHER_BOOTS, 1), Cost.of(Items.OAK_LOG, 32),
+					Cost.of(Items.OAK_LEAVES, 32), Cost.of(ModItems.DECENT_QUALITY_MYSTERY_MEAT, 4))),
+			new GearTrade("Carrion Armor", 4, List.of(Cost.gear("Rotten Armor (full set)"),
+					Cost.of(ModItems.DECENT_QUALITY_MYSTERY_MEAT, 4), Cost.of(ModItems.THICK_HIDE, 2), Cost.of(Items.LEATHER, 16),
+					Cost.of(Items.BONE, 16))),
+			new GearTrade("Ecocide Armor", 6, List.of(Cost.gear("Carrion Armor (full set)"),
+					Cost.of(ModItems.HIGH_QUALITY_MYSTERY_MEAT, 2), Cost.of(ModItems.THICK_HIDE, 2), Cost.of(Items.OAK_LOG, 32),
+					Cost.of(Items.DIAMOND, 4))));
 
 	public static final List<GearTrade> ANIMAL_WEAPONS = List.of(
-			new GearTrade("Skin Knife [Genesis]", 1, "Iron Sword + 5 Low Quality Mystery Meat"),
-			new GearTrade("Meat Cutter [Act I]", 3, "Skin Knife + 2 Decent Quality Mystery Meat + 5 Iron Ingots"),
-			new GearTrade("Limb Severer [Act II]", 5, "Meat Cutter + 1 High Quality Mystery Meat + 2 Diamonds"),
-			new GearTrade("Bone Breaker [Act III]", 7, "Limb Severer + 1 Large Femur + 8 Soul Sand"),
-			new GearTrade("Bone Pulverizer [Apotheosis]", 9, "Bone Breaker + 1 Large Femur + 12 Bone Meal + 8 Obsidian"));
+			new GearTrade("Skin Knife [Genesis]", 1, List.of(Cost.of(Items.IRON_SWORD, 1),
+					Cost.of(ModItems.LOW_QUALITY_MYSTERY_MEAT, 5))),
+			new GearTrade("Meat Cutter [Act I]", 3, List.of(Cost.gear("Skin Knife"),
+					Cost.of(ModItems.DECENT_QUALITY_MYSTERY_MEAT, 2), Cost.of(Items.IRON_INGOT, 5))),
+			new GearTrade("Limb Severer [Act II]", 5, List.of(Cost.gear("Meat Cutter"),
+					Cost.of(ModItems.HIGH_QUALITY_MYSTERY_MEAT, 1), Cost.of(Items.DIAMOND, 2))),
+			new GearTrade("Bone Breaker [Act III]", 7, List.of(Cost.gear("Limb Severer"), Cost.of(ModItems.LARGE_FEMUR, 1),
+					Cost.of(Items.SOUL_SAND, 8))),
+			new GearTrade("Bone Pulverizer [Apotheosis]", 9, List.of(Cost.gear("Bone Breaker"), Cost.of(ModItems.LARGE_FEMUR, 1),
+					Cost.of(Items.BONE_MEAL, 12), Cost.of(Items.OBSIDIAN, 8))));
 
 	/** Ranks that unlock each chapter of the soul's questline (Koro for Animal). */
 	public static final int[] QUESTLINE_RANKS = {3, 6, 9, 10};

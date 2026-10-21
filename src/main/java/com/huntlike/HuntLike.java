@@ -29,12 +29,14 @@ public class HuntLike implements ModInitializer {
 		ModSounds.initialize();
 		ModGear.initialize();
 		com.huntlike.gear.ModKoro.initialize();
+		com.huntlike.gear.HideBoots.initialize();
 		ModBlocks.initialize();
 		ModCreativeTab.initialize();
 		ModLoot.initialize();
 		ModEntities.initialize();
 		HuntPayloads.initialize();
 		QuestManager.initialize();
+		com.huntlike.hunt.WolfTreats.initialize();
 		HuntCommand.initialize();
 		LOGGER.info("HuntLike loaded. The Alpha Altar is listening...");
 	}

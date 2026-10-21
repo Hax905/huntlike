@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": "huntlike:high_quality_mystery_meat",
+  "base": "huntlike:winged_hide_boots",
+  "addition": "minecraft:iron_block",
+  "result": {
+    "id": "huntlike:hardened_hide_boots"
+  }
+}

@@ -33,6 +33,7 @@ public final class ModCreativeTab {
 				output.accept(ModItems.SPIRITUAL_CATALYST);
 				output.accept(ModItems.SOUL_STONE);
 				output.accept(ModItems.MYSTERY_CONCOCTION);
+				output.accept(ModItems.GOLDEN_MEAT);
 				output.accept(ModBlocks.SOUL_MONOLITH);
 				com.huntlike.gear.ModGear.WEAPONS.forEach(output::accept);
 				com.huntlike.gear.ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
@@ -40,6 +41,8 @@ public final class ModCreativeTab {
 				output.accept(com.huntlike.gear.ModKoro.GOLDEN_BELL);
 				output.accept(com.huntlike.gear.ModKoro.MOSSY_BELL);
 				output.accept(com.huntlike.gear.ModKoro.KORO_WHAKAMATE);
+				com.huntlike.gear.HideBoots.BOOTS.forEach(output::accept);
+				output.accept(com.huntlike.gear.HideBoots.FEATHER_CHUTE);
 			})
 			.build();
 

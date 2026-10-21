@@ -38,6 +38,7 @@ public class MysteryConcoctionItem extends Item {
 				return stack;
 			}
 			data.concoction = true;
+			QuestManager.award(player, "animal/never_again");
 			player.setAttached(QuestManager.DATA, data);
 			player.sendSystemMessage(Messages.c("Deities laugh at your act and favor your luck on Animal creatures!", 0xFF55FF));
 			QuestManager.playSound(player, SoundEvents.ZOMBIE_VILLAGER_CURE, 1.4F);

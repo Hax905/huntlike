@@ -59,6 +59,8 @@ public final class QuestManager {
 	public static final AttachmentType<HuntData> DATA = AttachmentRegistry.create(HuntLike.id("hunt_data"),
 			builder -> builder.initializer(HuntData::new).persistent(HuntData.CODEC).copyOnDeath());
 
+	/** Lured mobs slain for "I swear it was Self-Defense". */
+	public static final int SELF_DEFENSE_KILLS = 1000;
 	public static final TagKey<EntityType<?>> QUOTA_ANIMALS = TagKey.create(Registries.ENTITY_TYPE, HuntLike.id("animal_quota"));
 
 	public static final int BOSS_TIME_LIMIT = 20 * 60 * 5;
@@ -70,6 +72,7 @@ public final class QuestManager {
 				(payload, context) -> handleAction(context.player(), payload));
 		ServerTickEvents.END_SERVER_TICK.register(QuestManager::tick);
 		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.KoroWhakamateItem::tick);
+		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.HideBoots::tick);
 		ServerLivingEntityEvents.AFTER_DEATH.register(QuestManager::onDeath);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(BossController::allowDamage);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(com.huntlike.gear.GearEffects::allowDamage);
@@ -449,6 +452,13 @@ public final class QuestManager {
 			return;
 		}
 		HuntData data = data(killer);
+		if (SpiritLure.isLuredBy(entity, killer)) {
+			data.luredKills++;
+			if (data.luredKills >= SELF_DEFENSE_KILLS) {
+				award(killer, "animal/self_defense");
+			}
+			save(killer, data);
+		}
 		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(HuntDefs.odds("animal", 1, 100, data.concoction)) == 0) {
 			HuntData.Progress progress = data.progress("animal");
 			progress.dropsSeen.add("soul_stone");
@@ -515,6 +525,7 @@ public final class QuestManager {
 	}
 
 	private static void onLogout(ServerPlayer player) {
+		com.huntlike.gear.HideBoots.forget(player);
 		HuntData data = data(player);
 		if (data.quest != null && data.quest.phase != HuntData.PHASE_KILLING) {
 			resetToQuotaMinusOne(player, data);

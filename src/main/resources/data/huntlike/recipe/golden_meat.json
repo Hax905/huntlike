@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": "minecraft:gold_nugget",
+    "M": "huntlike:decent_quality_mystery_meat"
+  },
+  "pattern": [
+    "###",
+    "#M#",
+    "###"
+  ],
+  "result": {
+    "count": 9,
+    "id": "huntlike:golden_meat"
+  }
+}

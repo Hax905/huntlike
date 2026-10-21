@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": "huntlike:high_quality_mystery_meat",
+  "base": "huntlike:thick_hide_boots",
+  "addition": "huntlike:feather_chute",
+  "result": {
+    "id": "huntlike:winged_hide_boots"
+  }
+}

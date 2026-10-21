@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:large_femur"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.happier_dog.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.happier_dog.description"
+    },
+    "hidden": true,
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

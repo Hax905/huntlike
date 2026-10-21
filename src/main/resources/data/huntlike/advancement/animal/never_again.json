@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:mystery_concoction"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.never_again.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.never_again.description"
+    },
+    "hidden": true,
+    "frame": "task"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -24,6 +24,8 @@ public final class HuntData {
 	public boolean hintSeen;
 	/** Koro: chapters finished (0-4), and steps shown of the chapter in progress (0 = not started). */
 	public int koroDone;
+	/** Spirit Lure mobs this player has slain, all time. */
+	public int luredKills;
 	public int koroStep;
 	public final Map<String, Progress> progress = new HashMap<>();
 	/** The running quest, or null. */
@@ -69,6 +71,7 @@ public final class HuntData {
 		tag.putBoolean("concoction", concoction);
 		tag.putBoolean("hintSeen", hintSeen);
 		tag.putInt("koroDone", koroDone);
+		tag.putInt("luredKills", luredKills);
 		tag.putInt("koroStep", koroStep);
 		CompoundTag hunts = new CompoundTag();
 		progress.forEach((id, p) -> {
@@ -110,6 +113,7 @@ public final class HuntData {
 		data.concoction = tag.getBooleanOr("concoction", false);
 		data.hintSeen = tag.getBooleanOr("hintSeen", false);
 		data.koroDone = tag.getIntOr("koroDone", 0);
+		data.luredKills = tag.getIntOr("luredKills", 0);
 		data.koroStep = tag.getIntOr("koroStep", 0);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");
 		for (String id : hunts.keySet()) {

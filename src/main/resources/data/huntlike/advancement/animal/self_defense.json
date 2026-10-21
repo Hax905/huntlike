@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:animal/conquest",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:soul_stone"
+    },
+    "title": {
+      "translate": "advancements.huntlike.animal.self_defense.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.animal.self_defense.description"
+    },
+    "hidden": true,
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

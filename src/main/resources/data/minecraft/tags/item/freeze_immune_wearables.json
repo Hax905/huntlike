@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "huntlike:thick_hide_boots",
+    "huntlike:winged_hide_boots",
+    "huntlike:hardened_hide_boots",
+    "huntlike:speedy_hide_boots",
+    "huntlike:hermes_boots"
+  ]
+}

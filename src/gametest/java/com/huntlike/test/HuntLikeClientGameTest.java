@@ -162,6 +162,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			tierFive(context, singleplayer);
 			gear(context, singleplayer);
 			koro(context, singleplayer);
+			extras(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -523,6 +524,116 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(80);
 		check(singleplayer, "cow killed by Fatal Touch", data -> true);
+	}
+
+	/** Golden Meat, the wolf treats, the Hide Boots line and the FeatherChute. */
+	private static void extras(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		assertServer(singleplayer, "recipes loaded", server -> {
+			for (String id : new String[] {"golden_meat", "thick_hide_boots", "feather_chute", "winged_hide_boots_smithing",
+					"hardened_hide_boots_smithing", "speedy_hide_boots_smithing", "hermes_boots_smithing"}) {
+				var key = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, HuntLike.id(id));
+				if (server.getRecipeManager().byKey(key).isEmpty()) {
+					HuntLike.LOGGER.error("[test] missing recipe {}", id);
+					return false;
+				}
+			}
+			return true;
+		});
+		assertServer(singleplayer, "golden meat eaten instantly", server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			player.getFoodData().setFoodLevel(4);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.GOLDEN_MEAT, 2));
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			return player.getFoodData().getFoodLevel() == 12 && player.getMainHandItem().getCount() == 1 && !player.isUsingItem();
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.COMMAND);
+			wolf.setPos(player.getX() + 2, player.getY(), player.getZ());
+			wolf.addTag("huntlike_test_wolf");
+			player.level().addFreshEntity(wolf);
+		});
+		context.waitTicks(2);
+		assertServer(singleplayer, "low quality meat tames a wolf", server -> {
+			ServerPlayer player = player(server);
+			var wolf = testWolf(player);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.LOW_QUALITY_MYSTERY_MEAT, 1));
+			net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.invoker().interact(player, player.level(),
+					net.minecraft.world.InteractionHand.MAIN_HAND, wolf, null);
+			return wolf.isTame() && wolf.isOwnedBy(player);
+		});
+		assertServer(singleplayer, "large femur doubles wolf health and damage", server -> {
+			ServerPlayer player = player(server);
+			var wolf = testWolf(player);
+			double health = wolf.getMaxHealth();
+			double damage = wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.LARGE_FEMUR, 2));
+			net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.invoker().interact(player, player.level(),
+					net.minecraft.world.InteractionHand.MAIN_HAND, wolf, null);
+			net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.invoker().interact(player, player.level(),
+					net.minecraft.world.InteractionHand.MAIN_HAND, wolf, null);
+			HuntLike.LOGGER.info("[test] wolf health {} -> {}, damage {} -> {}", health, wolf.getMaxHealth(), damage,
+					wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
+			return wolf.getMaxHealth() == health * 2 && wolf.getHealth() == wolf.getMaxHealth()
+					&& wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage * 2
+					&& player.getMainHandItem().getCount() == 1 && hasAdvancement(player, "animal/happier_dog");
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			testWolf(player).discard();
+			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.HideBoots.WINGED_HIDE_BOOTS));
+			player.teleportTo(player.getX(), player.getY() + 30, player.getZ());
+		});
+		context.waitTicks(25);
+		assertServer(singleplayer, "winged boots glide", server -> {
+			ServerPlayer player = player(server);
+			return player.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING)
+					&& net.minecraft.world.level.block.PowderSnowBlock.canEntityWalkOnPowderSnow(player);
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, net.minecraft.world.item.ItemStack.EMPTY);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.HideBoots.FEATHER_CHUTE));
+			player.teleportTo(player.getX(), player.getY() + 40, player.getZ());
+		});
+		context.waitTicks(70);
+		assertServer(singleplayer, "feather chute glides and wears", server -> {
+			ServerPlayer player = player(server);
+			var chute = player.getOffhandItem();
+			HuntLike.LOGGER.info("[test] chute damage {}", chute.getDamageValue());
+			return player.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING) && chute.getDamageValue() >= 1
+					&& !net.minecraft.world.level.block.PowderSnowBlock.canEntityWalkOnPowderSnow(player);
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, net.minecraft.world.item.ItemStack.EMPTY);
+		});
+	}
+
+	private static net.minecraft.world.entity.animal.wolf.Wolf testWolf(ServerPlayer player) {
+		return player.level().getEntitiesOfClass(net.minecraft.world.entity.animal.wolf.Wolf.class,
+				player.getBoundingBox().inflate(32), w -> w.entityTags().contains("huntlike_test_wolf")).getFirst();
+	}
+
+	private static boolean hasAdvancement(ServerPlayer player, String path) {
+		var holder = player.level().getServer().getAdvancements().get(HuntLike.id(path));
+		return holder != null && player.getAdvancements().getOrStartProgress(holder).isDone();
+	}
+
+	private static void assertServer(TestSingleplayerContext singleplayer, String what,
+			java.util.function.Predicate<MinecraftServer> test) {
+		boolean ok = singleplayer.getServer().computeOnServer(test::test);
+		HuntLike.LOGGER.info("[test] {}: {}", what, ok ? "OK" : "FAILED");
+		if (!ok) {
+			throw new AssertionError("Check failed: " + what);
+		}
 	}
 
 	private static void give(ServerPlayer player, net.minecraft.world.item.Item item, int count) {

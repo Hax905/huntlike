@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": "huntlike:high_quality_mystery_meat",
+  "base": "huntlike:hardened_hide_boots",
+  "addition": "minecraft:rabbit_foot",
+  "result": {
+    "id": "huntlike:speedy_hide_boots"
+  }
+}

@@ -41,6 +41,12 @@ public final class ModItems {
 							net.minecraft.network.chat.Component.literal("But just one bite wouldn't kill me!")
 									.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.RED).withItalic(false))))));
 
+	/** Eaten instantly: 8 hunger, 8 saturation. */
+	public static final Item GOLDEN_MEAT = register("golden_meat", Item::new,
+			new Item.Properties().rarity(Rarity.RARE)
+					.food(new net.minecraft.world.food.FoodProperties(8, 8.0F, false),
+							net.minecraft.world.item.component.Consumables.defaultFood().consumeSeconds(0.0F).build()));
+
 	private static Item simple(String name, Rarity rarity) {
 		Item.Properties properties = Descriptions.with(new Item.Properties().rarity(rarity), "item.huntlike." + name + ".desc");
 		return register(name, Item::new, properties);

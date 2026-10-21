@@ -524,7 +524,8 @@ public class HuntMenuScreen extends Screen {
 		boolean seenStone = progress.dropsSeen.contains("soul_stone");
 		icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
 		names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
-				: colored("Unknown", TEXT_DIM)).append(colored("  1% (Spirit Lure animals)", TEXT_GRAY)));
+				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 / HuntDefs.odds(100, concoction))
+						+ " (Spirit Lure animals)", TEXT_GRAY)));
 		int width = 0;
 		for (Component name : names) {
 			width = Math.max(width, this.font.width(name));

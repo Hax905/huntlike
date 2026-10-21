@@ -369,6 +369,19 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				net.minecraft.client.Minecraft.getInstance().player));
 		context.waitTicks(10);
 		context.takeScreenshot("20-ecocide-inventory");
+		double[] helmet = context.computeOnClient(client -> {
+			double scale = client.getWindow().getGuiScale();
+			int left = (client.getWindow().getGuiScaledWidth() - 176) / 2;
+			int top = (client.getWindow().getGuiScaledHeight() - 166) / 2;
+			return new double[] {(left + 16) * scale, (top + 16) * scale};
+		});
+		context.getInput().setCursorPos(helmet[0], helmet[1]);
+		context.waitTicks(5);
+		context.takeScreenshot("20b-helmet-tooltip");
+		context.runOnClient(client -> {
+			var stack = new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModGear.BONE_PULVERIZER);
+			client.player.getInventory().setItem(9, stack);
+		});
 		context.setScreen(() -> null);
 		context.getInput().pressKey(options -> options.keyTogglePerspective);
 		context.getInput().pressKey(options -> options.keyTogglePerspective);

@@ -700,8 +700,8 @@ public class HuntMenuScreen extends Screen {
 				if (gearRank > rank) {
 					costName = costName.withStyle(style -> style.withObfuscated(true));
 				}
-				g.text(this.font, costName.append(colored(" x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED)), listX + 18, ly + 1,
-						WHITE, false);
+				g.text(this.font, Component.empty().append(costName).append(colored(" x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED)),
+						listX + 18, ly + 1, WHITE, false);
 				ly += 11;
 			}
 			Component label = unlocked ? Component.literal("[Click] - Buy") : Component.literal("Rank Required: [?]");

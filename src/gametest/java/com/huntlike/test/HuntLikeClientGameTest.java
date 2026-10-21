@@ -266,7 +266,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 
 		// Below 96: Apex Instinct heals to 108.
-		hitBoss(singleplayer, 30.0F);
+		hitBossDownTo(singleplayer, 90.0F);
 		context.waitTicks(15);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -424,6 +424,16 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	private static void give(ServerPlayer player, net.minecraft.world.item.Item item, int count) {
 		QuestManager.giveStack(player, new net.minecraft.world.item.ItemStack(item, count));
+	}
+
+	/** Damages the boss so its health drops to about the given value. */
+	private static void hitBossDownTo(TestSingleplayerContext singleplayer, float health) {
+		float current = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+			return boss == null ? 0.0F : boss.getHealth();
+		});
+		hitBoss(singleplayer, Math.max(1.0F, current - health));
 	}
 
 	private static void hitBoss(TestSingleplayerContext singleplayer, float amount) {

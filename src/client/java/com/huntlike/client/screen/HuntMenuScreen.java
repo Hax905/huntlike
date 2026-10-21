@@ -108,6 +108,8 @@ public class HuntMenuScreen extends Screen {
 		}
 		this.rankView = progress().rank();
 		this.questTier = highestUnlockedTier();
+		// After the first visit in this world, the menu opens straight onto the selected Hunt's panel.
+		this.panelOpen = hintSeen();
 	}
 
 	@Override
@@ -835,7 +837,10 @@ public class HuntMenuScreen extends Screen {
 	private void switchTab(int newTab) {
 		if (newTab != tab) {
 			tab = newTab;
-			panelOpen = false;
+			panelOpen = hintSeen();
+			gearPage = 1;
+			gearScroll = 0;
+			rankView = progress().rank();
 			cancelArmed = false;
 		}
 	}

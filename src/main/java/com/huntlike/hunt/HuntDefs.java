@@ -176,6 +176,23 @@ public final class HuntDefs {
 			new GearTrade("Bone Pulverizer [Apotheosis]", 9, List.of(Cost.of(ModGear.BONE_BREAKER, 1), Cost.of(ModItems.LARGE_FEMUR, 1),
 					Cost.of(Items.BONE_MEAL, 12), Cost.of(Items.OBSIDIAN, 8)), List.of(ModGear.BONE_PULVERIZER)));
 
+	/** Key stored in a player's seen list once they've obtained a piece of Hunt gear. */
+	public static String gearSeenId(Item item) {
+		return "gear:" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath();
+	}
+
+	/** The Rank that unlocks the trade giving this gear, or -1 if it isn't Hunt gear. */
+	public static int gearRank(Item item) {
+		for (List<GearTrade> list : List.of(ANIMAL_ARMOR, ANIMAL_WEAPONS)) {
+			for (GearTrade trade : list) {
+				if (trade.result().contains(item)) {
+					return trade.rank();
+				}
+			}
+		}
+		return -1;
+	}
+
 	/** Trades by page: 0 armor, 2 weapons (page 1 is Misc). */
 	public static List<GearTrade> trades(int page) {
 		return page == 0 ? ANIMAL_ARMOR : ANIMAL_WEAPONS;
@@ -203,9 +220,12 @@ public final class HuntDefs {
 		return level;
 	}
 
-	/** A rare drop's odds denominator, improved by one for players who ate the Mystery Concoction. */
-	public static int odds(int den, boolean concoction) {
-		return concoction ? Math.max(1, den - 1) : den;
+	/**
+	 * A rare drop's odds denominator for num/den odds. The Mystery Concoction (Animal Hunt only) turns "1 in X" into
+	 * "1 in X-1": 1/10 becomes 1/9, and 2/25 (1 in 12.5) becomes 2/23 (1 in 11.5).
+	 */
+	public static int odds(String hunt, int num, int den, boolean concoction) {
+		return concoction && "animal".equals(hunt) ? Math.max(num, den - num) : den;
 	}
 
 	/** Boss drops for a tier of the Animal Hunt, owner odds. */

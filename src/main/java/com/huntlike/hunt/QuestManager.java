@@ -211,6 +211,10 @@ public final class QuestManager {
 				left -= take;
 			}
 		}
+		for (net.minecraft.world.item.Item item : trade.result()) {
+			data.progress(hunt.id()).dropsSeen.add(HuntDefs.gearSeenId(item));
+		}
+		save(player, data);
 		for (int i = 0; i < upgraded; i++) {
 			ItemStack result = new ItemStack(trade.result().get(i));
 			if (sources[i] != null) {
@@ -318,7 +322,7 @@ public final class QuestManager {
 			if (drop.guaranteed()) {
 				int count = drop.minCount() + random.nextInt(drop.maxCount() - drop.minCount() + 1);
 				give(owner, data, hunt, drop, count);
-			} else if (random.nextInt(HuntDefs.odds(drop.chanceDen(), data.concoction)) < drop.chanceNum()) {
+			} else if (random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), data.concoction)) < drop.chanceNum()) {
 				give(owner, data, hunt, drop, drop.minCount());
 				owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 				playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -334,7 +338,7 @@ public final class QuestManager {
 			}
 			HuntData helperData = data(helper);
 			for (Drop drop : HuntDefs.drops(tier)) {
-				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(drop.chanceDen(), helperData.concoction)) < drop.chanceNum()) {
+				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), helperData.concoction)) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
 					helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 					playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -439,7 +443,7 @@ public final class QuestManager {
 			return;
 		}
 		HuntData data = data(killer);
-		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(HuntDefs.odds(100, data.concoction)) == 0) {
+		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(HuntDefs.odds("animal", 1, 100, data.concoction)) == 0) {
 			HuntData.Progress progress = data.progress("animal");
 			progress.dropsSeen.add("soul_stone");
 			progress.dropCounts.merge("soul_stone", 1, Integer::sum);

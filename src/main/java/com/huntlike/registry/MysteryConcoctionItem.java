@@ -39,7 +39,7 @@ public class MysteryConcoctionItem extends Item {
 			}
 			data.concoction = true;
 			player.setAttached(QuestManager.DATA, data);
-			player.sendSystemMessage(Messages.c("Deities laugh for your act and favor your luck on Animal creatures!", 0xFF55FF));
+			player.sendSystemMessage(Messages.c("Deities laugh at your act and favor your luck on Animal creatures!", 0xFF55FF));
 			QuestManager.playSound(player, SoundEvents.ZOMBIE_VILLAGER_CURE, 1.4F);
 			QuestManager.sync(player);
 		}

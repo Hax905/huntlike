@@ -385,6 +385,10 @@ public class HuntMenuScreen extends Screen {
 		List<FormattedCharSequence> lines = new ArrayList<>();
 		List<Integer> colors = new ArrayList<>();
 		for (Ability ability : tier.abilities()) {
+			if (!lines.isEmpty()) {
+				lines.add(FormattedCharSequence.EMPTY);
+				colors.add(WHITE);
+			}
 			lines.add(colored(ability.name(), HuntDefs.GOLD).getVisualOrderText());
 			colors.add(WHITE);
 			for (FormattedCharSequence line : this.font.split(colored(ability.description(), TEXT_GRAY), w - 14)) {
@@ -517,14 +521,14 @@ public class HuntMenuScreen extends Screen {
 			boolean seen = progress.dropsSeen.contains(drop.id());
 			icons.add(seen ? new ItemStack(drop.item()) : ItemStack.EMPTY);
 			String chance = drop.guaranteed() ? drop.minCount() + "-" + drop.maxCount() + " (100%)"
-					: formatPercent(drop.chanceNum() * 100.0 / HuntDefs.odds(drop.chanceDen(), concoction));
+					: formatPercent(drop.chanceNum() * 100.0 / HuntDefs.odds(hunt().id(), drop.chanceNum(), drop.chanceDen(), concoction));
 			names.add(Component.empty().append(seen ? new ItemStack(drop.item()).getStyledHoverName() : colored("Unknown", TEXT_DIM))
 					.append(colored("  " + chance, TEXT_GRAY)));
 		}
 		boolean seenStone = progress.dropsSeen.contains("soul_stone");
 		icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
 		names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
-				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 / HuntDefs.odds(100, concoction))
+				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 / HuntDefs.odds("animal", 1, 100, concoction))
 						+ " (Spirit Lure animals)", TEXT_GRAY)));
 		int width = 0;
 		for (Component name : names) {
@@ -670,17 +674,34 @@ public class HuntMenuScreen extends Screen {
 			int h = entryHeight(trade.cost().size());
 			sprite(g, "panel_dark", listX, ey, listW, h);
 			boolean unlocked = rank >= trade.rank();
-			g.text(this.font, colored(trade.name(), unlocked ? HuntDefs.GOLD : 0x8A8A8A), listX + 5, ey + 4, WHITE, false);
+			MutableComponent title = colored(trade.name(), unlocked ? HuntDefs.GOLD : 0x8A8A8A);
+			if (!unlocked) {
+				title = title.withStyle(style -> style.withObfuscated(true));
+			}
+			g.text(this.font, title, listX + 5, ey + 4, WHITE, false);
 			int ly = ey + 15;
 			for (HuntDefs.Cost cost : trade.cost()) {
 				boolean have = countInInventory(cost) >= cost.count();
 				String name = new ItemStack(cost.item()).getHoverName().getString();
-				g.pose().pushMatrix();
-				g.pose().translate(listX + 5, ly);
-				g.pose().scale(0.625F, 0.625F);
-				g.item(new ItemStack(cost.item()), 0, 0);
-				g.pose().popMatrix();
-				g.text(this.font, colored(name + " x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED), listX + 18, ly + 1, WHITE, false);
+				// Hunt gear you haven't obtained stays a mystery: no icon, and no name until its trade unlocks.
+				int gearRank = HuntDefs.gearRank(cost.item());
+				boolean hidden = gearRank >= 0 && !have && !progress().dropsSeen.contains(HuntDefs.gearSeenId(cost.item()));
+				if (hidden) {
+					sprite(g, "panel_dark", listX + 5, ly, 10, 10);
+					g.text(this.font, colored("?", TEXT_GRAY), listX + 8, ly + 1, WHITE, false);
+				} else {
+					g.pose().pushMatrix();
+					g.pose().translate(listX + 5, ly);
+					g.pose().scale(0.625F, 0.625F);
+					g.item(new ItemStack(cost.item()), 0, 0);
+					g.pose().popMatrix();
+				}
+				MutableComponent costName = colored(name, have ? 0xFFFFFF : HuntDefs.RED);
+				if (gearRank > rank) {
+					costName = costName.withStyle(style -> style.withObfuscated(true));
+				}
+				g.text(this.font, costName.append(colored(" x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED)), listX + 18, ly + 1,
+						WHITE, false);
 				ly += 11;
 			}
 			Component label = unlocked ? Component.literal("[Click] - Buy") : Component.literal("Rank Required: [?]");

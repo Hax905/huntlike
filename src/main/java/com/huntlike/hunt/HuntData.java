@@ -18,6 +18,8 @@ public final class HuntData {
 	public static final int PHASE_BOSS = 2;
 
 	public String selectedHunt = "animal";
+	/** Ate the Mystery Concoction: rare drops roll at 1/(X-1). */
+	public boolean concoction;
 	public final Map<String, Progress> progress = new HashMap<>();
 	/** The running quest, or null. */
 	public Quest quest;
@@ -59,6 +61,7 @@ public final class HuntData {
 	public CompoundTag toTag() {
 		CompoundTag tag = new CompoundTag();
 		tag.putString("selected", selectedHunt);
+		tag.putBoolean("concoction", concoction);
 		CompoundTag hunts = new CompoundTag();
 		progress.forEach((id, p) -> {
 			CompoundTag h = new CompoundTag();
@@ -96,6 +99,7 @@ public final class HuntData {
 	public static HuntData fromTag(CompoundTag tag) {
 		HuntData data = new HuntData();
 		data.selectedHunt = tag.getStringOr("selected", "animal");
+		data.concoction = tag.getBooleanOr("concoction", false);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");
 		for (String id : hunts.keySet()) {
 			CompoundTag h = hunts.getCompoundOrEmpty(id);

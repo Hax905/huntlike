@@ -3,11 +3,11 @@ package com.huntlike.hunt;
 import java.util.List;
 
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
+import com.huntlike.entity.ModEntities;
 import com.huntlike.gear.ModGear;
 import com.huntlike.registry.ModItems;
 
@@ -74,7 +74,8 @@ public final class HuntDefs {
 	}
 
 	/** A Hunt type. Only Animal exists for now. */
-	public record Hunt(String id, String name, int color, List<Tier> tiers, List<List<Unlock>> unlocks) {
+	public record Hunt(String id, String name, int color, net.minecraft.world.BossEvent.BossBarColor barColor, List<Tier> tiers,
+			List<List<Unlock>> unlocks) {
 		public Tier tier(int number) {
 			return tiers.get(number - 1);
 		}
@@ -100,17 +101,17 @@ public final class HuntDefs {
 	private static final String KORO_FIRST = "A soul from the unknown territories is here to talk! [Gear]";
 	private static final String KORO_NEXT = "The soul of Koro thinks you are ready for his next quest!";
 
-	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME,
+	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME, net.minecraft.world.BossEvent.BossBarColor.GREEN,
 			List.of(
-					new Tier(1, "Sylviornis", "The Giant Galliforme", EntityTypes.CHICKEN, 1.5F, 50, 1, 1, 0.25F, 2, 2, 5, 0,
+					new Tier(1, "Sylviornis", "The Giant Galliforme", ModEntities.SYLVIORNIS, 1.5F, 50, 1, 1, 0.25F, 2, 2, 5, 0,
 							List.of(EGG_BLASTER), "lore.huntlike.animal.1"),
-					new Tier(2, "Hylochoerus", "The Aberrant Souleater", EntityTypes.PIG, 1.25F, 80, 1, 2, 0.5F, 4, 4, 20, 2,
+					new Tier(2, "Hylochoerus", "The Aberrant Souleater", ModEntities.HYLOCHOERUS, 1.25F, 80, 1, 2, 0.5F, 4, 4, 20, 2,
 							List.of(EGG_BLASTER, SOUL_STRIKE), "lore.huntlike.animal.2"),
-					new Tier(3, "Ovis Ammon", "The Horned Creation", EntityTypes.SHEEP, 1.25F, 120, 2, 3, 1.0F, 6, 8, 75, 4,
+					new Tier(3, "Ovis Ammon", "The Horned Creation", ModEntities.OVIS_AMMON, 1.25F, 120, 2, 3, 1.0F, 6, 8, 75, 4,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE), "lore.huntlike.animal.3"),
-					new Tier(4, "Aurochs", "The Animal Mother", EntityTypes.COW, 1.25F, 170, 2, 4, 2.0F, 8, 16, 250, 6,
+					new Tier(4, "Aurochs", "The Animal Mother", ModEntities.AUROCHS, 1.25F, 170, 2, 4, 2.0F, 8, 16, 250, 6,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL), "lore.huntlike.animal.4"),
-					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", EntityTypes.WOLF, 2.0F, 240, 3, 5, 2.0F, 10, 32, 800, 8,
+					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", ModEntities.EPICYON_HAYDENI, 2.0F, 240, 3, 5, 2.0F, 10, 32, 800, 8,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL, APEX_INSTINCT),
 							"lore.huntlike.animal.5")),
 			List.of(
@@ -200,6 +201,11 @@ public final class HuntDefs {
 			}
 		}
 		return level;
+	}
+
+	/** A rare drop's odds denominator, improved by one for players who ate the Mystery Concoction. */
+	public static int odds(int den, boolean concoction) {
+		return concoction ? Math.max(1, den - 1) : den;
 	}
 
 	/** Boss drops for a tier of the Animal Hunt, owner odds. */

@@ -1,0 +1,10 @@
+{
+  "boss.moo": {
+    "subtitle": "subtitles.huntlike.boss.moo",
+    "sounds": ["minecraft:mob/cow/say1", "minecraft:mob/cow/say2", "minecraft:mob/cow/say3", "minecraft:mob/cow/say4"]
+  },
+  "boss.howl": {
+    "subtitle": "subtitles.huntlike.boss.howl",
+    "sounds": ["minecraft:mob/wolf/howl1", "minecraft:mob/wolf/howl2"]
+  }
+}

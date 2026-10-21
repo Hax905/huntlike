@@ -36,6 +36,8 @@ public final class SpiritLure {
 
 	public static final String LURED_TAG = "huntlike_lured";
 	public static final int CAP = 6;
+	/** Ticks an untouched lured animal stays: one minute. */
+	private static final int LURED_LIFETIME = 20 * 60;
 	public static final double CAP_RADIUS = 48.0;
 	private static final int HINT_DELAY = 20 * 30;
 
@@ -130,6 +132,17 @@ public final class SpiritLure {
 			}
 		} else {
 			HINT_PLACE.remove(id);
+		}
+
+		// Lured animals nobody has touched for a minute fade away.
+		if (level.getGameTime() % 20 == 0) {
+			for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(128.0), m -> isLuredBy(m, player))) {
+				if (mob.tickCount > LURED_LIFETIME && mob.getLastHurtByMob() == null) {
+					level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, mob.getX(), mob.getY() + 0.5, mob.getZ(), 10,
+							0.3, 0.3, 0.3, 0.02);
+					mob.discard();
+				}
+			}
 		}
 
 		int rank = data.progress(quest.hunt).rank();

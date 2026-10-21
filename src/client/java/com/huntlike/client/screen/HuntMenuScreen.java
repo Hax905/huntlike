@@ -7,6 +7,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -58,6 +61,10 @@ public class HuntMenuScreen extends Screen {
 	private int questTier = 1;
 	private int rankView;
 	private int abilityScroll;
+	/** Client-only boss entities for the boss card preview. */
+	private final java.util.Map<Integer, LivingEntity> previews = new java.util.HashMap<>();
+	/** The tier whose Drops panel is hovered this frame, or null. */
+	private Tier dropsHover;
 	/** Gear tab page: 0 Armor, 1 Misc, 2 Weapons. */
 	private int gearPage = 1;
 	private int gearScroll;
@@ -185,8 +192,43 @@ public class HuntMenuScreen extends Screen {
 				case 1 -> drawGear(g, mouseX, mouseY);
 				default -> drawRanks(g, mouseX, mouseY);
 			}
-		} else {
+		} else if (!hintSeen()) {
 			g.text(this.font, Component.literal("Click a symbol or press Enter"), px + 8, iy + ih - 14, TEXT_DIM, false);
+		}
+		if (dropsHover != null) {
+			drawDropsPanel(g, dropsHover, mouseX, mouseY);
+			dropsHover = null;
+		}
+	}
+
+	// ---------------------------------------------------------------- the "click a symbol" hint, shown until first used
+
+	private static Boolean hintSeen;
+
+	private static java.nio.file.Path settingsFile() {
+		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("huntlike-client.properties");
+	}
+
+	private static boolean hintSeen() {
+		if (hintSeen == null) {
+			try {
+				hintSeen = java.nio.file.Files.readString(settingsFile()).contains("hintSeen=true");
+			} catch (java.io.IOException e) {
+				hintSeen = false;
+			}
+		}
+		return hintSeen;
+	}
+
+	private static void markHintSeen() {
+		if (hintSeen()) {
+			return;
+		}
+		hintSeen = true;
+		try {
+			java.nio.file.Files.writeString(settingsFile(), "hintSeen=true\n");
+		} catch (java.io.IOException e) {
+			HuntLike.LOGGER.warn("Could not save HuntLike client settings", e);
 		}
 	}
 
@@ -293,6 +335,7 @@ public class HuntMenuScreen extends Screen {
 		y += 10;
 		g.centeredText(this.font, colored(tier.bossTitle(), TEXT_GRAY), cx, y, WHITE);
 		y += 12;
+		int statsTop = y;
 		boolean affordable = progress.tokens >= tier.tokenCost();
 		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(tier.tokenCost()), WHITE))
 				.append(colored(" [" + progress.tokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
@@ -306,7 +349,7 @@ public class HuntMenuScreen extends Screen {
 					? "Unlocks at " + hunt.rankName(tier.unlockRank()) + " (Rank " + HuntDefs.ROMAN[tier.unlockRank()] + ")"
 					: "Defeat " + hunt.tier(tier.number() - 1).bossName() + " (Tier " + HuntDefs.ROMAN[tier.number() - 1]
 							+ ") to unlock";
-			for (FormattedCharSequence line : this.font.split(colored(lock, HuntDefs.RED), pw - 12)) {
+			for (FormattedCharSequence line : this.font.split(colored(lock, HuntDefs.RED), pw - 90)) {
 				g.text(this.font, line, px + 6, y, WHITE, false);
 				y += 9;
 			}
@@ -322,6 +365,7 @@ public class HuntMenuScreen extends Screen {
 			y += 12;
 			drawAbilities(g, tier, px + 4, y, pw - 8, py + ph - 26 - y);
 		}
+		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
 
 		int by = py + ph - 20;
 		boolean defeated = progress.bossKills[tier.number() - 1] > 0;
@@ -437,7 +481,7 @@ public class HuntMenuScreen extends Screen {
 		int by = py + ph - 20;
 		boolean hoverDrops = button(g, px + 4, by, 50, 16, Component.literal("Drops"), true, mouseX, mouseY, null);
 		if (hoverDrops) {
-			g.setComponentTooltipForNextFrame(this.font, dropLines(tier), mouseX, mouseY);
+			dropsHover = tier;
 		}
 		Component cancelLabel = cancelArmed ? colored("Confirm?", HuntDefs.RED) : Component.literal("Cancel");
 		button(g, px + pw - 64, by, 60, 16, cancelLabel, true, mouseX, mouseY, () -> {
@@ -448,6 +492,72 @@ public class HuntMenuScreen extends Screen {
 				cancelArmed = true;
 			}
 		});
+	}
+
+	/** The boss, turning slowly, from a client-only copy of its entity. */
+	private void drawBossModel(GuiGraphicsExtractor g, Tier tier, int x1, int y1, int x2, int y2) {
+		if (this.minecraft.level == null) {
+			return;
+		}
+		LivingEntity entity = previews.computeIfAbsent(tier.number(),
+				n -> tier.mob().create(this.minecraft.level, EntitySpawnReason.LOAD));
+		if (entity == null) {
+			return;
+		}
+		double time = System.currentTimeMillis() / 1000.0;
+		float lookX = (x1 + x2) / 2.0F + (float) Math.sin(time * 0.7) * 80.0F;
+		float lookY = (y1 + y2) / 2.0F - 10.0F;
+		int[] scales = {0, 34, 22, 19, 18, 26};
+		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, scales[tier.number()], 0.0625F, lookX, lookY, entity);
+	}
+
+	/** Drops list with item icons, drawn on top of everything. */
+	private void drawDropsPanel(GuiGraphicsExtractor g, Tier tier, int mouseX, int mouseY) {
+		HuntData.Progress progress = progress();
+		boolean concoction = ClientHuntState.data.concoction;
+		List<ItemStack> icons = new ArrayList<>();
+		List<Component> names = new ArrayList<>();
+		for (Drop drop : HuntDefs.drops(tier)) {
+			boolean seen = progress.dropsSeen.contains(drop.id());
+			icons.add(seen ? new ItemStack(drop.item()) : ItemStack.EMPTY);
+			String chance = drop.guaranteed() ? drop.minCount() + "-" + drop.maxCount() + " (100%)"
+					: formatPercent(drop.chanceNum() * 100.0 / HuntDefs.odds(drop.chanceDen(), concoction));
+			names.add(Component.empty().append(seen ? new ItemStack(drop.item()).getStyledHoverName() : colored("Unknown", TEXT_DIM))
+					.append(colored("  " + chance, TEXT_GRAY)));
+		}
+		boolean seenStone = progress.dropsSeen.contains("soul_stone");
+		icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
+		names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
+				: colored("Unknown", TEXT_DIM)).append(colored("  1% (Spirit Lure animals)", TEXT_GRAY)));
+		int width = 0;
+		for (Component name : names) {
+			width = Math.max(width, this.font.width(name));
+		}
+		int rowH = 14;
+		int w = width + 30;
+		int h = 16 + names.size() * rowH + (concoction ? 11 : 0);
+		int x = Math.min(mouseX + 10, this.width - w - 4);
+		int y = Math.max(4, mouseY - h - 4);
+		g.nextStratum();
+		sprite(g, "panel", x, y, w, h);
+		g.text(this.font, colored("Drops", WHITE), x + 6, y + 5, WHITE, false);
+		for (int i = 0; i < names.size(); i++) {
+			int ry = y + 16 + i * rowH;
+			if (icons.get(i).isEmpty()) {
+				sprite(g, "panel_dark", x + 5, ry, 12, 12);
+				g.text(this.font, colored("?", TEXT_GRAY), x + 9, ry + 2, WHITE, false);
+			} else {
+				g.pose().pushMatrix();
+				g.pose().translate(x + 5, ry);
+				g.pose().scale(0.75F, 0.75F);
+				g.item(icons.get(i), 0, 0);
+				g.pose().popMatrix();
+			}
+			g.text(this.font, names.get(i), x + 22, ry + 2, WHITE, false);
+		}
+		if (concoction) {
+			g.text(this.font, colored("Mystery Concoction: odds improved", 0xFF55FF), x + 6, y + h - 11, WHITE, false);
+		}
 	}
 
 	private List<Component> dropLines(Tier tier) {
@@ -518,10 +628,11 @@ public class HuntMenuScreen extends Screen {
 		g.text(this.font, colored("Balance: ", TEXT_GRAY).append(colored(String.valueOf(progress().tokens), HuntDefs.LIME)),
 				px + 8, y + 15, WHITE, false);
 		tokenButton = new int[] {px + 8, y + 28, pw - 16, 16};
-		boolean hover = button(g, px + 8, y + 28, pw - 16, 16, Component.literal("Buy 64 Tokens [10 Oak Logs]"), true, mouseX,
+		boolean hover = button(g, px + 8, y + 28, pw - 16, 16, Component.literal("Buy 64 Tokens [10 Logs]"), true, mouseX,
 				mouseY, null);
 		if (hover) {
-			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 10 Oak Logs -> 64 Tokens", WHITE),
+			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 10 Logs -> 64 Tokens", WHITE),
+					colored("Any Overworld log works.", TEXT_GRAY),
 					colored("Shift-click: 100 Oak Logs -> 640 Tokens", TEXT_GRAY)), mouseX, mouseY);
 		}
 		y += 58;
@@ -567,8 +678,13 @@ public class HuntMenuScreen extends Screen {
 			for (HuntDefs.Cost cost : trade.cost()) {
 				boolean have = countInInventory(cost) >= cost.count();
 				String name = new ItemStack(cost.item()).getHoverName().getString();
-				g.text(this.font, colored("- " + name + " x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED), listX + 5, ly, WHITE, false);
-				ly += 9;
+				g.pose().pushMatrix();
+				g.pose().translate(listX + 5, ly);
+				g.pose().scale(0.625F, 0.625F);
+				g.item(new ItemStack(cost.item()), 0, 0);
+				g.pose().popMatrix();
+				g.text(this.font, colored(name + " x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED), listX + 18, ly + 1, WHITE, false);
+				ly += 11;
 			}
 			Component label = unlocked ? Component.literal("[Click] - Buy") : Component.literal("Rank Required: [?]");
 			if (ey + h > listTop && ey < listTop + listH) {
@@ -610,7 +726,7 @@ public class HuntMenuScreen extends Screen {
 	}
 
 	private static int entryHeight(int costLines) {
-		return 15 + costLines * 9 + 20;
+		return 15 + costLines * 11 + 20;
 	}
 
 	private void changeGearPage(int direction) {
@@ -708,6 +824,7 @@ public class HuntMenuScreen extends Screen {
 
 	private void openPanel() {
 		panelOpen = true;
+		markHintSeen();
 		abilityScroll = 0;
 		rankView = progress().rank();
 		questTier = Math.min(questTier, hunt().tiers().size());

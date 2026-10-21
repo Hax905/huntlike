@@ -60,5 +60,15 @@
   "item.huntlike.ecocide_helmet": "Ecocide Helmet",
   "item.huntlike.ecocide_chestplate": "Ecocide Chestplate",
   "item.huntlike.ecocide_leggings": "Ecocide Leggings",
-  "item.huntlike.ecocide_boots": "Ecocide Boots"
+  "item.huntlike.ecocide_boots": "Ecocide Boots",
+  "entity.huntlike.sylviornis": "Sylviornis",
+  "entity.huntlike.hylochoerus": "Hylochoerus",
+  "entity.huntlike.ovis_ammon": "Ovis Ammon",
+  "entity.huntlike.aurochs": "Aurochs",
+  "entity.huntlike.epicyon_haydeni": "Epicyon Haydeni",
+  "entity.huntlike.bos_taurus": "Bos Taurus",
+  "entity.huntlike.canis_lupus": "Canis Lupus",
+  "item.huntlike.mystery_concoction": "Mystery Concoction",
+  "subtitles.huntlike.boss.moo": "Aurochs calls its herd",
+  "subtitles.huntlike.boss.howl": "Epicyon Haydeni howls"
 }

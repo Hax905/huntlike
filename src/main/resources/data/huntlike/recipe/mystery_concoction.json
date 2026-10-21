@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:pufferfish",
+    "minecraft:cake",
+    "minecraft:cookie",
+    "minecraft:spider_eye",
+    "minecraft:rotten_flesh",
+    "minecraft:golden_apple",
+    "minecraft:bone",
+    "huntlike:high_quality_mystery_meat"
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:mystery_concoction"
+  }
+}

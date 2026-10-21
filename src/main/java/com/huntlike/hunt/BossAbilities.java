@@ -9,6 +9,9 @@ import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,7 +24,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -31,6 +33,8 @@ import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.phys.Vec3;
 
 import com.huntlike.HuntLike;
+import com.huntlike.entity.ModEntities;
+import com.huntlike.registry.ModSounds;
 import com.huntlike.hunt.HuntDefs.Tier;
 import com.huntlike.mixin.MobAccessor;
 
@@ -57,7 +61,45 @@ public final class BossAbilities {
 		boolean apex;
 		final List<UUID> herd = new ArrayList<>();
 		int lungeTicks;
+		/** Ticks of the half-second wind-up before a Lunge. */
+		int lungeWindup;
+		/** Ticks until the warned Soul Strike lands. */
+		int soulTimer;
+		/** Ticks until the herd appears after the boss's call. */
+		int herdTimer;
+		/** Ticks the boss stands still (Herd Call). */
+		int freeze;
 		final Map<UUID, Integer> herdCooldown = new HashMap<>();
+	}
+
+	/** Whether the boss is standing still for an ability (no chasing, melee or eggs). */
+	public static boolean frozen(Mob boss) {
+		State state = STATES.get(boss.getUUID());
+		return state != null && (state.freeze > 0 || state.lungeWindup > 0);
+	}
+
+	/** Herd Call's immunity starts with the call, before the herd appears. */
+	public static boolean immune(Mob boss) {
+		State state = STATES.get(boss.getUUID());
+		return state != null && state.herdTimer > 0 || herdAlive(boss);
+	}
+
+	/** Runs every tick of a fight: warned abilities land when their timers run out. */
+	public static void tickTimers(Mob boss, ServerPlayer owner, Tier tier) {
+		State state = STATES.get(boss.getUUID());
+		if (state == null) {
+			return;
+		}
+		ServerLevel level = (ServerLevel) boss.level();
+		if (state.freeze > 0) {
+			state.freeze--;
+		}
+		if (state.soulTimer > 0 && --state.soulTimer == 0) {
+			soulStrike(boss, owner, tier, level);
+		}
+		if (state.herdTimer > 0 && --state.herdTimer == 0) {
+			herdCall(boss, owner, tier, state, level);
+		}
 	}
 
 	private static final Map<UUID, State> STATES = new HashMap<>();
@@ -108,7 +150,7 @@ public final class BossAbilities {
 	}
 
 	public static int regen(Mob boss, Tier tier) {
-		if (herdAlive(boss)) {
+		if (immune(boss)) {
 			return 0;
 		}
 		return apex(boss) ? 6 : tier.regen();
@@ -128,13 +170,24 @@ public final class BossAbilities {
 			if (boss.getHealth() <= mark) {
 				boss.setHealth(Math.max(boss.getHealth(), mark));
 				state.herdCalled = true;
-				herdCall(boss, owner, tier, state, level);
+				// The call: a moo or a howl, one second standing still, then the herd.
+				state.herdTimer = 20;
+				state.freeze = 20;
+				boss.getNavigation().stop();
+				level.playSound(null, boss.blockPosition(), tier.number() >= 5 ? ModSounds.BOSS_HOWL : ModSounds.BOSS_MOO,
+						SoundSource.HOSTILE, 2.0F, 0.8F);
 				return;
 			}
 		}
 		if (tier.number() >= 2 && !state.soulStruck && boss.getHealth() <= threshold(boss, 0.5)) {
 			state.soulStruck = true;
-			soulStrike(boss, owner, tier, level);
+			// One second of warning: a title and a heartbeat, then the strike.
+			state.soulTimer = 20;
+			owner.connection.send(new ClientboundSetTitlesAnimationPacket(2, 20, 6));
+			owner.connection.send(new ClientboundSetSubtitleTextPacket(Messages.c("Brace your soul...", HuntDefs.GRAY)));
+			owner.connection.send(new ClientboundSetTitleTextPacket(Messages.c("Soul Strike!", 0x55FFFF)
+					.withStyle(style -> style.withBold(true))));
+			play(level, owner, SoundEvents.WARDEN_HEARTBEAT, 1.0F);
 		}
 		if (tier.number() >= 5 && !state.apex && boss.getHealth() <= threshold(boss, 0.4)) {
 			state.apex = true;
@@ -145,8 +198,10 @@ public final class BossAbilities {
 	// ---------------------------------------------------------------- Soul Strike
 
 	private static void soulStrike(Mob boss, ServerPlayer owner, Tier tier, ServerLevel level) {
+		if (!boss.isAlive()) {
+			return;
+		}
 		float damage = (tier.number() * 2 - 1) * 2;
-		play(level, owner, SoundEvents.WARDEN_HEARTBEAT, 1.0F);
 		play(level, owner, SoundEvents.ELDER_GUARDIAN_CURSE, 1.2F);
 		Vec3 from = boss.position().add(0, boss.getBbHeight() * 0.6, 0);
 		Vec3 to = owner.position().add(0, owner.getBbHeight() * 0.5, 0);
@@ -165,11 +220,27 @@ public final class BossAbilities {
 
 	/** Runs every tick of a Tier III+ fight. */
 	public static void tickLunge(Mob boss, ServerPlayer owner, Tier tier, long elapsed) {
-		if (tier.number() < 3 || herdAlive(boss)) {
+		if (tier.number() < 3 || immune(boss)) {
 			return;
 		}
 		State state = state(boss);
 		ServerLevel level = (ServerLevel) boss.level();
+		if (state.lungeWindup > 0) {
+			// Half a second of warning: the boss stops and gathers itself.
+			boss.getNavigation().stop();
+			boss.setDeltaMovement(0, boss.getDeltaMovement().y, 0);
+			boss.getLookControl().setLookAt(owner);
+			level.sendParticles(ParticleTypes.CRIT, boss.getX(), boss.getY() + boss.getBbHeight() * 0.5, boss.getZ(), 4,
+					boss.getBbWidth() / 2.0, 0.2, boss.getBbWidth() / 2.0, 0.1);
+			if (--state.lungeWindup == 0) {
+				Vec3 dir = owner.position().subtract(boss.position()).multiply(1, 0, 1).normalize();
+				double speed = LUNGE_SPEED * (apex(boss) ? 1.2 : 1.0);
+				boss.setDeltaMovement(dir.x * speed, 0.25, dir.z * speed);
+				state.lungeTicks = LUNGE_WINDOW;
+				level.sendParticles(ParticleTypes.SWEEP_ATTACK, boss.getX(), boss.getY() + 0.5, boss.getZ(), 3, 0.3, 0.2, 0.3, 0.0);
+			}
+			return;
+		}
 		if (state.lungeTicks > 0) {
 			state.lungeTicks--;
 			double reach = boss.getBbWidth() / 2.0 + 1.4;
@@ -188,11 +259,7 @@ public final class BossAbilities {
 			return;
 		}
 		if (elapsed > 0 && elapsed % LUNGE_INTERVAL == 0 && boss.hasLineOfSight(owner)) {
-			Vec3 dir = owner.position().subtract(boss.position()).multiply(1, 0, 1).normalize();
-			double speed = LUNGE_SPEED * (apex(boss) ? 1.2 : 1.0);
-			boss.setDeltaMovement(dir.x * speed, 0.25, dir.z * speed);
-			state.lungeTicks = LUNGE_WINDOW;
-			level.sendParticles(ParticleTypes.SWEEP_ATTACK, boss.getX(), boss.getY() + 0.5, boss.getZ(), 3, 0.3, 0.2, 0.3, 0.0);
+			state.lungeWindup = 10;
 			play(level, owner, SoundEvents.RAVAGER_ROAR, 1.6F);
 		}
 	}
@@ -206,10 +273,9 @@ public final class BossAbilities {
 
 	private static void herdCall(Mob boss, ServerPlayer owner, Tier tier, State state, ServerLevel level) {
 		boolean wolves = tier.number() >= 5;
-		EntityType<? extends Mob> type = wolves ? EntityTypes.WOLF : EntityTypes.COW;
+		EntityType<? extends Mob> type = wolves ? ModEntities.CANIS_LUPUS : ModEntities.BOS_TAURUS;
 		int count = wolves ? 6 : 5;
 		float health = wolves ? 20.0F : 15.0F;
-		String name = wolves ? "Canis Lupus" : "Bos Taurus";
 		for (int i = 0; i < count; i++) {
 			Mob mob = type.create(level, EntitySpawnReason.MOB_SUMMONED);
 			if (mob == null) {
@@ -227,8 +293,6 @@ public final class BossAbilities {
 			accessor.huntlike$getGoalSelector().removeAllGoals(goal -> !(goal instanceof FloatGoal));
 			accessor.huntlike$getTargetSelector().removeAllGoals(goal -> true);
 			mob.setPersistenceRequired();
-			mob.setCustomName(Messages.c(name, tier.color()));
-			mob.setCustomNameVisible(true);
 			mob.addTag(HERD_TAG);
 			mob.addTag(BossController.OWNER_PREFIX + owner.getUUID());
 			if (mob instanceof Wolf wolf) {

@@ -21,6 +21,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.world.BossEvent;
+import java.util.List;
 
 import com.huntlike.entity.BossEgg;
 import com.huntlike.hunt.HuntData.Quest;
@@ -40,6 +43,90 @@ public final class BossController {
 	private static final Map<UUID, Set<UUID>> HELPERS = new HashMap<>();
 	/** Ticks until each boss can melee again. */
 	private static final Map<UUID, Integer> MELEE_COOLDOWN = new HashMap<>();
+
+	/** Boss health bars, by boss. */
+	private static final Map<UUID, ServerBossEvent> BARS = new HashMap<>();
+	/** For each boss: closest distance to its owner lately, and ticks since it last got closer. */
+	private static final Map<UUID, double[]> STUCK = new HashMap<>();
+	private static final int STUCK_TICKS = 20 * 5;
+
+	/** Name, health and time left in the Hunt's color; shown to the owner and helpers nearby. */
+	private static void updateBar(Mob boss, ServerPlayer owner, Hunt hunt, Tier tier, long elapsed) {
+		ServerBossEvent bar = BARS.computeIfAbsent(boss.getUUID(), id -> new ServerBossEvent(id,
+				Messages.c(tier.bossName(), tier.color()), hunt.barColor(), BossEvent.BossBarOverlay.NOTCHED_10));
+		if (elapsed % 5 != 0 && !bar.getPlayers().isEmpty()) {
+			return;
+		}
+		boolean immune = BossAbilities.immune(boss);
+		int seconds = (int) Math.max(0, (QuestManager.BOSS_TIME_LIMIT - elapsed) / 20);
+		net.minecraft.network.chat.MutableComponent name = Messages.c(tier.bossName(), tier.color())
+				.append(Messages.c("  \u2764 " + (int) Math.ceil(boss.getHealth()) + "/" + (int) boss.getMaxHealth(), HuntDefs.RED))
+				.append(Messages.c(String.format("  %d:%02d", seconds / 60, seconds % 60), HuntDefs.GRAY));
+		if (immune) {
+			name.append(Messages.c("  [Immune]", 0xFFFFFF));
+		}
+		bar.setName(name);
+		bar.setProgress(Math.max(0.0F, Math.min(1.0F, boss.getHealth() / boss.getMaxHealth())));
+		bar.setColor(immune ? BossEvent.BossBarColor.WHITE : hunt.barColor());
+		java.util.Set<UUID> viewers = new HashSet<>();
+		viewers.add(owner.getUUID());
+		Set<UUID> helpers = HELPERS.get(boss.getUUID());
+		if (helpers != null) {
+			viewers.addAll(helpers);
+		}
+		for (ServerPlayer player : List.copyOf(bar.getPlayers())) {
+			if (!viewers.contains(player.getUUID()) || player.level() != boss.level() || player.distanceTo(boss) > 64) {
+				bar.removePlayer(player);
+			}
+		}
+		for (UUID id : viewers) {
+			ServerPlayer player = owner.level().getServer().getPlayerList().getPlayer(id);
+			if (player != null && player.level() == boss.level() && player.distanceTo(boss) <= 64
+					&& !bar.getPlayers().contains(player)) {
+				bar.addPlayer(player);
+			}
+		}
+	}
+
+	private static void removeBar(UUID boss) {
+		ServerBossEvent bar = BARS.remove(boss);
+		if (bar != null) {
+			bar.removeAllPlayers();
+		}
+	}
+
+	/** A boss that hasn't got closer to its owner for 5 seconds teleports next to them. */
+	private static void unstick(Mob boss, ServerPlayer owner) {
+		double distance = boss.distanceTo(owner);
+		double[] track = STUCK.computeIfAbsent(boss.getUUID(), id -> new double[] {distance, 0});
+		if (distance < 4.0 || distance < track[0] - 0.5) {
+			track[0] = distance;
+			track[1] = 0;
+			return;
+		}
+		track[1]++;
+		if (track[1] < STUCK_TICKS) {
+			return;
+		}
+		track[0] = distance;
+		track[1] = 0;
+		ServerLevel level = owner.level();
+		for (int attempt = 0; attempt < 8; attempt++) {
+			double angle = owner.getRandom().nextDouble() * Math.PI * 2;
+			net.minecraft.core.BlockPos near = net.minecraft.core.BlockPos.containing(owner.getX() + Math.cos(angle) * 2.5,
+					owner.getY(), owner.getZ() + Math.sin(angle) * 2.5);
+			net.minecraft.core.BlockPos spot = QuestManager.findGround(level, near);
+			if (spot != null && spot.distSqr(owner.blockPosition()) <= 25) {
+				level.sendParticles(ParticleTypes.PORTAL, boss.getX(), boss.getY() + 0.5, boss.getZ(), 30, 0.4, 0.6, 0.4, 0.2);
+				boss.teleportTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5);
+				boss.getNavigation().stop();
+				level.sendParticles(ParticleTypes.PORTAL, boss.getX(), boss.getY() + 0.5, boss.getZ(), 30, 0.4, 0.6, 0.4, 0.2);
+				level.playSound(null, boss.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.HOSTILE,
+						1.0F, 0.8F);
+				return;
+			}
+		}
+	}
 
 	public static boolean isBoss(LivingEntity entity) {
 		return entity.entityTags().contains(BOSS_TAG);
@@ -78,6 +165,8 @@ public final class BossController {
 			BossAbilities.discardHerd(boss);
 			BossAbilities.forget(boss.getUUID());
 			com.huntlike.gear.GearEffects.forgetBoss(boss.getUUID());
+			removeBar(boss.getUUID());
+			STUCK.remove(boss.getUUID());
 			boss.discard();
 		}
 	}
@@ -132,8 +221,6 @@ public final class BossController {
 		accessor.huntlike$getGoalSelector().removeAllGoals(goal -> !(goal instanceof FloatGoal));
 		accessor.huntlike$getTargetSelector().removeAllGoals(goal -> true);
 		boss.setPersistenceRequired();
-		boss.setCustomName(Messages.c(tier.bossName(), tier.color()));
-		boss.setCustomNameVisible(true);
 		boss.addTag(BOSS_TAG);
 		boss.addTag(OWNER_PREFIX + player.getUUID());
 
@@ -142,6 +229,9 @@ public final class BossController {
 		quest.phase = HuntData.PHASE_BOSS;
 		player.setAttached(QuestManager.DATA, data);
 		level.addFreshEntity(boss);
+		ServerBossEvent bar = new ServerBossEvent(boss.getUUID(), Messages.c(tier.bossName(), tier.color()), hunt.barColor(),
+				BossEvent.BossBarOverlay.NOTCHED_10);
+		BARS.put(boss.getUUID(), bar);
 
 		level.sendParticles(ParticleTypes.EXPLOSION, boss.getX(), boss.getY() + 0.5, boss.getZ(), 1, 0, 0, 0, 0);
 		player.sendSystemMessage(Messages.bossSpawned(hunt, tier.number()));
@@ -179,19 +269,28 @@ public final class BossController {
 			QuestManager.fail(player, data);
 			return;
 		}
-		Tier tier = HuntDefs.hunt(quest.hunt).tier(quest.tier);
+		Hunt hunt = HuntDefs.hunt(quest.hunt);
+		Tier tier = hunt.tier(quest.tier);
+		updateBar(boss, player, hunt, tier, elapsed);
+		BossAbilities.tickTimers(boss, player, tier);
+		boolean frozen = BossAbilities.frozen(boss);
 
-		// Chase the owner.
+		// Chase the owner, or stand still while an ability winds up.
 		boss.getLookControl().setLookAt(player);
-		if (elapsed % 10 == 0) {
+		if (frozen) {
+			boss.getNavigation().stop();
+		} else if (elapsed % 10 == 0) {
 			boss.getNavigation().moveTo(player, 1.2);
+		}
+		if (!frozen) {
+			unstick(boss, player);
 		}
 
 		// Basic melee.
 		int cooldown = MELEE_COOLDOWN.getOrDefault(boss.getUUID(), 0);
 		if (cooldown > 0) {
 			MELEE_COOLDOWN.put(boss.getUUID(), cooldown - 1);
-		} else if (player.isAlive() && !player.isSpectator() && !player.isCreative()) {
+		} else if (!frozen && player.isAlive() && !player.isSpectator() && !player.isCreative()) {
 			double reach = boss.getBbWidth() / 2.0 + 1.6;
 			if (boss.distanceTo(player) <= reach) {
 				player.hurtServer(level, level.damageSources().mobAttack(boss), tier.melee() * BossAbilities.meleeMultiplier(boss));
@@ -203,7 +302,7 @@ public final class BossController {
 			// Regeneration: health equal to the tier every second (6 in Apex Instinct, none while the herd lives).
 			boss.heal(BossAbilities.regen(boss, tier));
 			// Egg Blaster: one fast egg every second.
-			if (boss.hasLineOfSight(player) && !player.isSpectator()) {
+			if (!frozen && boss.hasLineOfSight(player) && !player.isSpectator()) {
 				BossEgg egg = new BossEgg(level, boss, tier.eggDamage());
 				double dx = player.getX() - egg.getX();
 				double dy = player.getEyeY() - 0.4 - egg.getY();
@@ -231,7 +330,7 @@ public final class BossController {
 		if (!isBoss(entity)) {
 			return true;
 		}
-		if (entity instanceof Mob mob && BossAbilities.herdAlive(mob)) {
+		if (entity instanceof Mob mob && BossAbilities.immune(mob)) {
 			return false;
 		}
 		return !(source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypeTags.IS_DROWNING) || source.is(DamageTypes.IN_WALL));
@@ -264,6 +363,8 @@ public final class BossController {
 		}
 		BossAbilities.forget(entity.getUUID());
 		com.huntlike.gear.GearEffects.forgetBoss(entity.getUUID());
+		removeBar(entity.getUUID());
+		STUCK.remove(entity.getUUID());
 		UUID ownerId = ownerOf(entity);
 		if (ownerId == null || !(entity.level() instanceof ServerLevel level)) {
 			return;

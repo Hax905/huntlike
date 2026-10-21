@@ -16,6 +16,7 @@ import com.huntlike.network.HuntPayloads;
 import com.huntlike.registry.ModBlocks;
 import com.huntlike.registry.ModCreativeTab;
 import com.huntlike.registry.ModItems;
+import com.huntlike.registry.ModSounds;
 
 /** Main entrypoint for HuntLike. */
 public class HuntLike implements ModInitializer {
@@ -25,6 +26,7 @@ public class HuntLike implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ModItems.initialize();
+		ModSounds.initialize();
 		ModGear.initialize();
 		ModBlocks.initialize();
 		ModCreativeTab.initialize();

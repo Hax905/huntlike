@@ -41,6 +41,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("01-quests-rail");
 			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(3);
+			context.waitTicks(10);
 			context.takeScreenshot("02-boss-card-tier1");
 			context.getInput().pressKey(InputConstants.KEY_D);
 			context.waitTicks(3);
@@ -199,7 +200,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 		// 240 -> below 180: Herd Call clamps at 180 and calls 6 wolves.
 		hitBoss(singleplayer, 70.0F);
-		context.waitTicks(5);
+		context.waitTicks(8);
+		context.takeScreenshot("14b-herd-call-warning");
+		context.waitTicks(25);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
@@ -229,7 +232,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		// Below 120: Soul Strike for 18 true damage.
 		float healthBefore = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
 		hitBoss(singleplayer, 65.0F);
-		context.waitTicks(15);
+		context.waitTicks(6);
+		context.takeScreenshot("15b-soul-strike-warning");
+		context.waitTicks(25);
 		float healthAfter = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
 		HuntLike.LOGGER.info("[test] Soul Strike: player health {} -> {}", healthBefore, healthAfter);
 		if (healthBefore - healthAfter < 17.0F) {

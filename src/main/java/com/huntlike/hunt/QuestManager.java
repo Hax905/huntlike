@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
@@ -127,18 +128,18 @@ public final class QuestManager {
 		int have = 0;
 		for (int i = 0; i < inventory.getContainerSize(); i++) {
 			ItemStack stack = inventory.getItem(i);
-			if (stack.is(Items.OAK_LOG)) {
+			if (stack.is(ItemTags.LOGS_THAT_BURN)) {
 				have += stack.getCount();
 			}
 		}
 		if (have < logs) {
-			player.sendSystemMessage(Messages.error("You need " + logs + " Oak Logs."));
+			player.sendSystemMessage(Messages.error("You need " + logs + " Logs."));
 			return;
 		}
 		int left = logs;
 		for (int i = 0; i < inventory.getContainerSize() && left > 0; i++) {
 			ItemStack stack = inventory.getItem(i);
-			if (stack.is(Items.OAK_LOG)) {
+			if (stack.is(ItemTags.LOGS_THAT_BURN)) {
 				int take = Math.min(left, stack.getCount());
 				stack.shrink(take);
 				left -= take;
@@ -312,7 +313,7 @@ public final class QuestManager {
 			if (drop.guaranteed()) {
 				int count = drop.minCount() + random.nextInt(drop.maxCount() - drop.minCount() + 1);
 				give(owner, data, hunt, drop, count);
-			} else if (random.nextInt(drop.chanceDen()) < drop.chanceNum()) {
+			} else if (random.nextInt(HuntDefs.odds(drop.chanceDen(), data.concoction)) < drop.chanceNum()) {
 				give(owner, data, hunt, drop, drop.minCount());
 				owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 				playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -328,7 +329,7 @@ public final class QuestManager {
 			}
 			HuntData helperData = data(helper);
 			for (Drop drop : HuntDefs.drops(tier)) {
-				if (!drop.guaranteed() && random.nextInt(drop.chanceDen() * 2) < drop.chanceNum()) {
+				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(drop.chanceDen(), helperData.concoction) * 2) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
 					helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 					playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -351,6 +352,11 @@ public final class QuestManager {
 		award(owner, hunt.id() + "/tier" + tier.number());
 		for (int level = oldRank + 1; level <= newRank; level++) {
 			owner.sendSystemMessage(Messages.rankUp(hunt, level));
+			owner.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(10, 60, 20));
+			owner.connection.send(new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(
+					Messages.c("Rank " + HuntDefs.ROMAN[level], HuntDefs.GOLD)));
+			owner.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(
+					Messages.c(hunt.rankName(level).toUpperCase(java.util.Locale.ROOT), hunt.color()).withStyle(style -> style.withBold(true))));
 			playSound(owner, SoundEvents.PLAYER_LEVELUP, 1.0F);
 			playSound(owner, SoundEvents.BELL_BLOCK, 1.0F);
 			if (level == HuntDefs.MAX_RANK) {
@@ -443,6 +449,8 @@ public final class QuestManager {
 		SpiritLure.onQuotaKill(killer);
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		killer.sendSystemMessage(Messages.quota(hunt, quest.kills, quest.quota), true);
+		killer.level().playSound(null, killer.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.6F,
+				0.6F + 0.9F * quest.kills / Math.max(1, quest.quota));
 		if (quest.kills >= quest.quota) {
 			beginSummon(killer, data, quest, entity.blockPosition());
 		}
@@ -466,7 +474,7 @@ public final class QuestManager {
 	}
 
 	/** A standing spot with solid ground within 5 blocks of the last quota kill, or null. */
-	private static BlockPos findGround(ServerLevel level, BlockPos origin) {
+	public static BlockPos findGround(ServerLevel level, BlockPos origin) {
 		for (int radius = 0; radius <= 5; radius++) {
 			for (int dy = 0; dy <= 5; dy++) {
 				for (int sign : new int[] {1, -1}) {

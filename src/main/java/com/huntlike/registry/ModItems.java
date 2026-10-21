@@ -1,5 +1,6 @@
 package com.huntlike.registry;
 
+import java.util.List;
 import java.util.function.Function;
 
 import net.minecraft.core.Registry;
@@ -29,6 +30,16 @@ public final class ModItems {
 
 	// Spirit Lure drop
 	public static final Item SOUL_STONE = simple("soul_stone", Rarity.UNCOMMON);
+
+	/** Eaten once for better rare-drop odds. */
+	public static final Item MYSTERY_CONCOCTION = register("mystery_concoction", MysteryConcoctionItem::new,
+			new Item.Properties().rarity(Rarity.EPIC).stacksTo(16)
+					.food(new net.minecraft.world.food.FoodProperties(2, 0.2F, true))
+					.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(List.of(
+							net.minecraft.network.chat.Component.literal("The type of meal you regret to eat...")
+									.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.GRAY).withItalic(false)),
+							net.minecraft.network.chat.Component.literal("But just one bite wouldn't kill me!")
+									.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.RED).withItalic(false))))));
 
 	private static Item simple(String name, Rarity rarity) {
 		Item.Properties properties = Descriptions.with(new Item.Properties().rarity(rarity), "item.huntlike." + name + ".desc");

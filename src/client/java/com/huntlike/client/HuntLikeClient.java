@@ -6,6 +6,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
+import com.huntlike.client.entity.*;
 import com.huntlike.client.screen.HuntMenuScreen;
 import com.huntlike.entity.ModEntities;
 import com.huntlike.network.HuntPayloads;
@@ -19,5 +20,12 @@ public class HuntLikeClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.OpenMenu.TYPE,
 				(payload, context) -> context.client().gui.setScreen(new HuntMenuScreen(payload.tab())));
 		EntityRendererRegistry.register(ModEntities.BOSS_EGG, ThrownItemRenderer::new);
+		EntityRendererRegistry.register(ModEntities.SYLVIORNIS, SylviornisRenderer::new);
+		EntityRendererRegistry.register(ModEntities.HYLOCHOERUS, HylochoerusRenderer::new);
+		EntityRendererRegistry.register(ModEntities.OVIS_AMMON, OvisAmmonRenderer::new);
+		EntityRendererRegistry.register(ModEntities.AUROCHS, AurochsRenderer::new);
+		EntityRendererRegistry.register(ModEntities.EPICYON_HAYDENI, EpicyonHaydeniRenderer::new);
+		EntityRendererRegistry.register(ModEntities.BOS_TAURUS, BosTaurusRenderer::new);
+		EntityRendererRegistry.register(ModEntities.CANIS_LUPUS, CanisLupusRenderer::new);
 	}
 }

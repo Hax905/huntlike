@@ -9,7 +9,8 @@
     "minecraft:rotten_flesh",
     "minecraft:golden_apple",
     "minecraft:bone",
-    "huntlike:high_quality_mystery_meat"
+    "huntlike:high_quality_mystery_meat",
+    "minecraft:dirt"
   ],
   "result": {
     "count": 1,

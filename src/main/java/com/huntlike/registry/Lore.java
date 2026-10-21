@@ -21,7 +21,7 @@ public final class Lore {
 
 	/** Longest tooltip line, in characters. */
 	public static final int MAX_LINE = 38;
-	public static final int ABILITY_COLOR = 0xFFAA00;
+	public static final int ABILITY_COLOR = 0xFF5555;
 
 	private static Map<String, String> english;
 
@@ -62,7 +62,7 @@ public final class Lore {
 
 	public static void gray(List<Component> lore, String text) {
 		for (String line : wrap(text)) {
-			lore.add(Component.literal(line).withStyle(style -> style.withColor(ChatFormatting.GRAY).withItalic(false)));
+			lore.add(Component.literal(line).withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(false)));
 		}
 	}
 
@@ -71,7 +71,8 @@ public final class Lore {
 		if (!lore.isEmpty()) {
 			lore.add(Component.empty());
 		}
-		lore.add(Component.literal(name).withStyle(style -> style.withColor(ABILITY_COLOR).withItalic(false)));
+		lore.add(Component.literal(name).withStyle(style -> style.withColor(ABILITY_COLOR).withItalic(false))
+				.append(Component.literal(" (Ability)").withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(false))));
 		gray(lore, description);
 	}
 }

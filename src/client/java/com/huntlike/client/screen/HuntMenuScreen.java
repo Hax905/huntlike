@@ -499,8 +499,14 @@ public class HuntMenuScreen extends Screen {
 		if (this.minecraft.level == null) {
 			return;
 		}
-		LivingEntity entity = previews.computeIfAbsent(tier.number(),
-				n -> tier.mob().create(this.minecraft.level, EntitySpawnReason.LOAD));
+		LivingEntity entity = previews.computeIfAbsent(tier.number(), n -> {
+			LivingEntity created = tier.mob().create(this.minecraft.level, EntitySpawnReason.LOAD);
+			if (created != null) {
+				// A preview never joins the world; it only needs an id the renderer can read.
+				created.setId(-1000 - n);
+			}
+			return created;
+		});
 		if (entity == null) {
 			return;
 		}

@@ -59,15 +59,15 @@ public final class HideBoots {
 
 	//                                                             armor toughness kb   speed  durability fireproof
 	public static final Item THICK_HIDE_BOOTS = boots("thick_hide_boots", "thick_hide", 2, 0, 0, 0, 15, false, Rarity.UNCOMMON,
-			WALK);
+			"Somehow light and strong!", WALK);
 	public static final Item WINGED_HIDE_BOOTS = boots("winged_hide_boots", "winged_hide", 2, 0, 0, 0, 15, false, Rarity.UNCOMMON,
-			WALK, GLIDE);
+			"Jumping feels easier now!", WALK, GLIDE);
 	public static final Item HARDENED_HIDE_BOOTS = boots("hardened_hide_boots", "hardened_hide", 3, 2, 0, 0, 33, false, Rarity.RARE,
-			WALK, GLIDE);
+			"The metal isn't even felt when the boots are on.", WALK, GLIDE);
 	public static final Item SPEEDY_HIDE_BOOTS = boots("speedy_hide_boots", "speedy_hide", 3, 2, 0, 0.2, 33, false, Rarity.RARE,
-			WALK, GLIDE, SPEED);
+			"You can now ZooOoOm", WALK, GLIDE, SPEED);
 	public static final Item HERMES_BOOTS = boots("hermes_boots", "hermes", 3, 3, 0.1, 0.2, 37, true, Rarity.EPIC,
-			WALK, GLIDE, SPEED, "Can't burn in fire or lava.");
+			"Adventuring made easy!", WALK, GLIDE, SPEED, "Can't burn in fire or lava.");
 
 	public static final List<Item> BOOTS = List.of(THICK_HIDE_BOOTS, WINGED_HIDE_BOOTS, HARDENED_HIDE_BOOTS, SPEEDY_HIDE_BOOTS,
 			HERMES_BOOTS);
@@ -77,7 +77,7 @@ public final class HideBoots {
 	public static final Item FEATHER_CHUTE = featherChute();
 
 	private static Item boots(String name, String assetId, double armor, double toughness, double knockback, double speed,
-			int durability, boolean fireproof, Rarity rarity, String... lines) {
+			int durability, boolean fireproof, Rarity rarity, String flavor, String... lines) {
 		ResourceKey<EquipmentAsset> asset = ResourceKey.create(EquipmentAssets.ROOT_ID, HuntLike.id(assetId));
 		Map<ArmorType, Integer> defense = new HashMap<>();
 		for (ArmorType type : ArmorType.values()) {
@@ -102,6 +102,8 @@ public final class HideBoots {
 					AttributeModifier.Operation.ADD_MULTIPLIED_BASE), feet);
 		}
 		List<Component> lore = new ArrayList<>();
+		Lore.gray(lore, flavor);
+		lore.add(Component.empty());
 		for (String line : lines) {
 			Lore.gray(lore, line);
 		}
@@ -165,6 +167,11 @@ public final class HideBoots {
 				return;
 			}
 			GLIDING.add(id);
+		}
+		if (boots && player.tickCount % 4 == 0) {
+			player.level().sendParticles(new net.minecraft.core.particles.ItemParticleOption(
+					net.minecraft.core.particles.ParticleTypes.ITEM, net.minecraft.world.item.Items.FEATHER),
+					player.getX(), player.getY() + 0.1, player.getZ(), 2, 0.25, 0.05, 0.25, 0.02);
 		}
 		MobEffectInstance current = player.getEffect(MobEffects.SLOW_FALLING);
 		if (current == null || current.getDuration() <= 5) {

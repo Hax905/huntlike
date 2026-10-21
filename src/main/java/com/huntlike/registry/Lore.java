@@ -60,6 +60,12 @@ public final class Lore {
 		return lines;
 	}
 
+	public static List<Component> wrapGray(String text) {
+		List<Component> lore = new ArrayList<>();
+		gray(lore, text);
+		return lore;
+	}
+
 	public static void gray(List<Component> lore, String text) {
 		for (String line : wrap(text)) {
 			lore.add(Component.literal(line).withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(false)));

@@ -44,6 +44,8 @@ public final class ModItems {
 	/** Eaten instantly: 8 hunger, 8 saturation. */
 	public static final Item GOLDEN_MEAT = register("golden_meat", Item::new,
 			new Item.Properties().rarity(Rarity.RARE)
+					.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(
+							Lore.wrapGray("You don't even want to chew.")))
 					.food(new net.minecraft.world.food.FoodProperties(8, 8.0F, false),
 							net.minecraft.world.item.component.Consumables.defaultFood().consumeSeconds(0.0F).build()));
 

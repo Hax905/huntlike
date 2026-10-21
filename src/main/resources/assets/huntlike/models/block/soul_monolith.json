@@ -1,6 +1,7 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_column",
   "textures": {
-    "all": "huntlike:block/soul_monolith"
+    "end": "huntlike:block/soul_monolith_end",
+    "side": "huntlike:block/soul_monolith_side"
   }
 }

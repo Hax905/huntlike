@@ -234,7 +234,7 @@ public class HuntMenuScreen extends Screen {
 			int y0 = sy - size / 2;
 			boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
 			sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
-			g.blit(RenderPipelines.GUI_TEXTURED, ANKH, x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6, 128, 128, 128, 128);
+			g.blit(RenderPipelines.GUI_TEXTURED, ANKH, x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6, 26, 26, 26, 26);
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));
 				if (hover) {

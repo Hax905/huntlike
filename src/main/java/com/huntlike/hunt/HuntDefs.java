@@ -142,8 +142,23 @@ public final class HuntDefs {
 	 * A Gear-tab trade. The first result.size() costs are the gear being upgraded (one item each, in the same order as
 	 * result), so each new item keeps that item's enchantments.
 	 */
-	public record GearTrade(String name, int rank, List<Cost> cost, List<Item> result) {
+	public record GearTrade(String name, int rank, List<Cost> cost, List<Item> result, int chapter) {
+		/** A Rank-gated trade. */
+		public GearTrade(String name, int rank, List<Cost> cost, List<Item> result) {
+			this(name, rank, cost, result, -1);
+		}
 	}
+
+	/** Koro's restocks (Misc page): each appears once its questline chapter is finished. */
+	public static final List<GearTrade> ANIMAL_SPECIAL = List.of(
+			new GearTrade("Wooden Bell", 0, List.of(Cost.of(Items.OAK_LOG, 16), Cost.of(ModItems.THICK_HIDE, 1)),
+					List.of(com.huntlike.gear.ModKoro.WOODEN_BELL), 0),
+			new GearTrade("Golden Bell", 0, List.of(Cost.of(com.huntlike.gear.ModKoro.WOODEN_BELL, 1), Cost.of(Items.GOLD_INGOT, 10),
+					Cost.of(ModItems.THICK_HIDE, 2)), List.of(com.huntlike.gear.ModKoro.GOLDEN_BELL), 1),
+			new GearTrade("Mossy Bell", 0, List.of(Cost.of(com.huntlike.gear.ModKoro.GOLDEN_BELL, 1), Cost.of(ModItems.GOLDEN_MOSS, 1)),
+					List.of(com.huntlike.gear.ModKoro.MOSSY_BELL), 2),
+			new GearTrade("Koro Whakamate", 0, List.of(Cost.of(Items.OBSIDIAN, 10), Cost.of(Items.NETHER_STAR, 1),
+					Cost.of(ModItems.SPIRITUAL_CATALYST, 1)), List.of(com.huntlike.gear.ModKoro.KORO_WHAKAMATE), 3));
 
 	private static List<Cost> set(ModGear.ArmorSet set) {
 		return List.of(Cost.of(set.helmet(), 1), Cost.of(set.chestplate(), 1), Cost.of(set.leggings(), 1), Cost.of(set.boots(), 1));
@@ -193,9 +208,9 @@ public final class HuntDefs {
 		return -1;
 	}
 
-	/** Trades by page: 0 armor, 2 weapons (page 1 is Misc). */
+	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. */
 	public static List<GearTrade> trades(int page) {
-		return page == 0 ? ANIMAL_ARMOR : ANIMAL_WEAPONS;
+		return page == 0 ? ANIMAL_ARMOR : page == 1 ? ANIMAL_SPECIAL : ANIMAL_WEAPONS;
 	}
 
 	/** Ranks that unlock each chapter of the soul's questline (Koro for Animal). */

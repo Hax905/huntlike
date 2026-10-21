@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:koro/chapter2",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:mossy_bell"
+    },
+    "title": {
+      "translate": "advancements.huntlike.koro.chapter3.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.koro.chapter3.description"
+    },
+    "hidden": true,
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

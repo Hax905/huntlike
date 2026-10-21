@@ -70,5 +70,19 @@
   "entity.huntlike.canis_lupus": "Canis Lupus",
   "item.huntlike.mystery_concoction": "Mystery Concoction",
   "subtitles.huntlike.boss.moo": "Aurochs calls its herd",
-  "subtitles.huntlike.boss.howl": "Epicyon Haydeni howls"
+  "subtitles.huntlike.boss.howl": "Epicyon Haydeni howls",
+  "advancements.huntlike.koro.chapter1.title": "Koro the Craftsman",
+  "advancements.huntlike.koro.chapter1.description": "Help Koro craft the Wooden Bell.",
+  "advancements.huntlike.koro.chapter2.title": "The Sweet Sound of Gold",
+  "advancements.huntlike.koro.chapter2.description": "Help Koro craft the Golden Bell.",
+  "advancements.huntlike.koro.chapter3.title": "Sweet Sound of Appreciation",
+  "advancements.huntlike.koro.chapter3.description": "Help Koro craft the Mossy Bell.",
+  "advancements.huntlike.koro.final.title": "Koro's Last Will",
+  "advancements.huntlike.koro.final.description": "Receive Koro Whakamate.",
+  "item.huntlike.wooden_bell": "Wooden Bell",
+  "item.huntlike.golden_bell": "Golden Bell",
+  "item.huntlike.mossy_bell": "Mossy Bell",
+  "item.huntlike.koro_whakamate": "Koro Whakamate",
+  "item.huntlike.corrosive_stinger": "Corrosive Stinger",
+  "entity.huntlike.corrosive_stinger": "Corrosive Stinger"
 }

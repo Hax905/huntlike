@@ -636,20 +636,26 @@ public class HuntMenuScreen extends Screen {
 		if (hover) {
 			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 10 Logs -> 64 Tokens", WHITE),
 					colored("Any Overworld log works.", TEXT_GRAY),
-					colored("Shift-click: 100 Oak Logs -> 640 Tokens", TEXT_GRAY)), mouseX, mouseY);
+					colored("Shift-click: 100 Logs -> 640 Tokens", TEXT_GRAY)), mouseX, mouseY);
 		}
 		y += 58;
 		sprite(g, "panel_dark", px + 4, y, pw - 8, 44);
-		g.centeredText(this.font, colored("Questline - Spiritual Talk", WHITE), cx, y + 6, WHITE);
-		int nextRank = HuntDefs.QUESTLINE_RANKS[0];
-		boolean unlocked = progress().rank() >= nextRank;
-		Component label = Component.literal("[Click] - Rank " + HuntDefs.ROMAN[nextRank] + " Required");
-		boolean hoverTalk = button(g, px + 8, y + 20, pw - 16, 16, label, false, mouseX, mouseY, null);
-		if (hoverTalk) {
-			g.setComponentTooltipForNextFrame(this.font, List.of(
-					colored(unlocked ? "Koro's questline arrives in a later version." : "Unlocks at " + hunt.rankName(nextRank)
-							+ " (Rank " + HuntDefs.ROMAN[nextRank] + ")", TEXT_GRAY)), mouseX, mouseY);
+		g.centeredText(this.font, colored("Questline - Spiritual Connection", WHITE), cx, y + 6, WHITE);
+		int firstRank = HuntDefs.QUESTLINE_RANKS[0];
+		boolean met = progress().rank() >= firstRank;
+		HuntData data = ClientHuntState.data;
+		Component label;
+		if (!met) {
+			label = Component.literal("[Click] - Rank " + HuntDefs.ROMAN[firstRank] + " Required");
+		} else if (data.koroDone >= com.huntlike.hunt.KoroScript.CHAPTERS.size()) {
+			label = Component.literal("[Click] - Visit the Soul");
+		} else {
+			label = Component.literal("[Click] - Connect");
 		}
+		button(g, px + 8, y + 20, pw - 16, 16, label, met, mouseX, mouseY,
+				() -> this.minecraft.gui.setScreen(new KoroScreen(this)));
+		y += 50;
+		drawGearTrades(g, HuntDefs.ANIMAL_SPECIAL, y, mouseX, mouseY);
 	}
 
 	private void drawGearTrades(GuiGraphicsExtractor g, List<HuntDefs.GearTrade> trades, int y, int mouseX, int mouseY) {
@@ -660,7 +666,12 @@ public class HuntMenuScreen extends Screen {
 		int rank = progress().rank();
 		int total = 0;
 		for (HuntDefs.GearTrade trade : trades) {
-			total += entryHeight(trade.cost().size()) + 4;
+			if (shown(trade)) {
+				total += entryHeight(trade.cost().size()) + 4;
+			}
+		}
+		if (total == 0) {
+			return;
 		}
 		int maxScroll = Math.max(0, total - 4 - listH);
 		gearScroll = Math.max(0, Math.min(gearScroll, maxScroll));
@@ -668,6 +679,9 @@ public class HuntMenuScreen extends Screen {
 		int ey = listTop - gearScroll;
 		for (int t = 0; t < trades.size(); t++) {
 			HuntDefs.GearTrade trade = trades.get(t);
+			if (!shown(trade)) {
+				continue;
+			}
 			int value = gearPage * 100 + t;
 			boolean affordable = true;
 			for (HuntDefs.Cost cost : trade.cost()) {
@@ -743,6 +757,11 @@ public class HuntMenuScreen extends Screen {
 			}
 		}
 		return count;
+	}
+
+	/** Koro's restocks only appear once their chapter is finished. */
+	private static boolean shown(HuntDefs.GearTrade trade) {
+		return trade.chapter() < 0 || ClientHuntState.data.koroDone > trade.chapter();
 	}
 
 	private static int entryHeight(int costLines) {

@@ -32,6 +32,17 @@ public final class ModEntities {
 					.noSave()
 					.build(BOSS_EGG_KEY));
 
+	private static final ResourceKey<EntityType<?>> CORROSIVE_STINGER_KEY = ResourceKey.create(Registries.ENTITY_TYPE,
+			HuntLike.id("corrosive_stinger"));
+
+	public static final EntityType<CorrosiveStinger> CORROSIVE_STINGER = Registry.register(BuiltInRegistries.ENTITY_TYPE,
+			CORROSIVE_STINGER_KEY, EntityType.Builder.<CorrosiveStinger>of(CorrosiveStinger::new, MobCategory.MISC)
+					.sized(0.25F, 0.25F)
+					.clientTrackingRange(4)
+					.updateInterval(10)
+					.noSave()
+					.build(CORROSIVE_STINGER_KEY));
+
 	// Hunt bosses and Herd Call animals: their own entity types, so they carry their own names (also in death
 	// messages) and can get their own models later.
 	public static final EntityType<Sylviornis> SYLVIORNIS = animal("sylviornis", Sylviornis::new, 0.4F, 0.7F);

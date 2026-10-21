@@ -24,6 +24,7 @@ public class HuntLikeClient implements ClientModInitializer {
 			context.client().gui.toastManager().addToast(new GearToast(new net.minecraft.world.item.ItemStack(item), payload.name()));
 		});
 		EntityRendererRegistry.register(ModEntities.BOSS_EGG, ThrownItemRenderer::new);
+		EntityRendererRegistry.register(ModEntities.CORROSIVE_STINGER, ThrownItemRenderer::new);
 		EntityRendererRegistry.register(ModEntities.SYLVIORNIS, SylviornisRenderer::new);
 		EntityRendererRegistry.register(ModEntities.HYLOCHOERUS, HylochoerusRenderer::new);
 		EntityRendererRegistry.register(ModEntities.OVIS_AMMON, OvisAmmonRenderer::new);

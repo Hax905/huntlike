@@ -22,6 +22,9 @@ public final class HuntData {
 	public boolean concoction;
 	/** Opened a Hunt menu panel once in this world: the "click a symbol" hint stays hidden. */
 	public boolean hintSeen;
+	/** Koro: chapters finished (0-4), and steps shown of the chapter in progress (0 = not started). */
+	public int koroDone;
+	public int koroStep;
 	public final Map<String, Progress> progress = new HashMap<>();
 	/** The running quest, or null. */
 	public Quest quest;
@@ -65,6 +68,8 @@ public final class HuntData {
 		tag.putString("selected", selectedHunt);
 		tag.putBoolean("concoction", concoction);
 		tag.putBoolean("hintSeen", hintSeen);
+		tag.putInt("koroDone", koroDone);
+		tag.putInt("koroStep", koroStep);
 		CompoundTag hunts = new CompoundTag();
 		progress.forEach((id, p) -> {
 			CompoundTag h = new CompoundTag();
@@ -104,6 +109,8 @@ public final class HuntData {
 		data.selectedHunt = tag.getStringOr("selected", "animal");
 		data.concoction = tag.getBooleanOr("concoction", false);
 		data.hintSeen = tag.getBooleanOr("hintSeen", false);
+		data.koroDone = tag.getIntOr("koroDone", 0);
+		data.koroStep = tag.getIntOr("koroStep", 0);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");
 		for (String id : hunts.keySet()) {
 			CompoundTag h = hunts.getCompoundOrEmpty(id);

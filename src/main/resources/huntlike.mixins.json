@@ -3,6 +3,7 @@
 	"package": "com.huntlike.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"CreeperMixin",
 		"LivingEntityMixin",
 		"MobAccessor"
 	],

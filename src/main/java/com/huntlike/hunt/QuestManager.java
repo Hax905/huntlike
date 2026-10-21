@@ -69,6 +69,7 @@ public final class QuestManager {
 		ServerPlayNetworking.registerGlobalReceiver(HuntPayloads.Action.TYPE,
 				(payload, context) -> handleAction(context.player(), payload));
 		ServerTickEvents.END_SERVER_TICK.register(QuestManager::tick);
+		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.KoroWhakamateItem::tick);
 		ServerLivingEntityEvents.AFTER_DEATH.register(QuestManager::onDeath);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(BossController::allowDamage);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(com.huntlike.gear.GearEffects::allowDamage);
@@ -115,6 +116,7 @@ public final class QuestManager {
 			}
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
 			case "buy_gear" -> buyGear(player, data, hunt, action.value());
+			case "koro_click" -> KoroManager.click(player, data);
 			case "hint_seen" -> {
 				data.hintSeen = true;
 				save(player, data);
@@ -170,7 +172,7 @@ public final class QuestManager {
 	private static void buyGear(ServerPlayer player, HuntData data, Hunt hunt, int value) {
 		int page = value / 100;
 		int index = value % 100;
-		if (page != 0 && page != 2) {
+		if (page < 0 || page > 2) {
 			return;
 		}
 		List<HuntDefs.GearTrade> trades = HuntDefs.trades(page);
@@ -178,6 +180,10 @@ public final class QuestManager {
 			return;
 		}
 		HuntDefs.GearTrade trade = trades.get(index);
+		if (trade.chapter() >= 0 && data.koroDone <= trade.chapter()) {
+			player.sendSystemMessage(Messages.error("Finish Koro's chapter first."));
+			return;
+		}
 		if (data.progress(hunt.id()).rank() < trade.rank()) {
 			player.sendSystemMessage(Messages.error("Your Rank is too low for this trade."));
 			return;

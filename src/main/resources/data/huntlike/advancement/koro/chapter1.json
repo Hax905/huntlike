@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:wooden_bell"
+    },
+    "title": {
+      "translate": "advancements.huntlike.koro.chapter1.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.koro.chapter1.description"
+    },
+    "hidden": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

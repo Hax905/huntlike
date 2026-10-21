@@ -28,8 +28,8 @@ public final class ModBlocks {
 					.requiresCorrectToolForDrops().lightLevel(state -> 7),
 			Rarity.RARE);
 
-	/** Resistance I and creeper protection in a 17x17x17 cube (effect comes in a later version). */
-	public static final Block SOUL_MONOLITH = register("soul_monolith", Block::new,
+	/** Resistance I and creeper protection in a 17x17x17 cube. */
+	public static final Block SOUL_MONOLITH = register("soul_monolith", com.huntlike.block.SoulMonolithBlock::new,
 			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_BLUE).strength(4.0F, 1200.0F).sound(SoundType.STONE)
 					.requiresCorrectToolForDrops().lightLevel(state -> 10),
 			Rarity.EPIC);

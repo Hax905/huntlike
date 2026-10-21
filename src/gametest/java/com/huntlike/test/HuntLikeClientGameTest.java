@@ -161,6 +161,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> null);
 			tierFive(context, singleplayer);
 			gear(context, singleplayer);
+			koro(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -417,6 +418,111 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.getInput().pressKey(options -> options.keyTogglePerspective);
 		context.waitTicks(10);
 		context.takeScreenshot("21-ecocide-worn");
+	}
+
+	/** v0.5: Koro's four chapters, the bells, Koro Whakamate and the Soul Monolith. */
+	private static void koro(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		addProgress(singleplayer, 50500, 0);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			give(player, net.minecraft.world.item.Items.MUSHROOM_STEW, 1);
+			give(player, net.minecraft.world.item.Items.OAK_LOG, 16);
+			give(player, com.huntlike.registry.ModItems.THICK_HIDE, 3);
+			give(player, com.huntlike.registry.ModItems.LOW_QUALITY_MYSTERY_MEAT, 5);
+			give(player, net.minecraft.world.item.Items.IRON_INGOT, 5);
+			give(player, net.minecraft.world.item.Items.SAND, 10);
+			give(player, net.minecraft.world.item.Items.GOLD_INGOT, 10);
+			give(player, com.huntlike.registry.ModItems.DECENT_QUALITY_MYSTERY_MEAT, 3);
+			give(player, com.huntlike.registry.ModItems.GOLDEN_MOSS, 1);
+			give(player, com.huntlike.registry.ModItems.HIGH_QUALITY_MYSTERY_MEAT, 1);
+			give(player, com.huntlike.registry.ModItems.SPIRITUAL_CATALYST, 1);
+		});
+		context.waitTicks(5);
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(5);
+		context.takeScreenshot("22-misc-koro");
+		context.setScreen(() -> new com.huntlike.client.screen.KoroScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("23-koro-first-visit");
+		for (int i = 0; i < 400; i++) {
+			int done = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).koroDone);
+			if (done >= 4) {
+				break;
+			}
+			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+					new com.huntlike.network.HuntPayloads.Action("koro_click", "animal", 0)));
+			context.waitTicks(1);
+			if (i == 8) {
+				context.waitTicks(3);
+				context.takeScreenshot("24-koro-chapter1");
+			}
+			int stepNow = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).koroStep);
+			int doneNow = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).koroDone);
+			if (doneNow == 3 && stepNow == 20) {
+				context.waitTicks(3);
+				context.takeScreenshot("25-koro-final-quest");
+			}
+		}
+		context.waitTicks(5);
+		context.takeScreenshot("26-koro-finished");
+		check(singleplayer, "Koro questline finished", data -> data.koroDone == 4);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			ServerLevel level = player.level();
+			var inventory = player.getInventory();
+			boolean bell = false;
+			boolean dagger = false;
+			for (int i = 0; i < inventory.getContainerSize(); i++) {
+				bell |= inventory.getItem(i).is(com.huntlike.gear.ModKoro.MOSSY_BELL);
+				dagger |= inventory.getItem(i).is(com.huntlike.gear.ModKoro.KORO_WHAKAMATE);
+			}
+			HuntLike.LOGGER.info("[test] Koro rewards: Mossy Bell {} Koro Whakamate {}", bell, dagger);
+			if (!bell || !dagger) {
+				throw new AssertionError("Koro rewards missing");
+			}
+			// Mossy Bell: heal and Absorption II.
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModKoro.MOSSY_BELL));
+			player.getMainHandItem().use(level, player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			var absorption = player.getEffect(net.minecraft.world.effect.MobEffects.ABSORPTION);
+			HuntLike.LOGGER.info("[test] Mossy Bell absorption level {}", absorption == null ? -1 : absorption.getAmplifier());
+			if (absorption == null || absorption.getAmplifier() != 1) {
+				throw new AssertionError("Bell failed");
+			}
+			// Koro Whakamate on a cow (poison) and a zombie (wither).
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModKoro.KORO_WHAKAMATE));
+			var cow = EntityTypes.COW.create(level, EntitySpawnReason.COMMAND);
+			cow.snapTo(player.getX() + 1.5, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(cow);
+			player.attack(cow);
+			var zombie = EntityTypes.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+			zombie.snapTo(player.getX() - 1.5, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(zombie);
+			player.attack(zombie);
+			HuntLike.LOGGER.info("[test] Whakamate: cow poisoned {} burning {}, zombie withered {}",
+					cow.hasEffect(net.minecraft.world.effect.MobEffects.POISON), cow.isOnFire(),
+					zombie.hasEffect(net.minecraft.world.effect.MobEffects.WITHER));
+			if (!cow.hasEffect(net.minecraft.world.effect.MobEffects.POISON)
+					|| !zombie.hasEffect(net.minecraft.world.effect.MobEffects.WITHER)) {
+				throw new AssertionError("Koro Whakamate effects failed");
+			}
+			zombie.discard();
+			// Soul Monolith next to the player.
+			level.setBlockAndUpdate(player.blockPosition().offset(2, 0, 2), com.huntlike.registry.ModBlocks.SOUL_MONOLITH.defaultBlockState());
+		});
+		context.waitTicks(20);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			boolean resistance = player.hasEffect(net.minecraft.world.effect.MobEffects.RESISTANCE);
+			HuntLike.LOGGER.info("[test] Soul Monolith resistance {}", resistance);
+			if (!resistance) {
+				throw new AssertionError("Soul Monolith failed");
+			}
+		});
+		context.waitTicks(80);
+		check(singleplayer, "cow killed by Fatal Touch", data -> true);
 	}
 
 	private static void give(ServerPlayer player, net.minecraft.world.item.Item item, int count) {

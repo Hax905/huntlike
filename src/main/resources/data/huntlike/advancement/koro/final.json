@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:koro/chapter3",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:koro_whakamate"
+    },
+    "title": {
+      "translate": "advancements.huntlike.koro.final.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.koro.final.description"
+    },
+    "hidden": true,
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

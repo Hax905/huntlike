@@ -83,9 +83,10 @@ public class KoroScreen extends Screen {
 		return data.koroDone - 1;
 	}
 
-	private static Component itemName(Item item, HuntData data) {
+	private Component itemName(Item item, HuntData data) {
 		MutableComponent name = Component.literal(new ItemStack(item).getHoverName().getString()).withColor(LIGHT_BLUE);
-		if (item == ModItems.SPIRITUAL_CATALYST && !data.progress("animal").dropsSeen.contains("spiritual_catalyst")) {
+		if (item == ModItems.SPIRITUAL_CATALYST && !data.progress("animal").dropsSeen.contains("spiritual_catalyst")
+				&& carried(item) == 0) {
 			name = name.withStyle(style -> style.withObfuscated(true));
 		}
 		return name;

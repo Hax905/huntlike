@@ -18,9 +18,17 @@ public class GearToast implements Toast {
 	private final Component name;
 	private Visibility visibility = Visibility.SHOW;
 
+	private final int width;
+
 	public GearToast(ItemStack icon, String name) {
 		this.icon = icon;
 		this.name = Component.literal(name);
+		this.width = Math.max(160, 30 + net.minecraft.client.Minecraft.getInstance().font.width(name) + 8);
+	}
+
+	@Override
+	public int width() {
+		return width;
 	}
 
 	@Override

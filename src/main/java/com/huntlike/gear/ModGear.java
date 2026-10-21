@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -26,14 +25,13 @@ import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.EquipmentAssets;
 
 import com.huntlike.HuntLike;
+import com.huntlike.registry.Lore;
 import com.huntlike.registry.ModItems;
 
 /** The Animal Hunt Weapons and Hunt Armor. */
 public final class ModGear {
 	private ModGear() {
 	}
-
-	private static final int GOLD = 0xFFAA00;
 
 	// ---------------------------------------------------------------- weapons
 
@@ -64,9 +62,8 @@ public final class ModGear {
 
 	private static Item weapon(String name, int stage, ToolMaterial material, Rarity rarity, String description) {
 		List<Component> lore = new ArrayList<>();
-		lore.add(gray(description));
-		lore.add(Component.empty());
-		ability(lore, "Bountiful!", "Animal kills count double towards the quota.");
+		Lore.gray(lore, description);
+		Lore.ability(lore, "Bountiful!", "Animal kills count double towards the quota.");
 		if (stage >= 2) {
 			ability(lore, "Biohazard", "Grants " + Math.round((BIOHAZARD[stage] - 1) * 100) + "% more damage towards animals.");
 		}
@@ -123,9 +120,10 @@ public final class ModGear {
 		List<Component> lore = new ArrayList<>();
 		ability(lore, "Egg Shell", "Attacks that involve Eggs are nullified.");
 		ability(lore, "Animalistic", "The armor reacts to familiar tendencies of species and reduces damage from Animal creatures.");
-		lore.add(gray("-" + trim(reduction * 100) + "% damage from Animal creatures (full set)."));
+		lore.add(Component.empty());
+		Lore.gray(lore, "-" + percent(reduction) + "% damage from Animal creatures (full set).");
 		if (lunge > 0) {
-			lore.add(gray("-" + trim(lunge * 100) + "% Animalia Lunge knockback per piece."));
+			Lore.gray(lore, "-" + percent(lunge) + "% Animalia Lunge knockback per piece.");
 		}
 		ArmorType[] types = {ArmorType.HELMET, ArmorType.CHESTPLATE, ArmorType.LEGGINGS, ArmorType.BOOTS};
 		String[] names = {"helmet", "chestplate", "leggings", "boots"};
@@ -152,17 +150,14 @@ public final class ModGear {
 		return new ArmorSet(id, defense, toughness, health, reduction, lunge, items[0], items[1], items[2], items[3]);
 	}
 
-	private static String trim(float value) {
-		return value == Math.floor(value) ? String.valueOf((int) value) : String.valueOf(value);
-	}
-
-	private static Component gray(String text) {
-		return Component.literal(text).withStyle(style -> style.withColor(ChatFormatting.GRAY).withItalic(false));
+	/** 0.15 -> "15", 0.0125 -> "1.25". */
+	private static String percent(float fraction) {
+		java.math.BigDecimal value = java.math.BigDecimal.valueOf(Math.round(fraction * 10000) / 100.0).stripTrailingZeros();
+		return value.toPlainString();
 	}
 
 	private static void ability(List<Component> lore, String name, String description) {
-		lore.add(Component.literal(name).withStyle(style -> style.withColor(GOLD).withItalic(false)));
-		lore.add(gray(description));
+		Lore.ability(lore, name, description);
 	}
 
 	public static void initialize() {

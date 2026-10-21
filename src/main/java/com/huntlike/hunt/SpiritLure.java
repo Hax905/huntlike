@@ -133,7 +133,8 @@ public final class SpiritLure {
 		}
 
 		int rank = data.progress(quest.hunt).rank();
-		int interval = Math.max(1, 15 - rank) * 20;
+		// 10 seconds, one second less at Ranks II, IV, VI, VIII and X.
+		int interval = (10 - rank / 2) * 20;
 		int timer = TIMERS.merge(id, 1, Integer::sum);
 		if (timer < interval) {
 			return;

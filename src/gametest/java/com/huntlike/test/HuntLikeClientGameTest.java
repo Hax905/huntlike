@@ -153,8 +153,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("12-ranks-after");
 			context.setScreen(() -> new HuntMenuScreen(0));
 			context.waitTicks(3);
-			context.getInput().pressKey(InputConstants.KEY_RETURN);
-			context.waitTicks(3);
 			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(3);
 			context.takeScreenshot("13-boss-card-defeated");
@@ -183,7 +181,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		context.setScreen(() -> new HuntMenuScreen(0));
 		context.waitTicks(3);
-		context.getInput().pressKey(InputConstants.KEY_RETURN);
 		for (int i = 0; i < 4; i++) {
 			context.getInput().pressKey(InputConstants.KEY_D);
 		}

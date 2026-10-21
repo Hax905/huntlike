@@ -44,7 +44,8 @@ public final class Messages {
 	}
 
 	public static Component spiritLure(Hunt hunt) {
-		return c("SPIRIT LURE! ", HuntDefs.AQUA)
+		return c("SPIRIT LURE!", HuntDefs.AQUA).withStyle(style -> style.withBold(true))
+				.append(Component.literal(" "))
 				.append(c("Your quest is attracting ", HuntDefs.LIGHT_BLUE))
 				.append(c(hunt.name(), hunt.color()))
 				.append(c(" spirits", HuntDefs.PINK))

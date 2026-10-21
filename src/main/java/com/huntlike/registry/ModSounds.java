@@ -14,8 +14,6 @@ public final class ModSounds {
 
 	/** Aurochs calling its herd: a cow's moo. */
 	public static final SoundEvent BOSS_MOO = register("boss.moo");
-	/** Epicyon Haydeni calling its pack: a wolf's howl. */
-	public static final SoundEvent BOSS_HOWL = register("boss.howl");
 
 	private static SoundEvent register(String name) {
 		Identifier id = HuntLike.id(name);

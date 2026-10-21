@@ -108,6 +108,12 @@ public final class BossAbilities {
 		return STATES.computeIfAbsent(boss.getUUID(), id -> new State());
 	}
 
+	/** The deep growl of the big wolf variant: vanilla has no howl sound file. */
+	private static SoundEvent bigWolfGrowl() {
+		return SoundEvents.WOLF_SOUNDS.get(net.minecraft.world.entity.animal.wolf.WolfSoundVariants.SoundSet.BIG).adultSounds()
+				.growlSound().value();
+	}
+
 	public static void forget(UUID boss) {
 		STATES.remove(boss);
 	}
@@ -174,7 +180,7 @@ public final class BossAbilities {
 				state.herdTimer = 20;
 				state.freeze = 20;
 				boss.getNavigation().stop();
-				level.playSound(null, boss.blockPosition(), tier.number() >= 5 ? ModSounds.BOSS_HOWL : ModSounds.BOSS_MOO,
+				level.playSound(null, boss.blockPosition(), tier.number() >= 5 ? bigWolfGrowl() : ModSounds.BOSS_MOO,
 						SoundSource.HOSTILE, 2.0F, 0.8F);
 				return;
 			}

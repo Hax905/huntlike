@@ -7,22 +7,5 @@
       "minecraft:mob/cow/say3",
       "minecraft:mob/cow/say4"
     ]
-  },
-  "boss.howl": {
-    "subtitle": "subtitles.huntlike.boss.howl",
-    "sounds": [
-      {
-        "name": "minecraft:mob/wolf/growl1",
-        "pitch": 0.6
-      },
-      {
-        "name": "minecraft:mob/wolf/growl2",
-        "pitch": 0.6
-      },
-      {
-        "name": "minecraft:mob/wolf/growl3",
-        "pitch": 0.6
-      }
-    ]
   }
 }

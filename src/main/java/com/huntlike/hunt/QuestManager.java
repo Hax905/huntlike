@@ -70,6 +70,7 @@ public final class QuestManager {
 		ServerTickEvents.END_SERVER_TICK.register(QuestManager::tick);
 		ServerLivingEntityEvents.AFTER_DEATH.register(QuestManager::onDeath);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(BossController::allowDamage);
+		ServerLivingEntityEvents.ALLOW_DAMAGE.register(com.huntlike.gear.GearEffects::allowDamage);
 		ServerLivingEntityEvents.AFTER_DAMAGE.register(BossController::afterDamage);
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sync(handler.player));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> onLogout(handler.player));
@@ -112,6 +113,7 @@ public final class QuestManager {
 				}
 			}
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
+			case "buy_gear" -> buyGear(player, data, hunt, action.value());
 			default -> {
 			}
 		}
@@ -146,6 +148,86 @@ public final class QuestManager {
 		data.progress(hunt.id()).tokens += tokens;
 		save(player, data);
 		playSound(player, SoundEvents.WOOD_PLACE, 1.0F);
+	}
+
+	private static int count(Inventory inventory, net.minecraft.world.item.Item item) {
+		int have = 0;
+		for (int i = 0; i < inventory.getContainerSize(); i++) {
+			ItemStack stack = inventory.getItem(i);
+			if (stack.is(item)) {
+				have += stack.getCount();
+			}
+		}
+		return have;
+	}
+
+	/** Buys a Gear trade. value = page * 100 + index (page 0 armor, 2 weapons). Upgrades keep enchantments. */
+	private static void buyGear(ServerPlayer player, HuntData data, Hunt hunt, int value) {
+		int page = value / 100;
+		int index = value % 100;
+		if (page != 0 && page != 2) {
+			return;
+		}
+		List<HuntDefs.GearTrade> trades = HuntDefs.trades(page);
+		if (index < 0 || index >= trades.size()) {
+			return;
+		}
+		HuntDefs.GearTrade trade = trades.get(index);
+		if (data.progress(hunt.id()).rank() < trade.rank()) {
+			player.sendSystemMessage(Messages.error("Your Rank is too low for this trade."));
+			return;
+		}
+		Inventory inventory = player.getInventory();
+		for (HuntDefs.Cost cost : trade.cost()) {
+			int have = count(inventory, cost.item());
+			if (have < cost.count()) {
+				player.sendSystemMessage(Messages.error("Missing " + new ItemStack(cost.item()).getHoverName().getString() + " x"
+						+ (cost.count() - have) + "."));
+				return;
+			}
+		}
+		int upgraded = trade.result().size();
+		ItemStack[] sources = new ItemStack[upgraded];
+		int[] sourceSlots = new int[upgraded];
+		for (int c = 0; c < trade.cost().size(); c++) {
+			HuntDefs.Cost cost = trade.cost().get(c);
+			int left = cost.count();
+			for (int i = 0; i < inventory.getContainerSize() && left > 0; i++) {
+				ItemStack stack = inventory.getItem(i);
+				if (!stack.is(cost.item())) {
+					continue;
+				}
+				if (c < upgraded && sources[c] == null) {
+					sources[c] = stack.copyWithCount(1);
+					sourceSlots[c] = i;
+				}
+				int take = Math.min(left, stack.getCount());
+				stack.shrink(take);
+				left -= take;
+			}
+		}
+		for (int i = 0; i < upgraded; i++) {
+			ItemStack result = new ItemStack(trade.result().get(i));
+			if (sources[i] != null) {
+				var enchantments = sources[i].get(net.minecraft.core.component.DataComponents.ENCHANTMENTS);
+				if (enchantments != null) {
+					result.set(net.minecraft.core.component.DataComponents.ENCHANTMENTS, enchantments);
+				}
+				var name = sources[i].get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+				if (name != null) {
+					result.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, name);
+				}
+			}
+			if (sources[i] != null && inventory.getItem(sourceSlots[i]).isEmpty()) {
+				inventory.setItem(sourceSlots[i], result);
+			} else {
+				giveStack(player, result);
+			}
+		}
+		inventory.setChanged();
+		player.inventoryMenu.broadcastChanges();
+		player.sendSystemMessage(Messages.c("Obtained " + trade.name() + "!", HuntDefs.GOLD));
+		playSound(player, SoundEvents.SMITHING_TABLE_USE, 1.0F);
 	}
 
 	// ---------------------------------------------------------------- quest lifecycle
@@ -357,7 +439,7 @@ public final class QuestManager {
 		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !quest.hunt.equals("animal") || isPeaceful(killer)) {
 			return;
 		}
-		quest.kills = Math.min(quest.quota, quest.kills + 1);
+		quest.kills = Math.min(quest.quota, quest.kills + com.huntlike.gear.GearEffects.quotaKills(killer));
 		SpiritLure.onQuotaKill(killer);
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		killer.sendSystemMessage(Messages.quota(hunt, quest.kills, quest.quota), true);

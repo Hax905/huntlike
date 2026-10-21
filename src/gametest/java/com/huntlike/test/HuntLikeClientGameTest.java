@@ -161,6 +161,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("14-lore-tooltip");
 			context.setScreen(() -> null);
 			tierFive(context, singleplayer);
+			gear(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -259,6 +260,124 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(20);
 		check(singleplayer, "tier V complete", data -> data.quest == null && data.progress("animal").bossKills[4] == 1);
 		context.takeScreenshot("18-tier5-complete");
+	}
+
+	/** v0.4: buy every weapon and armor stage, then check their effects. */
+	private static void gear(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		addProgress(singleplayer, 26500, 0);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			var sharpness = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+					.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
+			var sword = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD);
+			sword.enchant(sharpness, 5);
+			QuestManager.giveStack(player, sword);
+			give(player, com.huntlike.registry.ModItems.LOW_QUALITY_MYSTERY_MEAT, 5);
+			give(player, com.huntlike.registry.ModItems.DECENT_QUALITY_MYSTERY_MEAT, 10);
+			give(player, com.huntlike.registry.ModItems.HIGH_QUALITY_MYSTERY_MEAT, 3);
+			give(player, com.huntlike.registry.ModItems.LARGE_FEMUR, 2);
+			give(player, com.huntlike.registry.ModItems.THICK_HIDE, 4);
+			give(player, net.minecraft.world.item.Items.IRON_INGOT, 5);
+			give(player, net.minecraft.world.item.Items.DIAMOND, 6);
+			give(player, net.minecraft.world.item.Items.SOUL_SAND, 8);
+			give(player, net.minecraft.world.item.Items.BONE_MEAL, 12);
+			give(player, net.minecraft.world.item.Items.OBSIDIAN, 8);
+			give(player, net.minecraft.world.item.Items.OAK_LOG, 64);
+			give(player, net.minecraft.world.item.Items.OAK_LEAVES, 32);
+			give(player, net.minecraft.world.item.Items.LEATHER, 16);
+			give(player, net.minecraft.world.item.Items.BONE, 16);
+			for (var piece : new net.minecraft.world.item.Item[] {net.minecraft.world.item.Items.LEATHER_HELMET,
+					net.minecraft.world.item.Items.LEATHER_CHESTPLATE, net.minecraft.world.item.Items.LEATHER_LEGGINGS,
+					net.minecraft.world.item.Items.LEATHER_BOOTS}) {
+				give(player, piece, 1);
+			}
+		});
+		context.waitTicks(10);
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(3);
+		context.getInput().pressKey(InputConstants.KEY_RETURN);
+		context.getInput().pressKey(InputConstants.KEY_D);
+		context.waitTicks(5);
+		context.takeScreenshot("19-gear-weapons-affordable");
+		for (int value : new int[] {200, 201, 202, 203, 204, 0, 1, 2}) {
+			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+					new com.huntlike.network.HuntPayloads.Action("buy_gear", "animal", value)));
+			context.waitTicks(5);
+		}
+		context.setScreen(() -> null);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var inventory = player.getInventory();
+			net.minecraft.world.item.ItemStack weapon = net.minecraft.world.item.ItemStack.EMPTY;
+			int ecocide = 0;
+			for (int i = 0; i < inventory.getContainerSize(); i++) {
+				var stack = inventory.getItem(i);
+				if (stack.is(com.huntlike.gear.ModGear.BONE_PULVERIZER)) {
+					weapon = stack;
+				}
+				if (com.huntlike.gear.ModGear.armorSetOf(stack.getItem()) == com.huntlike.gear.ModGear.ECOCIDE) {
+					ecocide++;
+				}
+			}
+			var sharpness = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+					.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
+			int level = weapon.isEmpty() ? -1 : weapon.getEnchantments().getLevel(sharpness);
+			HuntLike.LOGGER.info("[test] gear bought: pulverizer {} (Sharpness {}), ecocide pieces {}", !weapon.isEmpty(), level, ecocide);
+			if (weapon.isEmpty() || level != 5 || ecocide != 4) {
+				throw new AssertionError("Gear purchase failed");
+			}
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, weapon.copy());
+			weapon.setCount(0);
+			for (int i = 0; i < inventory.getContainerSize(); i++) {
+				var stack = inventory.getItem(i);
+				var set = com.huntlike.gear.ModGear.armorSetOf(stack.getItem());
+				if (set == com.huntlike.gear.ModGear.ECOCIDE) {
+					var slot = stack.get(net.minecraft.core.component.DataComponents.EQUIPPABLE).slot();
+					player.setItemSlot(slot, stack.copy());
+					stack.setCount(0);
+				}
+			}
+		});
+		context.waitTicks(10);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			ServerLevel level = player.level();
+			HuntLike.LOGGER.info("[test] Ecocide worn: armor {} toughness {} max health {}", player.getArmorValue(),
+					player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS), player.getMaxHealth());
+			var cow = EntityTypes.COW.create(level, EntitySpawnReason.COMMAND);
+			cow.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(100.0);
+			cow.setHealth(100.0F);
+			cow.snapTo(player.getX() + 1.5, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(cow);
+			player.attack(cow);
+			boolean slowed = cow.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS);
+			HuntLike.LOGGER.info("[test] Bone Pulverizer hit on a cow: {} damage, Fracture {}", 100.0F - cow.getHealth(), slowed);
+			if (100.0F - cow.getHealth() < 13.0F || !slowed) {
+				throw new AssertionError("Biohazard or Fracture failed");
+			}
+			var boss = EntityTypes.CHICKEN.create(level, EntitySpawnReason.COMMAND);
+			boss.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0.0F, 0.0F);
+			var egg = new com.huntlike.entity.BossEgg(level, boss, 2.0F);
+			boolean allowed = com.huntlike.gear.GearEffects.allowDamage(player, level.damageSources().thrown(egg, boss), 2.0F);
+			HuntLike.LOGGER.info("[test] Egg Shell blocks eggs: {}", !allowed);
+			if (allowed) {
+				throw new AssertionError("Egg Shell failed");
+			}
+		});
+		context.setScreen(() -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(
+				net.minecraft.client.Minecraft.getInstance().player));
+		context.waitTicks(10);
+		context.takeScreenshot("20-ecocide-inventory");
+		context.setScreen(() -> null);
+		context.getInput().pressKey(options -> options.keyTogglePerspective);
+		context.getInput().pressKey(options -> options.keyTogglePerspective);
+		context.waitTicks(10);
+		context.takeScreenshot("21-ecocide-worn");
+	}
+
+	private static void give(ServerPlayer player, net.minecraft.world.item.Item item, int count) {
+		QuestManager.giveStack(player, new net.minecraft.world.item.ItemStack(item, count));
 	}
 
 	private static void hitBoss(TestSingleplayerContext singleplayer, float amount) {

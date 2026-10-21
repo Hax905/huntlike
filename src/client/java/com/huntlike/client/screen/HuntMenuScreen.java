@@ -552,25 +552,29 @@ public class HuntMenuScreen extends Screen {
 		gearScroll = Math.max(0, Math.min(gearScroll, maxScroll));
 		g.enableScissor(listX, listTop, listX + listW, listTop + listH);
 		int ey = listTop - gearScroll;
-		for (HuntDefs.GearTrade trade : trades) {
+		for (int t = 0; t < trades.size(); t++) {
+			HuntDefs.GearTrade trade = trades.get(t);
+			int value = gearPage * 100 + t;
+			boolean affordable = true;
+			for (HuntDefs.Cost cost : trade.cost()) {
+				affordable &= countInInventory(cost) >= cost.count();
+			}
 			int h = entryHeight(trade.cost().size());
 			sprite(g, "panel_dark", listX, ey, listW, h);
 			boolean unlocked = rank >= trade.rank();
 			g.text(this.font, colored(trade.name(), unlocked ? HuntDefs.GOLD : 0x8A8A8A), listX + 5, ey + 4, WHITE, false);
 			int ly = ey + 15;
 			for (HuntDefs.Cost cost : trade.cost()) {
-				boolean have = cost.item() != null && countInInventory(cost) >= cost.count();
-				String name = cost.item() != null ? new ItemStack(cost.item()).getHoverName().getString() : cost.label();
+				boolean have = countInInventory(cost) >= cost.count();
+				String name = new ItemStack(cost.item()).getHoverName().getString();
 				g.text(this.font, colored("- " + name + " x" + cost.count(), have ? 0xFFFFFF : HuntDefs.RED), listX + 5, ly, WHITE, false);
 				ly += 9;
 			}
 			Component label = unlocked ? Component.literal("[Click] - Buy") : Component.literal("Rank Required: [?]");
 			if (ey + h > listTop && ey < listTop + listH) {
-				boolean hover = button(g, listX + 4, ly + 2, listW - 8, 14, label, false, mouseX, mouseY, null);
-				if (hover && unlocked && mouseY >= listTop && mouseY < listTop + listH) {
-					g.setComponentTooltipForNextFrame(this.font, List.of(colored("Buying arrives in v0.4.", TEXT_GRAY)), mouseX,
-							mouseY);
-				}
+				boolean inside = mouseY >= listTop && mouseY < listTop + listH;
+				button(g, listX + 4, ly + 2, listW - 8, 14, label, unlocked && affordable, mouseX, mouseY,
+						inside ? () -> ClientPlayNetworking.send(new HuntPayloads.Action("buy_gear", hunt().id(), value)) : null);
 			}
 			ey += h + 4;
 		}

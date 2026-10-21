@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "huntlike:skin_knife",
+    "huntlike:meat_cutter",
+    "huntlike:limb_severer",
+    "huntlike:bone_breaker",
+    "huntlike:bone_pulverizer"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "huntlike:ecocide"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "huntlike:ecocide"
+      }
+    ]
+  }
+}

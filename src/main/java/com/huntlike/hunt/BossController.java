@@ -77,6 +77,7 @@ public final class BossController {
 			MELEE_COOLDOWN.remove(boss.getUUID());
 			BossAbilities.discardHerd(boss);
 			BossAbilities.forget(boss.getUUID());
+			com.huntlike.gear.GearEffects.forgetBoss(boss.getUUID());
 			boss.discard();
 		}
 	}
@@ -262,6 +263,7 @@ public final class BossController {
 			BossAbilities.discardHerd(mob);
 		}
 		BossAbilities.forget(entity.getUUID());
+		com.huntlike.gear.GearEffects.forgetBoss(entity.getUUID());
 		UUID ownerId = ownerOf(entity);
 		if (ownerId == null || !(entity.level() instanceof ServerLevel level)) {
 			return;

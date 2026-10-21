@@ -33,6 +33,8 @@ public final class ModCreativeTab {
 				output.accept(ModItems.SPIRITUAL_CATALYST);
 				output.accept(ModItems.SOUL_STONE);
 				output.accept(ModBlocks.SOUL_MONOLITH);
+				com.huntlike.gear.ModGear.WEAPONS.forEach(output::accept);
+				com.huntlike.gear.ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
 			})
 			.build();
 

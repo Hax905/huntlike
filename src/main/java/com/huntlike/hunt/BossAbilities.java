@@ -197,9 +197,9 @@ public final class BossAbilities {
 		}
 	}
 
-	/** Ecocide Armor's Lunge knockback resistance (Hunt armor arrives in a later version). */
+	/** Ecocide Armor's Lunge knockback resistance. */
 	private static double knockbackResistance(ServerPlayer owner) {
-		return 0.0;
+		return com.huntlike.gear.GearEffects.lungeResistance(owner);
 	}
 
 	// ---------------------------------------------------------------- Herd Call

@@ -9,6 +9,7 @@ import net.fabricmc.api.ModInitializer;
 
 import com.huntlike.command.HuntCommand;
 import com.huntlike.entity.ModEntities;
+import com.huntlike.gear.ModGear;
 import com.huntlike.hunt.QuestManager;
 import com.huntlike.loot.ModLoot;
 import com.huntlike.network.HuntPayloads;
@@ -24,6 +25,7 @@ public class HuntLike implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ModItems.initialize();
+		ModGear.initialize();
 		ModBlocks.initialize();
 		ModCreativeTab.initialize();
 		ModLoot.initialize();

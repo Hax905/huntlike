@@ -1,0 +1,109 @@
+package com.huntlike.gear;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+
+import com.huntlike.entity.BossEgg;
+import com.huntlike.hunt.BossAbilities;
+import com.huntlike.hunt.BossController;
+import com.huntlike.hunt.QuestManager;
+
+/** What the Animal Hunt Weapons and Armor do in a fight. */
+public final class GearEffects {
+	private GearEffects() {
+	}
+
+	private static final EquipmentSlot[] ARMOR_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+	/** Momentum stacks: boss -> player -> hits. */
+	private static final Map<UUID, Map<UUID, Integer>> MOMENTUM = new HashMap<>();
+
+	/** Animal mobs (the quota animals), Animal bosses and their herds. */
+	public static boolean isAnimal(Entity entity) {
+		return entity.getType().builtInRegistryHolder().is(QuestManager.QUOTA_ANIMALS)
+				|| entity instanceof LivingEntity living && BossController.isBoss(living)
+				|| BossAbilities.isHerd(entity);
+	}
+
+	/** Called with every damage amount, before armor: Biohazard, Momentum, Fracture and Animalistic. */
+	public static float adjustDamage(LivingEntity target, DamageSource source, float amount) {
+		Entity attacker = source.getEntity();
+		if (attacker instanceof ServerPlayer player && source.getDirectEntity() == player && isAnimal(target)) {
+			int stage = ModGear.weaponStage(player.getMainHandItem().getItem());
+			if (stage > 0) {
+				amount *= ModGear.BIOHAZARD[stage];
+				if (stage >= 3 && BossController.isBoss(target)) {
+					Map<UUID, Integer> stacks = MOMENTUM.computeIfAbsent(target.getUUID(), id -> new HashMap<>());
+					int hits = stacks.getOrDefault(player.getUUID(), 0);
+					amount *= 1.0F + Math.min(ModGear.MOMENTUM_CAP[stage], ModGear.MOMENTUM_STEP[stage] * hits);
+					stacks.put(player.getUUID(), hits + 1);
+				}
+				if (stage >= 5) {
+					target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20 * 3, 1), player);
+				}
+			}
+		}
+		if (target instanceof Player player && attacker != null && isAnimal(attacker) && !source.is(BossAbilities.SOUL_STRIKE)) {
+			float reduction = 0.0F;
+			for (EquipmentSlot slot : ARMOR_SLOTS) {
+				ModGear.ArmorSet set = ModGear.armorSetOf(player.getItemBySlot(slot).getItem());
+				if (set != null) {
+					reduction += set.animalReduction();
+				}
+			}
+			amount *= 1.0F - reduction;
+		}
+		return amount;
+	}
+
+	/** Egg Shell: a full set of Animal Hunt Armor ignores Egg Blaster's eggs. */
+	public static boolean allowDamage(LivingEntity entity, DamageSource source, float amount) {
+		if (entity instanceof Player player && source.getDirectEntity() instanceof BossEgg) {
+			return armorPieces(player) < 4;
+		}
+		return true;
+	}
+
+	/** How many Animal Hunt Armor pieces the player wears. */
+	public static int armorPieces(Player player) {
+		int pieces = 0;
+		for (EquipmentSlot slot : ARMOR_SLOTS) {
+			if (ModGear.armorSetOf(player.getItemBySlot(slot).getItem()) != null) {
+				pieces++;
+			}
+		}
+		return pieces;
+	}
+
+	/** Ecocide Armor: 20% less Animalia Lunge knockback per piece. */
+	public static double lungeResistance(Player player) {
+		double resistance = 0.0;
+		for (EquipmentSlot slot : ARMOR_SLOTS) {
+			ModGear.ArmorSet set = ModGear.armorSetOf(player.getItemBySlot(slot).getItem());
+			if (set != null) {
+				resistance += set.lungeResistance();
+			}
+		}
+		return Math.min(1.0, resistance);
+	}
+
+	/** Bountiful!: a kill with an Animal Hunt Weapon counts double. */
+	public static int quotaKills(ServerPlayer killer) {
+		ItemStack hand = killer.getMainHandItem();
+		return ModGear.weaponStage(hand.getItem()) > 0 ? 2 : 1;
+	}
+
+	public static void forgetBoss(UUID boss) {
+		MOMENTUM.remove(boss);
+	}
+}

@@ -54,14 +54,10 @@ public final class GearEffects {
 			}
 		}
 		if (target instanceof Player player && attacker != null && isAnimal(attacker) && !source.is(BossAbilities.SOUL_STRIKE)) {
-			float reduction = 0.0F;
-			for (EquipmentSlot slot : ARMOR_SLOTS) {
-				ModGear.ArmorSet set = ModGear.armorSetOf(player.getItemBySlot(slot).getItem());
-				if (set != null) {
-					reduction += set.animalReduction();
-				}
+			ModGear.ArmorSet set = fullSet(player);
+			if (set != null) {
+				amount *= 1.0F - set.animalReduction();
 			}
-			amount *= 1.0F - reduction;
 		}
 		return amount;
 	}
@@ -72,6 +68,19 @@ public final class GearEffects {
 			return armorPieces(player) < 4;
 		}
 		return true;
+	}
+
+	/** The armor set the player wears all four pieces of, or null. */
+	public static ModGear.ArmorSet fullSet(Player player) {
+		ModGear.ArmorSet first = null;
+		for (EquipmentSlot slot : ARMOR_SLOTS) {
+			ModGear.ArmorSet set = ModGear.armorSetOf(player.getItemBySlot(slot).getItem());
+			if (set == null || first != null && set != first) {
+				return null;
+			}
+			first = set;
+		}
+		return first;
 	}
 
 	/** How many Animal Hunt Armor pieces the player wears. */

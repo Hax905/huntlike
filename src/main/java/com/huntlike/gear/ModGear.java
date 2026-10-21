@@ -86,7 +86,7 @@ public final class ModGear {
 
 	// ---------------------------------------------------------------- armor
 
-	/** One Hunt Armor set. defense is helmet, chestplate, leggings, boots. */
+	/** One Hunt Armor set. defense is helmet, chestplate, leggings, boots; animalReduction needs the full set. */
 	public record ArmorSet(String id, double[] defense, double toughness, int health, float animalReduction,
 			float lungeResistance, Item helmet, Item chestplate, Item leggings, Item boots) {
 		public List<Item> pieces() {
@@ -94,9 +94,9 @@ public final class ModGear {
 		}
 	}
 
-	public static final ArmorSet ROTTEN = armorSet("rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.0125F, 0, Rarity.UNCOMMON);
-	public static final ArmorSet CARRION = armorSet("carrion", new double[] {2.5, 6.5, 5.5, 2.5}, 0, 2, 0.025F, 0, Rarity.RARE);
-	public static final ArmorSet ECOCIDE = armorSet("ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.0375F, 0.20F, Rarity.EPIC);
+	public static final ArmorSet ROTTEN = armorSet("rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.05F, 0, Rarity.UNCOMMON);
+	public static final ArmorSet CARRION = armorSet("carrion", new double[] {2.5, 6.5, 5.5, 2.5}, 0, 2, 0.10F, 0, Rarity.RARE);
+	public static final ArmorSet ECOCIDE = armorSet("ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.15F, 0.20F, Rarity.EPIC);
 
 	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE);
 
@@ -123,7 +123,7 @@ public final class ModGear {
 		List<Component> lore = new ArrayList<>();
 		ability(lore, "Egg Shell", "Attacks that involve Eggs are nullified.");
 		ability(lore, "Animalistic", "The armor reacts to familiar tendencies of species and reduces damage from Animal creatures.");
-		lore.add(gray("-" + trim(reduction * 100) + "% damage from Animal creatures per piece."));
+		lore.add(gray("-" + trim(reduction * 100) + "% damage from Animal creatures (full set)."));
 		if (lunge > 0) {
 			lore.add(gray("-" + trim(lunge * 100) + "% Animalia Lunge knockback per piece."));
 		}

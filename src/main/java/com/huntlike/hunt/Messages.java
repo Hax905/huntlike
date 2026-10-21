@@ -85,11 +85,11 @@ public final class Messages {
 		int i = Math.max(1, Math.min(4, dropClass));
 		int color = DROP_COLORS[i];
 		return Component.empty().withStyle(style -> style.withBold(true))
-				.append(c("ABC", color).withStyle(style -> style.withObfuscated(true)))
+				.append(c("ABC", 0xFFFFFF).withStyle(style -> style.withObfuscated(true)))
 				.append(c(" " + DROP_LABELS[i], color))
 				.append(itemName.copy())
 				.append(c(" ", color))
-				.append(c("ABC", color).withStyle(style -> style.withObfuscated(true)));
+				.append(c("ABC", 0xFFFFFF).withStyle(style -> style.withObfuscated(true)));
 	}
 
 	public static Component error(String text) {

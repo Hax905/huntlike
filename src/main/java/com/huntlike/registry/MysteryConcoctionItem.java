@@ -23,7 +23,7 @@ public class MysteryConcoctionItem extends Item {
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
 		if (player instanceof ServerPlayer serverPlayer && QuestManager.data(serverPlayer).concoction) {
-			serverPlayer.sendSystemMessage(Messages.c("Your stomach refuses another bite...", 0xAAAAAA));
+			serverPlayer.sendSystemMessage(Messages.c("You would never eat this again...", 0xAAAAAA));
 			return InteractionResult.FAIL;
 		}
 		return super.use(level, player, hand);
@@ -34,12 +34,12 @@ public class MysteryConcoctionItem extends Item {
 		if (entity instanceof ServerPlayer player) {
 			HuntData data = QuestManager.data(player);
 			if (data.concoction) {
-				player.sendSystemMessage(Messages.c("Your stomach refuses another bite...", 0xAAAAAA));
+				player.sendSystemMessage(Messages.c("You would never eat this again...", 0xAAAAAA));
 				return stack;
 			}
 			data.concoction = true;
 			player.setAttached(QuestManager.DATA, data);
-			player.sendSystemMessage(Messages.c("Your stomach churns... Rare drops now come a little easier.", 0xFF55FF));
+			player.sendSystemMessage(Messages.c("Deities laugh for your act and favor your luck on Animal creatures!", 0xFF55FF));
 			QuestManager.playSound(player, SoundEvents.ZOMBIE_VILLAGER_CURE, 1.4F);
 			QuestManager.sync(player);
 		}

@@ -53,7 +53,22 @@ public final class HuntPayloads {
 		}
 	}
 
+	/** Server to client: show the "gear obtained" popup for an item. */
+	public record GearToast(String itemId, String name) implements CustomPacketPayload {
+		public static final Type<GearToast> TYPE = new Type<>(HuntLike.id("gear_toast"));
+		public static final StreamCodec<ByteBuf, GearToast> CODEC = StreamCodec.composite(
+				ByteBufCodecs.STRING_UTF8, GearToast::itemId,
+				ByteBufCodecs.STRING_UTF8, GearToast::name,
+				GearToast::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public static void initialize() {
+		PayloadTypeRegistry.clientboundPlay().register(GearToast.TYPE, GearToast.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Sync.TYPE, Sync.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(OpenMenu.TYPE, OpenMenu.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(Action.TYPE, Action.CODEC);

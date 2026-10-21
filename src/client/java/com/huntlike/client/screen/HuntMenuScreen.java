@@ -203,34 +203,19 @@ public class HuntMenuScreen extends Screen {
 
 	// ---------------------------------------------------------------- the "click a symbol" hint, shown until first used
 
-	private static Boolean hintSeen;
-
-	private static java.nio.file.Path settingsFile() {
-		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("huntlike-client.properties");
-	}
-
+	/** The hint is remembered per world or server, in the player's Hunt data. */
 	private static boolean hintSeen() {
-		if (hintSeen == null) {
-			try {
-				hintSeen = java.nio.file.Files.readString(settingsFile()).contains("hintSeen=true");
-			} catch (java.io.IOException e) {
-				hintSeen = false;
-			}
-		}
-		return hintSeen;
+		return ClientHuntState.data.hintSeen;
 	}
 
 	private static void markHintSeen() {
 		if (hintSeen()) {
 			return;
 		}
-		hintSeen = true;
-		try {
-			java.nio.file.Files.writeString(settingsFile(), "hintSeen=true\n");
-		} catch (java.io.IOException e) {
-			HuntLike.LOGGER.warn("Could not save HuntLike client settings", e);
-		}
+		ClientHuntState.data.hintSeen = true;
+		ClientPlayNetworking.send(new HuntPayloads.Action("hint_seen", "animal", 0));
 	}
+
 
 	/** Unselected tabs are drawn behind the window, the selected tab in front so it joins the window. */
 	private void drawTabs(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean selectedPass) {
@@ -402,7 +387,7 @@ public class HuntMenuScreen extends Screen {
 		for (Ability ability : tier.abilities()) {
 			lines.add(colored(ability.name(), HuntDefs.GOLD).getVisualOrderText());
 			colors.add(WHITE);
-			for (FormattedCharSequence line : this.font.split(colored(ability.description(), TEXT_GRAY), w - 10)) {
+			for (FormattedCharSequence line : this.font.split(colored(ability.description(), TEXT_GRAY), w - 14)) {
 				lines.add(line);
 				colors.add(WHITE);
 			}
@@ -418,10 +403,15 @@ public class HuntMenuScreen extends Screen {
 			g.text(this.font, lines.get(i), x + 4, ly, colors.get(i), false);
 		}
 		g.disableScissor();
+		// Scroll bar: a dark track, with a handle when there is more to read.
+		g.fill(x + w - 5, viewTop, x + w - 1, viewTop + viewH, 0xFF1A1A1A);
 		if (maxScroll > 0) {
-			int barH = Math.max(8, viewH * viewH / (lines.size() * lineH));
+			int barH = Math.max(10, viewH * viewH / (lines.size() * lineH));
 			int barY = viewTop + (viewH - barH) * abilityScroll / maxScroll;
-			g.fill(x + w - 3, barY, x + w - 1, barY + barH, 0xFF8A8A8A);
+			g.fill(x + w - 5, barY, x + w - 1, barY + barH, 0xFFC6C6C6);
+			g.fill(x + w - 2, barY, x + w - 1, barY + barH, 0xFF8B8B8B);
+		} else {
+			g.fill(x + w - 5, viewTop, x + w - 1, viewTop + viewH, 0xFF555555);
 		}
 	}
 

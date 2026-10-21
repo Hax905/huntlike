@@ -115,6 +115,10 @@ public final class QuestManager {
 			}
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
 			case "buy_gear" -> buyGear(player, data, hunt, action.value());
+			case "hint_seen" -> {
+				data.hintSeen = true;
+				save(player, data);
+			}
 			default -> {
 			}
 		}
@@ -227,7 +231,8 @@ public final class QuestManager {
 		}
 		inventory.setChanged();
 		player.inventoryMenu.broadcastChanges();
-		player.sendSystemMessage(Messages.c("Obtained " + trade.name() + "!", HuntDefs.GOLD));
+		ServerPlayNetworking.send(player, new HuntPayloads.GearToast(
+				net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(trade.result().get(0)).toString(), trade.name()));
 		playSound(player, SoundEvents.SMITHING_TABLE_USE, 1.0F);
 	}
 
@@ -329,7 +334,7 @@ public final class QuestManager {
 			}
 			HuntData helperData = data(helper);
 			for (Drop drop : HuntDefs.drops(tier)) {
-				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(drop.chanceDen(), helperData.concoction) * 2) < drop.chanceNum()) {
+				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(drop.chanceDen(), helperData.concoction)) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
 					helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 					playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -434,7 +439,7 @@ public final class QuestManager {
 			return;
 		}
 		HuntData data = data(killer);
-		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(100) == 0) {
+		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(HuntDefs.odds(100, data.concoction)) == 0) {
 			HuntData.Progress progress = data.progress("animal");
 			progress.dropsSeen.add("soul_stone");
 			progress.dropCounts.merge("soul_stone", 1, Integer::sum);

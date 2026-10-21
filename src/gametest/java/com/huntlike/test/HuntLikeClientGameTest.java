@@ -181,6 +181,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.setHealth(100.0F);
 		});
 		context.waitTicks(10);
+		context.setScreen(() -> new HuntMenuScreen(0));
+		context.waitTicks(3);
+		context.getInput().pressKey(InputConstants.KEY_RETURN);
+		for (int i = 0; i < 4; i++) {
+			context.getInput().pressKey(InputConstants.KEY_D);
+		}
+		context.waitTicks(10);
+		context.takeScreenshot("13c-tier5-card");
+		context.setScreen(() -> null);
 		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
 				new com.huntlike.network.HuntPayloads.Action("start", "animal", 5)));
 		context.waitTicks(10);
@@ -197,6 +206,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(80);
 		check(singleplayer, "tier V boss spawned", data -> data.quest != null && data.quest.phase == HuntData.PHASE_BOSS);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.concoction = true;
+			data.progress("animal").dropsSeen.add("thick_hide");
+			data.progress("animal").dropsSeen.add("large_femur");
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
+		});
+		singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
+		context.waitForScreen(HuntMenuScreen.class);
+		context.waitTicks(5);
+		hover(context, "Drops");
+		context.takeScreenshot("14a-drops-concoction");
+		context.setScreen(() -> null);
 
 		// 240 -> below 180: Herd Call clamps at 180 and calls 6 wolves.
 		hitBoss(singleplayer, 70.0F);
@@ -309,6 +333,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
 					new com.huntlike.network.HuntPayloads.Action("buy_gear", "animal", value)));
 			context.waitTicks(5);
+			if (value == 200) {
+				context.waitTicks(10);
+				context.takeScreenshot("19b-gear-toast");
+			}
 		}
 		context.setScreen(() -> null);
 		singleplayer.getServer().runOnServer(server -> {

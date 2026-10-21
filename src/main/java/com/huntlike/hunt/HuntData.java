@@ -20,6 +20,8 @@ public final class HuntData {
 	public String selectedHunt = "animal";
 	/** Ate the Mystery Concoction: rare drops roll at 1/(X-1). */
 	public boolean concoction;
+	/** Opened a Hunt menu panel once in this world: the "click a symbol" hint stays hidden. */
+	public boolean hintSeen;
 	public final Map<String, Progress> progress = new HashMap<>();
 	/** The running quest, or null. */
 	public Quest quest;
@@ -62,6 +64,7 @@ public final class HuntData {
 		CompoundTag tag = new CompoundTag();
 		tag.putString("selected", selectedHunt);
 		tag.putBoolean("concoction", concoction);
+		tag.putBoolean("hintSeen", hintSeen);
 		CompoundTag hunts = new CompoundTag();
 		progress.forEach((id, p) -> {
 			CompoundTag h = new CompoundTag();
@@ -100,6 +103,7 @@ public final class HuntData {
 		HuntData data = new HuntData();
 		data.selectedHunt = tag.getStringOr("selected", "animal");
 		data.concoction = tag.getBooleanOr("concoction", false);
+		data.hintSeen = tag.getBooleanOr("hintSeen", false);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");
 		for (String id : hunts.keySet()) {
 			CompoundTag h = hunts.getCompoundOrEmpty(id);

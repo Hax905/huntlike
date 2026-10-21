@@ -19,6 +19,10 @@ public class HuntLikeClient implements ClientModInitializer {
 				(payload, context) -> ClientHuntState.update(payload.tag()));
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.OpenMenu.TYPE,
 				(payload, context) -> context.client().gui.setScreen(new HuntMenuScreen(payload.tab())));
+		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.GearToast.TYPE, (payload, context) -> {
+			var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(net.minecraft.resources.Identifier.parse(payload.itemId()));
+			context.client().gui.toastManager().addToast(new GearToast(new net.minecraft.world.item.ItemStack(item), payload.name()));
+		});
 		EntityRendererRegistry.register(ModEntities.BOSS_EGG, ThrownItemRenderer::new);
 		EntityRendererRegistry.register(ModEntities.SYLVIORNIS, SylviornisRenderer::new);
 		EntityRendererRegistry.register(ModEntities.HYLOCHOERUS, HylochoerusRenderer::new);

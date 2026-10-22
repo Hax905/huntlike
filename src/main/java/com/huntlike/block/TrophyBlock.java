@@ -63,6 +63,23 @@ public class TrophyBlock extends Block implements EntityBlock {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 
+	/** The dropped trophy keeps its owner's lore. */
+	@Override
+	protected java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
+			net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+		java.util.List<net.minecraft.world.item.ItemStack> drops = super.getDrops(state, params);
+		BlockEntity entity = params.getOptionalParameter(
+				net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+		if (entity instanceof TrophyBlockEntity trophy && !trophy.lore().lines().isEmpty()) {
+			for (net.minecraft.world.item.ItemStack drop : drops) {
+				if (drop.is(asItem())) {
+					drop.set(net.minecraft.core.component.DataComponents.LORE, trophy.lore());
+				}
+			}
+		}
+		return drops;
+	}
+
 	@Override
 	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new TrophyBlockEntity(pos, state);

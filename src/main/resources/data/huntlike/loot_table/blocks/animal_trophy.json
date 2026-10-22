@@ -6,16 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "huntlike:animal_trophy",
-          "functions": [
-            {
-              "function": "minecraft:copy_components",
-              "source": "block_entity",
-              "include": [
-                "minecraft:lore"
-              ]
-            }
-          ]
+          "name": "huntlike:animal_trophy"
         }
       ],
       "conditions": [

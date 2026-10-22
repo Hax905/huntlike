@@ -16,6 +16,8 @@ public final class HuntData {
 	public static final int PHASE_KILLING = 0;
 	public static final int PHASE_SUMMONING = 1;
 	public static final int PHASE_BOSS = 2;
+	/** Daily Quest charges given every new world day. */
+	public static final int DAILY_CHARGES = 5;
 
 	public String selectedHunt = "animal";
 	/** Ate the Mystery Concoction: rare drops roll at 1/(X-1). */
@@ -27,6 +29,9 @@ public final class HuntData {
 	/** Spirit Lure mobs this player has slain, all time. */
 	public int luredKills;
 	public int koroStep;
+	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
+	public int dailyCharges = DAILY_CHARGES;
+	public long dailyDay = -1;
 	public final Map<String, Progress> progress = new HashMap<>();
 	/** The running quest, or null. */
 	public Quest quest;
@@ -55,6 +60,8 @@ public final class HuntData {
 		public int phase = PHASE_KILLING;
 		public String bossUuid = "";
 		public long bossSpawnTime;
+		/** Started with a Daily Quest charge: x2 XP and +50% rare-drop odds for the owner. */
+		public boolean daily;
 		public int summonX;
 		public int summonY;
 		public int summonZ;
@@ -73,6 +80,8 @@ public final class HuntData {
 		tag.putInt("koroDone", koroDone);
 		tag.putInt("luredKills", luredKills);
 		tag.putInt("koroStep", koroStep);
+		tag.putInt("dailyCharges", dailyCharges);
+		tag.putLong("dailyDay", dailyDay);
 		CompoundTag hunts = new CompoundTag();
 		progress.forEach((id, p) -> {
 			CompoundTag h = new CompoundTag();
@@ -102,6 +111,7 @@ public final class HuntData {
 			q.putInt("sy", quest.summonY);
 			q.putInt("sz", quest.summonZ);
 			q.putInt("summonTicks", quest.summonTicks);
+			q.putBoolean("daily", quest.daily);
 			tag.put("quest", q);
 		}
 		return tag;
@@ -115,6 +125,8 @@ public final class HuntData {
 		data.koroDone = tag.getIntOr("koroDone", 0);
 		data.luredKills = tag.getIntOr("luredKills", 0);
 		data.koroStep = tag.getIntOr("koroStep", 0);
+		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
+		data.dailyDay = tag.getLongOr("dailyDay", -1L);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");
 		for (String id : hunts.keySet()) {
 			CompoundTag h = hunts.getCompoundOrEmpty(id);
@@ -144,6 +156,7 @@ public final class HuntData {
 			quest.summonY = q.getIntOr("sy", 0);
 			quest.summonZ = q.getIntOr("sz", 0);
 			quest.summonTicks = q.getIntOr("summonTicks", 0);
+			quest.daily = q.getBooleanOr("daily", false);
 			data.quest = quest;
 		}
 		return data;

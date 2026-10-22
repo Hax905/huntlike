@@ -197,10 +197,49 @@ public class HuntMenuScreen extends Screen {
 		} else if (!hintSeen()) {
 			g.text(this.font, Component.literal("Click a symbol or press Enter"), px + 8, iy + ih - 14, TEXT_DIM, false);
 		}
+		if (tab == 0) {
+			drawDailyCharges(g, mouseX, mouseY);
+		}
 		if (dropsHover != null) {
 			drawDropsPanel(g, dropsHover, mouseX, mouseY);
 			dropsHover = null;
 		}
+	}
+
+	// ---------------------------------------------------------------- Daily Quest charges
+
+	/** Five stars in the bottom-left corner: pink for each charge left, grey once used (from right to left). */
+	private void drawDailyCharges(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+		int charges = Math.max(0, Math.min(HuntData.DAILY_CHARGES, ClientHuntState.data.dailyCharges));
+		MutableComponent stars = Component.empty();
+		for (int i = 0; i < HuntData.DAILY_CHARGES; i++) {
+			stars.append(i < charges ? colored("\u2605", HuntDefs.PINK) : colored("\u2606", 0xFF808080));
+		}
+		int w = this.font.width(stars) + 8;
+		int h = 14;
+		int x = ix + 4;
+		int y = iy + ih - h - 4;
+		sprite(g, "panel_dark", x, y, w, h);
+		g.text(this.font, stars, x + 4, y + 3, WHITE, false);
+		if (mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h) {
+			List<Component> lines = new ArrayList<>();
+			lines.add(colored("Daily Quest Charges", HuntDefs.PINK));
+			for (FormattedCharSequence line : this.font.split(colored(
+					"The first five hunting quests you start will yield more XP and have higher odds of a rare drop!", TEXT_GRAY), 200)) {
+				lines.add(toComponent(line));
+			}
+			lines.add(colored("Refills at sunrise.", TEXT_DIM));
+			g.setComponentTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+		}
+	}
+
+	private static Component toComponent(FormattedCharSequence sequence) {
+		MutableComponent out = Component.empty();
+		sequence.accept((index, style, codePoint) -> {
+			out.append(Component.literal(new String(Character.toChars(codePoint))).withStyle(style));
+			return true;
+		});
+		return out;
 	}
 
 	// ---------------------------------------------------------------- the "click a symbol" hint, shown until first used
@@ -434,7 +473,12 @@ public class HuntMenuScreen extends Screen {
 				px + 6, y, WHITE, false);
 		y += 11;
 		g.text(this.font, colored("Boss: ", TEXT_GRAY).append(colored(tier.bossName(), tier.color())), px + 6, y, WHITE, false);
-		y += 14;
+		y += 11;
+		if (quest.daily) {
+			g.text(this.font, colored("\u2605 Daily Quest - \u00d72 XP", HuntDefs.PINK), px + 6, y, WHITE, false);
+			y += 11;
+		}
+		y += 3;
 
 		int barX = px + 6;
 		int barW = pw - 12;
@@ -517,20 +561,22 @@ public class HuntMenuScreen extends Screen {
 	private void drawDropsPanel(GuiGraphicsExtractor g, Tier tier, int mouseX, int mouseY) {
 		HuntData.Progress progress = progress();
 		boolean concoction = ClientHuntState.data.concoction;
+		HuntData.Quest running = activeQuest();
+		boolean daily = running != null && running.daily;
 		List<ItemStack> icons = new ArrayList<>();
 		List<Component> names = new ArrayList<>();
 		for (Drop drop : HuntDefs.drops(tier)) {
 			boolean seen = progress.dropsSeen.contains(drop.id());
 			icons.add(seen ? new ItemStack(drop.item()) : ItemStack.EMPTY);
 			String chance = drop.guaranteed() ? drop.minCount() + "-" + drop.maxCount() + " (100%)"
-					: formatPercent(drop.chanceNum() * 100.0 / HuntDefs.odds(hunt().id(), drop.chanceNum(), drop.chanceDen(), concoction));
+					: formatPercent(100.0 * HuntDefs.chance(hunt().id(), drop.chanceNum(), drop.chanceDen(), concoction, daily));
 			names.add(Component.empty().append(seen ? new ItemStack(drop.item()).getStyledHoverName() : colored("Unknown", TEXT_DIM))
 					.append(colored("  " + chance, TEXT_GRAY)));
 		}
 		boolean seenStone = progress.dropsSeen.contains("soul_stone");
 		icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
 		names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
-				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 / HuntDefs.odds("animal", 1, 100, concoction))
+				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 * HuntDefs.chance("animal", 1, 100, concoction, daily))
 						+ " (Spirit Lure animals)", TEXT_GRAY)));
 		int width = 0;
 		for (Component name : names) {
@@ -538,7 +584,7 @@ public class HuntMenuScreen extends Screen {
 		}
 		int rowH = 14;
 		int w = width + 30;
-		int h = 16 + names.size() * rowH + (concoction ? 11 : 0);
+		int h = 16 + names.size() * rowH + (concoction ? 11 : 0) + (daily ? 11 : 0);
 		int x = Math.min(mouseX + 10, this.width - w - 4);
 		int y = Math.max(4, mouseY - h - 4);
 		g.nextStratum();
@@ -559,7 +605,10 @@ public class HuntMenuScreen extends Screen {
 			g.text(this.font, names.get(i), x + 22, ry + 2, WHITE, false);
 		}
 		if (concoction) {
-			g.text(this.font, colored("Mystery Concoction: odds improved", 0xFF55FF), x + 6, y + h - 11, WHITE, false);
+			g.text(this.font, colored("Mystery Concoction: odds improved", 0xFF55FF), x + 6, y + h - 11 - (daily ? 11 : 0), WHITE, false);
+		}
+		if (daily) {
+			g.text(this.font, colored("Daily Quest: rare-drop odds +50%", HuntDefs.PINK), x + 6, y + h - 11, WHITE, false);
 		}
 	}
 

@@ -31,6 +31,12 @@ public final class Messages {
 		return questLine("Started", HuntDefs.PREFIX, hunt, tier);
 	}
 
+	/** The start line with " [Daily]" in pink when a Daily Quest charge was used. */
+	public static Component started(Hunt hunt, int tier, boolean daily) {
+		MutableComponent line = questLine("Started", HuntDefs.PREFIX, hunt, tier);
+		return daily ? line.append(Component.literal(" ")).append(c("[Daily]", HuntDefs.PINK)) : line;
+	}
+
 	public static Component bossSpawned(Hunt hunt, int tier) {
 		return questLine("Boss Spawned", HuntDefs.AQUA, hunt, tier);
 	}

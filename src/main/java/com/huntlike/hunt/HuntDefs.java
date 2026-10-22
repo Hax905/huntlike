@@ -243,6 +243,15 @@ public final class HuntDefs {
 		return concoction && "animal".equals(hunt) ? Math.max(num, den - num) : den;
 	}
 
+	/** Daily Quest bonus to rare-drop chances (applied after the Mystery Concoction). */
+	public static final double DAILY_ODDS = 1.5;
+
+	/** The chance (0-1) of a rare drop: num/den, with the Concoction's 1/(X-1), then x1.5 on a Daily Quest. */
+	public static double chance(String hunt, int num, int den, boolean concoction, boolean daily) {
+		double chance = num / (double) odds(hunt, num, den, concoction);
+		return Math.min(1.0, daily ? chance * DAILY_ODDS : chance);
+	}
+
 	/** Boss drops for a tier of the Animal Hunt, owner odds. */
 	public static List<Drop> drops(Tier tier) {
 		int t = tier.number();

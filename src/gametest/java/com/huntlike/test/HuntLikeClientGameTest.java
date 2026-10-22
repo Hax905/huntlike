@@ -141,8 +141,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
 			});
 			context.waitTicks(20);
-			check(singleplayer, "quest complete", data -> data.quest == null && data.progress("animal").xp == 5
-					&& data.progress("animal").bossKills[0] == 1);
+			check(singleplayer, "quest complete (Daily Quest: x2 XP, one charge used)", data -> data.quest == null
+					&& data.progress("animal").xp == 10 && data.progress("animal").bossKills[0] == 1 && data.dailyCharges == 4);
 			context.takeScreenshot("11-quest-complete");
 
 			addProgress(singleplayer, 200, 0);
@@ -167,6 +167,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			multiplayer(context, singleplayer);
 			trophy(context, singleplayer);
 			catalystAndPulverizer(context, singleplayer);
+			dailyRefill(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -690,6 +691,26 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	}
 
 	private static net.minecraft.world.item.ItemStack trophyStack = net.minecraft.world.item.ItemStack.EMPTY;
+
+	/** Daily Quest charges: commands don't use them; a new world day refills all five. */
+	private static void dailyRefill(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		int before = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).dailyCharges);
+		HuntLike.LOGGER.info("[test] daily charges before refill: {}", before);
+		singleplayer.getServer().runCommand("huntlike quest start @a animal 1");
+		context.waitTicks(2);
+		check(singleplayer, "command quests use no charge", data -> data.quest != null && !data.quest.daily
+				&& data.dailyCharges == before);
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
+		context.waitForScreen(HuntMenuScreen.class);
+		context.waitTicks(25);
+		context.takeScreenshot("31-daily-charges-used");
+		singleplayer.getServer().runCommand("time add 24000");
+		context.waitTicks(25);
+		check(singleplayer, "a new day refills the charges", data -> data.dailyCharges == HuntData.DAILY_CHARGES);
+		context.takeScreenshot("32-daily-charges-refilled");
+		context.setScreen(() -> null);
+	}
 
 	/** Spiritual Catalyst highlights the nearest living entity (client side); the Bone Pulverizer in hand. */
 	private static void catalystAndPulverizer(ClientGameTestContext context, TestSingleplayerContext singleplayer) {

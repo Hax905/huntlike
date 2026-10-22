@@ -59,6 +59,22 @@ public final class QuestManager {
 	public static final AttachmentType<HuntData> DATA = AttachmentRegistry.create(HuntLike.id("hunt_data"),
 			builder -> builder.initializer(HuntData::new).persistent(HuntData.CODEC).copyOnDeath());
 
+	/** The world day number: one per 24,000 ticks of the Overworld clock, starting at sunrise. */
+	public static long worldDay(ServerPlayer player) {
+		return player.level().getServer().overworld().getOverworldClockTime() / 24000L;
+	}
+
+	/** Refills the Daily Quest charges on a new world day. True if they were refilled. */
+	public static boolean refreshDaily(ServerPlayer player, HuntData data) {
+		long day = worldDay(player);
+		if (data.dailyDay == day) {
+			return false;
+		}
+		data.dailyDay = day;
+		data.dailyCharges = HuntData.DAILY_CHARGES;
+		return true;
+	}
+
 	/** Top-tier bosses needed for a Hunting Trophy (given once). */
 	public static final int TROPHY_KILLS = 100;
 
@@ -299,10 +315,15 @@ public final class QuestManager {
 		quest.hunt = hunt.id();
 		quest.tier = tierNumber;
 		quest.quota = tier.quota();
+		refreshDaily(player, data);
+		if (data.dailyCharges > 0) {
+			data.dailyCharges--;
+			quest.daily = true;
+		}
 		data.quest = quest;
 		save(player, data);
 		SpiritLure.reset(player);
-		player.sendSystemMessage(Messages.started(hunt, tierNumber));
+		player.sendSystemMessage(Messages.started(hunt, tierNumber, quest.daily));
 		playSound(player, SoundEvents.ENCHANTMENT_TABLE_USE, 1.0F);
 		playSound(player, SoundEvents.BEACON_ACTIVATE, 1.2F);
 		award(player, hunt.id() + "/conquest");
@@ -386,7 +407,7 @@ public final class QuestManager {
 			if (drop.guaranteed()) {
 				int count = drop.minCount() + random.nextInt(drop.maxCount() - drop.minCount() + 1);
 				give(owner, data, hunt, drop, count);
-			} else if (random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), data.concoction)) < drop.chanceNum()) {
+			} else if (random.nextDouble() < HuntDefs.chance(hunt.id(), drop.chanceNum(), drop.chanceDen(), data.concoction, quest.daily)) {
 				give(owner, data, hunt, drop, drop.minCount());
 				owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
 				playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
@@ -414,7 +435,7 @@ public final class QuestManager {
 
 		int oldRank = progress.rank();
 		progress.bossKills[tier.number() - 1]++;
-		progress.xp += tier.xp();
+		progress.xp += quest.daily ? tier.xp() * 2 : tier.xp();
 		int newRank = progress.rank();
 		SpiritLure.cleanup(owner);
 		data.quest = null;
@@ -467,6 +488,10 @@ public final class QuestManager {
 		boolean syncNow = server.getTickCount() % 20 == 0;
 		for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
 			HuntData data = data(player);
+			if (syncNow && refreshDaily(player, data)) {
+				save(player, data);
+				sync(player);
+			}
 			Quest quest = data.quest;
 			if (quest == null) {
 				continue;
@@ -517,7 +542,8 @@ public final class QuestManager {
 			}
 			save(killer, data);
 		}
-		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextInt(HuntDefs.odds("animal", 1, 100, data.concoction)) == 0) {
+		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextDouble() < HuntDefs.chance("animal", 1, 100,
+				data.concoction, data.quest != null && data.quest.daily)) {
 			HuntData.Progress progress = data.progress("animal");
 			progress.dropsSeen.add("soul_stone");
 			progress.dropCounts.merge("soul_stone", 1, Integer::sum);

@@ -688,6 +688,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 	}
 
+	private static net.minecraft.world.item.ItemStack trophyStack = net.minecraft.world.item.ItemStack.EMPTY;
+
 	/** The 100th Tier V boss gives the Animal Hunting Trophy, which keeps its lore when placed and broken. */
 	private static void trophy(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
 		singleplayer.getServer().runOnServer(server -> {
@@ -710,9 +712,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					String lore = stack.get(net.minecraft.core.component.DataComponents.LORE).lines().stream()
 							.map(net.minecraft.network.chat.Component::getString).reduce("", (a, b) -> a + b + " ");
 					HuntLike.LOGGER.info("[test] trophy lore: {}", lore);
-					player.getInventory().setItem(i, net.minecraft.world.item.ItemStack.EMPTY);
-					player.getInventory().setSelectedSlot(0);
-					player.getInventory().setItem(0, stack);
+					trophyStack = stack.copy();
 					return lore.contains(player.getScoreboardName()) && lore.contains("mastery over animal hunting");
 				}
 			}
@@ -723,7 +723,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.setYRot(0);
 			player.setXRot(0);
 			player.connection.teleport(player.getX(), player.getY(), player.getZ(), 0, 0);
-			var stack = player.getMainHandItem();
+			var stack = trophyStack;
 			var level = player.level();
 			BlockPos display = player.blockPosition().offset(0, 1, 3);
 			BlockPos broken = player.blockPosition().offset(3, 1, 3);
@@ -734,7 +734,14 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				level.setBlockAndUpdate(pos, state);
 				level.getBlockEntity(pos).applyComponentsFromItemStack(stack);
 			}
+			HuntLike.LOGGER.info("[test] trophy stack {} lore {}, block entity lore {}", stack,
+					stack.get(net.minecraft.core.component.DataComponents.LORE),
+					((com.huntlike.block.TrophyBlockEntity) level.getBlockEntity(broken)).lore());
 			level.destroyBlock(broken, true, player);
+			for (var e : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					new net.minecraft.world.phys.AABB(broken).inflate(2), e -> true)) {
+				HuntLike.LOGGER.info("[test] dropped {} lore {}", e.getItem(), e.getItem().get(net.minecraft.core.component.DataComponents.LORE));
+			}
 			return level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
 					new net.minecraft.world.phys.AABB(broken).inflate(2), e -> e.getItem().is(stack.getItem())
 							&& e.getItem().get(net.minecraft.core.component.DataComponents.LORE) != null

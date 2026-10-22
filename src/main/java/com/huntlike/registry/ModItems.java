@@ -49,6 +49,13 @@ public final class ModItems {
 					.food(new net.minecraft.world.food.FoodProperties(8, 8.0F, false),
 							net.minecraft.world.item.component.Consumables.defaultFood().consumeSeconds(0.0F).build()));
 
+	/** The Hunting Trophy block item of a Hunt. */
+	public static Item trophy(String hunt) {
+		return switch (hunt) {
+			default -> ModBlocks.ANIMAL_TROPHY.asItem();
+		};
+	}
+
 	private static Item simple(String name, Rarity rarity) {
 		Item.Properties properties = Descriptions.with(new Item.Properties().rarity(rarity), "item.huntlike." + name + ".desc");
 		return register(name, Item::new, properties);

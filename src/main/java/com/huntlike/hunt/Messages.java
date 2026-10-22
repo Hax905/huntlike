@@ -39,6 +39,15 @@ public final class Messages {
 		return questLine("Complete", HuntDefs.DARK_GREEN, hunt, tier);
 	}
 
+	/** "[Player] has reached a mastery over [Hunt] hunting." in bold gold; the name dark red, the Hunt in its color. */
+	public static Component mastery(net.minecraft.server.level.ServerPlayer player, Hunt hunt) {
+		return Component.empty().withStyle(style -> style.withBold(true))
+				.append(c(player.getScoreboardName(), HuntDefs.DARK_RED))
+				.append(c(" has reached a mastery over ", HuntDefs.GOLD))
+				.append(c(hunt.name(), hunt.color()))
+				.append(c(" hunting.", HuntDefs.GOLD));
+	}
+
 	public static Component failed(Hunt hunt, int tier) {
 		return questLine("Failed", HuntDefs.DARK_RED, hunt, tier);
 	}

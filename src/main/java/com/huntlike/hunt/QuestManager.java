@@ -59,6 +59,23 @@ public final class QuestManager {
 	public static final AttachmentType<HuntData> DATA = AttachmentRegistry.create(HuntLike.id("hunt_data"),
 			builder -> builder.initializer(HuntData::new).persistent(HuntData.CODEC).copyOnDeath());
 
+	/** Top-tier bosses needed for a Hunting Trophy (given once). */
+	public static final int TROPHY_KILLS = 100;
+
+	/** The Hunting Trophy: into the inventory, with a golden announcement to everyone on the server. */
+	public static void giveTrophy(ServerPlayer player, Hunt hunt) {
+		ItemStack trophy = new ItemStack(ModItems.trophy(hunt.id()));
+		java.util.List<net.minecraft.network.chat.Component> lore = new java.util.ArrayList<>();
+		com.huntlike.registry.Lore.gray(lore, "A sign of " + player.getScoreboardName() + "'s mastery over "
+				+ hunt.name().toLowerCase(java.util.Locale.ROOT) + " hunting.");
+		trophy.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(lore));
+		giveStack(player, trophy);
+		player.level().getServer().getPlayerList().broadcastSystemMessage(Messages.mastery(player, hunt), false);
+		for (ServerPlayer other : player.level().getServer().getPlayerList().getPlayers()) {
+			playSound(other, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.8F);
+		}
+	}
+
 	/** Lured mobs slain for "I swear it was Self-Defense". */
 	public static final int SELF_DEFENSE_KILLS = 1000;
 	public static final TagKey<EntityType<?>> QUOTA_ANIMALS = TagKey.create(Registries.ENTITY_TYPE, HuntLike.id("animal_quota"));
@@ -404,6 +421,9 @@ public final class QuestManager {
 		save(owner, data);
 
 		owner.sendSystemMessage(Messages.complete(hunt, tier.number()));
+		if (tier.number() == hunt.tiers().size() && progress.bossKills[tier.number() - 1] == TROPHY_KILLS) {
+			giveTrophy(owner, hunt);
+		}
 		playSound(owner, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F);
 		award(owner, hunt.id() + "/tier" + tier.number());
 		for (int level = oldRank + 1; level <= newRank; level++) {

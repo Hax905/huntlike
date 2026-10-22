@@ -68,6 +68,7 @@ public final class ModCreativeTab {
 		register(BLOCKS, ModBlocks.ALPHA_ALTAR, output -> {
 			output.accept(ModBlocks.ALPHA_ALTAR);
 			output.accept(ModBlocks.SOUL_MONOLITH);
+			output.accept(ModBlocks.ANIMAL_TROPHY);
 		});
 	}
 }

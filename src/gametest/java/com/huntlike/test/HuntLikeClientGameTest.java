@@ -2,6 +2,7 @@ package com.huntlike.test;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -164,6 +165,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			koro(context, singleplayer);
 			extras(context, singleplayer);
 			multiplayer(context, singleplayer);
+			trophy(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -684,6 +686,63 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			removeFromPlayerList(server, helper);
 			helper.discard();
 		});
+	}
+
+	/** The 100th Tier V boss gives the Animal Hunting Trophy, which keeps its lore when placed and broken. */
+	private static void trophy(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			HuntData data = QuestManager.data(player);
+			data.progress("animal").bossKills[4] = 99;
+			player.setAttached(QuestManager.DATA, data);
+		});
+		String name = singleplayer.getServer().computeOnServer(server -> player(server).getScoreboardName());
+		singleplayer.getServer().runCommand("huntlike boss animal 5 " + name);
+		context.waitTicks(60);
+		assertServer(singleplayer, "100th Tier V boss gives the trophy", server -> {
+			ServerPlayer player = player(server);
+			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
+			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100000.0F);
+			for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+				var stack = player.getInventory().getItem(i);
+				if (stack.is(com.huntlike.registry.ModBlocks.ANIMAL_TROPHY.asItem())) {
+					String lore = stack.get(net.minecraft.core.component.DataComponents.LORE).lines().stream()
+							.map(net.minecraft.network.chat.Component::getString).reduce("", (a, b) -> a + b + " ");
+					HuntLike.LOGGER.info("[test] trophy lore: {}", lore);
+					player.getInventory().setItem(i, net.minecraft.world.item.ItemStack.EMPTY);
+					player.getInventory().setSelectedSlot(0);
+					player.getInventory().setItem(0, stack);
+					return lore.contains(player.getScoreboardName()) && lore.contains("mastery over animal hunting");
+				}
+			}
+			return false;
+		});
+		assertServer(singleplayer, "placed trophy keeps its lore when broken", server -> {
+			ServerPlayer player = player(server);
+			player.setYRot(0);
+			player.setXRot(0);
+			player.connection.teleport(player.getX(), player.getY(), player.getZ(), 0, 0);
+			var stack = player.getMainHandItem();
+			var level = player.level();
+			BlockPos display = player.blockPosition().offset(0, 1, 3);
+			BlockPos broken = player.blockPosition().offset(3, 1, 3);
+			var state = com.huntlike.registry.ModBlocks.ANIMAL_TROPHY.defaultBlockState()
+					.setValue(com.huntlike.block.TrophyBlock.FACING, net.minecraft.core.Direction.NORTH);
+			for (BlockPos pos : new BlockPos[] {display, broken}) {
+				level.setBlockAndUpdate(pos.south(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+				level.setBlockAndUpdate(pos, state);
+				level.getBlockEntity(pos).applyComponentsFromItemStack(stack);
+			}
+			level.destroyBlock(broken, true, player);
+			return level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					new net.minecraft.world.phys.AABB(broken).inflate(2), e -> e.getItem().is(stack.getItem())
+							&& e.getItem().get(net.minecraft.core.component.DataComponents.LORE) != null
+							&& e.getItem().get(net.minecraft.core.component.DataComponents.LORE).equals(
+									stack.get(net.minecraft.core.component.DataComponents.LORE))).size() == 1;
+		});
+		context.waitTicks(20);
+		context.takeScreenshot("27-trophy");
 	}
 
 	private static ServerPlayer helper(MinecraftServer server) {

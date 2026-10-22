@@ -34,6 +34,30 @@ public final class ModBlocks {
 					.requiresCorrectToolForDrops().lightLevel(state -> 10),
 			Rarity.EPIC);
 
+	/** Given once, at the 100th Tier V Animal boss. */
+	public static final Block ANIMAL_TROPHY = registerTrophy("animal_trophy");
+
+	public static final net.minecraft.world.level.block.entity.BlockEntityType<com.huntlike.block.TrophyBlockEntity> TROPHY_ENTITY =
+			Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, HuntLike.id("trophy"),
+					new net.minecraft.world.level.block.entity.BlockEntityType<>(com.huntlike.block.TrophyBlockEntity::new,
+							java.util.Set.of(ANIMAL_TROPHY)));
+
+	private static Block registerTrophy(String name) {
+		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, HuntLike.id(name));
+		Block block = Registry.register(BuiltInRegistries.BLOCK, blockKey, new com.huntlike.block.TrophyBlock(
+				BlockBehaviour.Properties.of().mapColor(MapColor.GOLD).strength(1.0F, 1200.0F).sound(SoundType.METAL)
+						.noCollision().noOcclusion().pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+						.setId(blockKey)));
+		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, HuntLike.id(name));
+		Item.Properties itemProperties = new Item.Properties().rarity(Rarity.EPIC).stacksTo(1).useBlockDescriptionPrefix()
+				.setId(itemKey);
+		itemProperties.component(net.minecraft.core.component.DataComponents.ITEM_NAME,
+				net.minecraft.network.chat.Component.translatable("block.huntlike." + name)
+						.withStyle(net.minecraft.ChatFormatting.GOLD));
+		Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties));
+		return block;
+	}
+
 	private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory,
 			BlockBehaviour.Properties properties, Rarity rarity) {
 		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, HuntLike.id(name));

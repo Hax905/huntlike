@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "huntlike:block/animal_trophy"
+    },
+    "facing=east": {
+      "model": "huntlike:block/animal_trophy",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "huntlike:block/animal_trophy",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "huntlike:block/animal_trophy",
+      "y": 270
+    }
+  }
+}

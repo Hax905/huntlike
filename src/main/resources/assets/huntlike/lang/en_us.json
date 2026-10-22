@@ -99,5 +99,6 @@
   "item.huntlike.hardened_hide_boots": "Hardened Hide Boots [Act II]",
   "item.huntlike.speedy_hide_boots": "Speedy Hide Boots [Act III]",
   "item.huntlike.hermes_boots": "Hermes Boots [Apotheosis]",
-  "item.huntlike.feather_chute": "FeatherChute"
+  "item.huntlike.feather_chute": "FeatherChute",
+  "block.huntlike.animal_trophy": "Animal Hunting Trophy"
 }

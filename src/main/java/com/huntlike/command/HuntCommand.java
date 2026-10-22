@@ -105,7 +105,7 @@ public final class HuntCommand {
 		}
 		int count = done;
 		String what = (boss ? "Summoned " : "Started ") + hunt.name() + " [Tier " + HuntDefs.ROMAN[tier] + "]"
-				+ (boss ? " bosses" : " quests");
+				+ (boss ? (count == 1 ? " boss" : " bosses") : (count == 1 ? " quest" : " quests"));
 		if (count > 0) {
 			ctx.getSource().sendSuccess(() -> Component.literal(what + " for " + count + " player" + (count == 1 ? "." : "s.")), true);
 		}

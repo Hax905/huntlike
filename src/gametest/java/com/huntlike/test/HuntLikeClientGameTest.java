@@ -692,6 +692,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	/** The 100th Tier V boss gives the Animal Hunting Trophy, which keeps its lore when placed and broken. */
 	private static void trophy(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		context.setScreen(() -> null);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			player.getInventory().clearContent();
@@ -747,6 +748,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 							&& e.getItem().get(net.minecraft.core.component.DataComponents.LORE) != null
 							&& e.getItem().get(net.minecraft.core.component.DataComponents.LORE).equals(
 									stack.get(net.minecraft.core.component.DataComponents.LORE))).size() == 1;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (int slot = 0; slot < 9; slot++) {
+				player.getInventory().setItem(slot, trophyStack.copy());
+			}
 		});
 		context.waitTicks(20);
 		context.takeScreenshot("27-trophy");

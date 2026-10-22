@@ -141,8 +141,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
 			});
 			context.waitTicks(20);
-			check(singleplayer, "quest complete (Daily Quest: x2 XP, one charge used)", data -> data.quest == null
-					&& data.progress("animal").xp == 10 && data.progress("animal").bossKills[0] == 1 && data.dailyCharges == 4);
+			check(singleplayer, "quest complete (Rank 0: no Daily Quest charge used)", data -> data.quest == null
+					&& data.progress("animal").xp == 5 && data.progress("animal").bossKills[0] == 1
+					&& data.dailyCharges == HuntData.DAILY_CHARGES);
 			context.takeScreenshot("11-quest-complete");
 
 			addProgress(singleplayer, 200, 0);
@@ -197,7 +198,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
 				new com.huntlike.network.HuntPayloads.Action("start", "animal", 5)));
 		context.waitTicks(10);
-		check(singleplayer, "tier V started", data -> data.quest != null && data.quest.tier == 5);
+		check(singleplayer, "tier V started as a Daily Quest (Rank I+)", data -> data.quest != null && data.quest.tier == 5
+				&& data.quest.daily && data.dailyCharges == HuntData.DAILY_CHARGES - 1);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			ServerLevel level = player.level();
@@ -289,9 +291,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		float afterLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
 		HuntLike.LOGGER.info("[test] health over 11 s of Tier V fighting: {} -> {}", beforeLunge, afterLunge);
 		context.takeScreenshot("17-tier5-fight");
+		int xpBefore = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).progress("animal").xp);
 		hitBoss(singleplayer, 1000.0F);
 		context.waitTicks(20);
-		check(singleplayer, "tier V complete", data -> data.quest == null && data.progress("animal").bossKills[4] == 1);
+		check(singleplayer, "tier V complete with Daily Quest x2 XP (+1600)", data -> data.quest == null
+				&& data.progress("animal").bossKills[4] == 1 && data.progress("animal").xp == xpBefore + 1600);
 		context.takeScreenshot("18-tier5-complete");
 	}
 

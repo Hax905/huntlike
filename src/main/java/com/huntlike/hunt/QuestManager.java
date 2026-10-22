@@ -316,7 +316,7 @@ public final class QuestManager {
 		quest.tier = tierNumber;
 		quest.quota = tier.quota();
 		refreshDaily(player, data);
-		if (data.dailyCharges > 0) {
+		if (data.dailyCharges > 0 && progress.rank() >= HuntData.DAILY_UNLOCK_RANK) {
 			data.dailyCharges--;
 			quest.daily = true;
 		}

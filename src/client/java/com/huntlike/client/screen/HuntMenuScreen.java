@@ -210,7 +210,8 @@ public class HuntMenuScreen extends Screen {
 
 	/** Five stars in the bottom-left corner: pink for each charge left, grey once used (from right to left). */
 	private void drawDailyCharges(GuiGraphicsExtractor g, int mouseX, int mouseY) {
-		int charges = Math.max(0, Math.min(HuntData.DAILY_CHARGES, ClientHuntState.data.dailyCharges));
+		boolean unlocked = progress().rank() >= HuntData.DAILY_UNLOCK_RANK;
+		int charges = unlocked ? Math.max(0, Math.min(HuntData.DAILY_CHARGES, ClientHuntState.data.dailyCharges)) : 0;
 		MutableComponent stars = Component.empty();
 		for (int i = 0; i < HuntData.DAILY_CHARGES; i++) {
 			stars.append(i < charges ? colored("\u2605", HuntDefs.PINK) : colored("\u2606", 0xFF808080));
@@ -228,7 +229,11 @@ public class HuntMenuScreen extends Screen {
 					"The first five hunting quests you start will yield more XP and have higher odds of a rare drop!", TEXT_GRAY), 200)) {
 				lines.add(toComponent(line));
 			}
-			lines.add(colored("Refills at sunrise.", TEXT_DIM));
+			if (unlocked) {
+				lines.add(colored("Refills at sunrise.", TEXT_DIM));
+			} else {
+				lines.add(colored("Unlocks at " + hunt().rankName(HuntData.DAILY_UNLOCK_RANK) + " (Rank I).", HuntDefs.RED));
+			}
 			g.setComponentTooltipForNextFrame(this.font, lines, mouseX, mouseY);
 		}
 	}

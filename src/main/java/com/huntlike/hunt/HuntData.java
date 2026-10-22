@@ -18,6 +18,8 @@ public final class HuntData {
 	public static final int PHASE_BOSS = 2;
 	/** Daily Quest charges given every new world day. */
 	public static final int DAILY_CHARGES = 5;
+	/** Daily Quests unlock at this Rank of a Hunt, so new players learn quests first. */
+	public static final int DAILY_UNLOCK_RANK = 1;
 
 	public String selectedHunt = "animal";
 	/** Ate the Mystery Concoction: rare drops roll at 1/(X-1). */

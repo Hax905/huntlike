@@ -51,9 +51,6 @@ public final class ModBlocks {
 		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, HuntLike.id(name));
 		Item.Properties itemProperties = new Item.Properties().rarity(Rarity.EPIC).stacksTo(1).useBlockDescriptionPrefix()
 				.setId(itemKey);
-		itemProperties.component(net.minecraft.core.component.DataComponents.ITEM_NAME,
-				net.minecraft.network.chat.Component.translatable("block.huntlike." + name)
-						.withStyle(net.minecraft.ChatFormatting.GOLD));
 		Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties));
 		return block;
 	}

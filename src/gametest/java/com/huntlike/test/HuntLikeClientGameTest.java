@@ -721,18 +721,16 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		assertServer(singleplayer, "placed trophy keeps its lore when broken", server -> {
 			ServerPlayer player = player(server);
-			player.setYRot(0);
-			player.setXRot(0);
-			player.connection.teleport(player.getX(), player.getY(), player.getZ(), 0, 0);
+			player.connection.teleport(player.getX(), player.getY(), player.getZ(), 90, 10);
 			var stack = trophyStack;
 			var level = player.level();
-			BlockPos display = player.blockPosition().offset(0, 1, 3);
+			BlockPos display = player.blockPosition().offset(-2, 1, 0);
 			BlockPos broken = player.blockPosition().offset(3, 1, 3);
-			var state = com.huntlike.registry.ModBlocks.ANIMAL_TROPHY.defaultBlockState()
-					.setValue(com.huntlike.block.TrophyBlock.FACING, net.minecraft.core.Direction.NORTH);
 			for (BlockPos pos : new BlockPos[] {display, broken}) {
-				level.setBlockAndUpdate(pos.south(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
-				level.setBlockAndUpdate(pos, state);
+				var facing = pos == display ? net.minecraft.core.Direction.EAST : net.minecraft.core.Direction.NORTH;
+				level.setBlockAndUpdate(pos.relative(facing.getOpposite()), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+				level.setBlockAndUpdate(pos, com.huntlike.registry.ModBlocks.ANIMAL_TROPHY.defaultBlockState()
+						.setValue(com.huntlike.block.TrophyBlock.FACING, facing));
 				level.getBlockEntity(pos).applyComponentsFromItemStack(stack);
 			}
 			HuntLike.LOGGER.info("[test] trophy stack {} lore {}, block entity lore {}", stack,

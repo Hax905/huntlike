@@ -46,7 +46,7 @@ public final class ModBlocks {
 		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, HuntLike.id(name));
 		Block block = Registry.register(BuiltInRegistries.BLOCK, blockKey, new com.huntlike.block.TrophyBlock(
 				BlockBehaviour.Properties.of().mapColor(MapColor.GOLD).strength(1.0F, 1200.0F).sound(SoundType.METAL)
-						.noCollision().noOcclusion().pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+						.noCollision().noOcclusion().pushReaction(net.minecraft.world.level.material.PushReaction.POPPED)
 						.setId(blockKey)));
 		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, HuntLike.id(name));
 		Item.Properties itemProperties = new Item.Properties().rarity(Rarity.EPIC).stacksTo(1).useBlockDescriptionPrefix()

@@ -1,7 +1,5 @@
 package com.huntlike.block;
 
-import com.mojang.serialization.MapCodec;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -20,7 +18,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** A Hunting Trophy: a golden plaque hung on a wall like an item frame. Keeps its owner's lore when broken. */
 public class TrophyBlock extends Block implements EntityBlock {
-	public static final MapCodec<TrophyBlock> CODEC = simpleCodec(TrophyBlock::new);
 	public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
 	private static final VoxelShape NORTH = box(0, 0, 15, 16, 16, 16);
@@ -31,11 +28,6 @@ public class TrophyBlock extends Block implements EntityBlock {
 	public TrophyBlock(Properties properties) {
 		super(properties);
 		registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
-	}
-
-	@Override
-	protected MapCodec<? extends Block> codec() {
-		return CODEC;
 	}
 
 	@Override

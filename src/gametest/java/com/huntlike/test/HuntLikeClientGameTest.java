@@ -765,7 +765,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(20);
 		context.takeScreenshot("27-trophy-message");
-		context.runOnClient(client -> client.gui.getChat().clearMessages(false));
+		context.runOnClient(client -> client.gui.hud.getChat().clearMessages(false));
 		context.waitTicks(3);
 		context.takeScreenshot("27b-trophy-placed");
 	}

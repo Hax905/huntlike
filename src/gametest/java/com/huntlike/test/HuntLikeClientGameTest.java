@@ -733,6 +733,14 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			throw new AssertionError("Spiritual Catalyst highlight did not fade");
 		}
 		singleplayer.getServer().runOnServer(server -> player(server).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+				new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModGear.BONE_BREAKER)));
+		context.waitTicks(10);
+		context.takeScreenshot("29a-breaker-first-person");
+		context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+		context.waitTicks(10);
+		context.takeScreenshot("29b-breaker-third-person");
+		context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+		singleplayer.getServer().runOnServer(server -> player(server).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
 				new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModGear.BONE_PULVERIZER)));
 		context.waitTicks(10);
 		context.takeScreenshot("29-pulverizer-first-person");

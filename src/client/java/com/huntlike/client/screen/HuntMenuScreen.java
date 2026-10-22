@@ -222,6 +222,7 @@ public class HuntMenuScreen extends Screen {
 		int y = iy + ih - h - 4;
 		sprite(g, "panel_dark", x, y, w, h);
 		g.text(this.font, stars, x + 4, y + 3, WHITE, false);
+		buttonCenters.put("Daily Quest Charges", new int[] {x + w / 2, y + h / 2});
 		if (mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h) {
 			List<Component> lines = new ArrayList<>();
 			lines.add(colored("Daily Quest Charges", HuntDefs.PINK));

@@ -709,11 +709,25 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(HuntMenuScreen.class);
 		context.waitTicks(25);
 		context.takeScreenshot("31-daily-charges-used");
+		hover(context, "Daily Quest Charges");
+		context.takeScreenshot("31b-daily-charges-tooltip");
 		singleplayer.getServer().runCommand("time add 24000");
 		context.waitTicks(25);
 		check(singleplayer, "a new day refills the charges", data -> data.dailyCharges == HuntData.DAILY_CHARGES);
 		context.takeScreenshot("32-daily-charges-refilled");
+		addProgress(singleplayer, 0, 64);
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("start", "animal", 1)));
+		context.waitTicks(25);
+		check(singleplayer, "menu quest uses a charge", data -> data.quest != null && data.quest.daily
+				&& data.dailyCharges == HuntData.DAILY_CHARGES - 1);
+		context.takeScreenshot("33-daily-active-quest");
+		hover(context, "Drops");
+		context.takeScreenshot("34-daily-drops");
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
 		context.setScreen(() -> null);
+		context.waitTicks(5);
+		context.takeScreenshot("35-daily-refill-message");
 	}
 
 	/** Spiritual Catalyst highlights the nearest living entity (client side); the Bone Pulverizer in hand. */

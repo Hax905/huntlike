@@ -64,6 +64,16 @@ public final class QuestManager {
 		return player.level().getServer().overworld().getOverworldClockTime() / 24000L;
 	}
 
+	/** Daily Quests are open once any Hunt reaches Rank I (each quest still needs Rank I in its own Hunt). */
+	public static boolean dailyUnlocked(HuntData data) {
+		for (Hunt hunt : HuntDefs.HUNTS) {
+			if (data.progress(hunt.id()).rank() >= HuntData.DAILY_UNLOCK_RANK) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Refills the Daily Quest charges on a new world day. True if they were refilled. */
 	public static boolean refreshDaily(ServerPlayer player, HuntData data) {
 		long day = worldDay(player);
@@ -488,9 +498,16 @@ public final class QuestManager {
 		boolean syncNow = server.getTickCount() % 20 == 0;
 		for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
 			HuntData data = data(player);
-			if (syncNow && refreshDaily(player, data)) {
-				save(player, data);
-				sync(player);
+			if (syncNow) {
+				boolean firstDay = data.dailyDay < 0;
+				if (refreshDaily(player, data)) {
+					save(player, data);
+					sync(player);
+					if (!firstDay && dailyUnlocked(data)) {
+						player.sendSystemMessage(Messages.c("Your Daily Quest charges have been refilled!", HuntDefs.PINK));
+						playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.2F);
+					}
+				}
 			}
 			Quest quest = data.quest;
 			if (quest == null) {

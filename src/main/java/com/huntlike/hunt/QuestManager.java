@@ -291,6 +291,44 @@ public final class QuestManager {
 		award(player, hunt.id() + "/conquest");
 	}
 
+	/** Admin start: no token cost, no Rank or previous-boss requirement. False if a quest is already running. */
+	public static boolean forceStart(ServerPlayer player, Hunt hunt, int tierNumber) {
+		HuntData data = data(player);
+		if (data.quest != null || tierNumber < 1 || tierNumber > hunt.tiers().size()) {
+			return false;
+		}
+		Quest quest = new Quest();
+		quest.hunt = hunt.id();
+		quest.tier = tierNumber;
+		quest.quota = hunt.tier(tierNumber).quota();
+		data.quest = quest;
+		save(player, data);
+		SpiritLure.reset(player);
+		player.sendSystemMessage(Messages.started(hunt, tierNumber));
+		playSound(player, SoundEvents.ENCHANTMENT_TABLE_USE, 1.0F);
+		playSound(player, SoundEvents.BEACON_ACTIVATE, 1.2F);
+		sync(player);
+		return true;
+	}
+
+	/** Admin boss: starts the quest with its quota already filled and summons the boss next to the player. */
+	public static boolean forceBoss(ServerPlayer player, Hunt hunt, int tierNumber) {
+		if (!forceStart(player, hunt, tierNumber)) {
+			return false;
+		}
+		HuntData data = data(player);
+		Quest quest = data.quest;
+		quest.kills = quest.quota;
+		beginSummon(player, data, quest, player.blockPosition());
+		if (quest.phase != HuntData.PHASE_SUMMONING) {
+			fail(player, data);
+			return false;
+		}
+		save(player, data);
+		sync(player);
+		return true;
+	}
+
 	/** Fails or cancels the quest: no refund. */
 	public static void fail(ServerPlayer player, HuntData data) {
 		Quest quest = data.quest;

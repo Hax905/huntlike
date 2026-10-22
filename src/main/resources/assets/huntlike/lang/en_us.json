@@ -1,5 +1,7 @@
 {
-  "itemGroup.huntlike": "HuntLike",
+  "itemGroup.huntlike.drops": "HuntLike - Drops",
+  "itemGroup.huntlike.gear": "HuntLike - Gear",
+  "itemGroup.huntlike.blocks": "HuntLike - Blocks",
   "block.huntlike.alpha_altar": "Alpha Altar",
   "block.huntlike.alpha_altar.desc": "A carefully crafted altar that seems to communicate with an otherworldly presence...",
   "block.huntlike.soul_monolith": "Soul Monolith",

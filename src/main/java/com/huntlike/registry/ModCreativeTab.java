@@ -1,52 +1,73 @@
 package com.huntlike.registry;
 
+import java.util.function.Consumer;
+
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 
 import com.huntlike.HuntLike;
+import com.huntlike.gear.HideBoots;
+import com.huntlike.gear.ModGear;
+import com.huntlike.gear.ModKoro;
 
-/** The HuntLike tab in the creative inventory. */
+/** The HuntLike tabs in the creative inventory: Drops, Gear and Blocks, in that order. */
 public final class ModCreativeTab {
 	private ModCreativeTab() {
 	}
 
-	public static final ResourceKey<CreativeModeTab> KEY = ResourceKey.create(
-			BuiltInRegistries.CREATIVE_MODE_TAB.key(), HuntLike.id("huntlike"));
+	/** Every drop from HuntLike mobs, bosses and Spirit Lure animals, and the Mystery Meat chain. */
+	public static final ResourceKey<CreativeModeTab> DROPS = key("drops");
+	/** Armor, weapons, special items and anything else for combat. */
+	public static final ResourceKey<CreativeModeTab> GEAR = key("gear");
+	/** Every block the mod adds. */
+	public static final ResourceKey<CreativeModeTab> BLOCKS = key("blocks");
 
-	public static final CreativeModeTab TAB = FabricCreativeModeTab.builder()
-			.icon(() -> new ItemStack(ModBlocks.ALPHA_ALTAR))
-			.title(Component.translatable("itemGroup.huntlike"))
-			.displayItems((params, output) -> {
-				output.accept(ModBlocks.ALPHA_ALTAR);
-				output.accept(ModItems.LOW_QUALITY_MYSTERY_MEAT);
-				output.accept(ModItems.DECENT_QUALITY_MYSTERY_MEAT);
-				output.accept(ModItems.HIGH_QUALITY_MYSTERY_MEAT);
-				output.accept(ModItems.THICK_HIDE);
-				output.accept(ModItems.LARGE_FEMUR);
-				output.accept(ModItems.GOLDEN_MOSS);
-				output.accept(ModItems.SPIRITUAL_CATALYST);
-				output.accept(ModItems.SOUL_STONE);
-				output.accept(ModItems.MYSTERY_CONCOCTION);
-				output.accept(ModItems.GOLDEN_MEAT);
-				output.accept(ModBlocks.SOUL_MONOLITH);
-				com.huntlike.gear.ModGear.WEAPONS.forEach(output::accept);
-				com.huntlike.gear.ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
-				output.accept(com.huntlike.gear.ModKoro.WOODEN_BELL);
-				output.accept(com.huntlike.gear.ModKoro.GOLDEN_BELL);
-				output.accept(com.huntlike.gear.ModKoro.MOSSY_BELL);
-				output.accept(com.huntlike.gear.ModKoro.KORO_WHAKAMATE);
-				com.huntlike.gear.HideBoots.BOOTS.forEach(output::accept);
-				output.accept(com.huntlike.gear.HideBoots.FEATHER_CHUTE);
-			})
-			.build();
+	private static ResourceKey<CreativeModeTab> key(String id) {
+		return ResourceKey.create(BuiltInRegistries.CREATIVE_MODE_TAB.key(), HuntLike.id(id));
+	}
+
+	private static void register(ResourceKey<CreativeModeTab> key, ItemLike icon, Consumer<CreativeModeTab.Output> items) {
+		CreativeModeTab tab = FabricCreativeModeTab.builder()
+				.icon(() -> new ItemStack(icon))
+				.title(Component.translatable("itemGroup.huntlike." + key.identifier().getPath()))
+				.displayItems((params, output) -> items.accept(output))
+				.build();
+		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, key, tab);
+	}
 
 	public static void initialize() {
-		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, KEY, TAB);
+		register(DROPS, ModItems.LOW_QUALITY_MYSTERY_MEAT, output -> {
+			output.accept(ModItems.LOW_QUALITY_MYSTERY_MEAT);
+			output.accept(ModItems.DECENT_QUALITY_MYSTERY_MEAT);
+			output.accept(ModItems.HIGH_QUALITY_MYSTERY_MEAT);
+			output.accept(ModItems.THICK_HIDE);
+			output.accept(ModItems.LARGE_FEMUR);
+			output.accept(ModItems.GOLDEN_MOSS);
+			output.accept(ModItems.SPIRITUAL_CATALYST);
+			output.accept(ModItems.SOUL_STONE);
+		});
+		register(GEAR, ModGear.SKIN_KNIFE, output -> {
+			ModGear.WEAPONS.forEach(output::accept);
+			ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
+			output.accept(ModKoro.WOODEN_BELL);
+			output.accept(ModKoro.GOLDEN_BELL);
+			output.accept(ModKoro.MOSSY_BELL);
+			output.accept(ModKoro.KORO_WHAKAMATE);
+			HideBoots.BOOTS.forEach(output::accept);
+			output.accept(HideBoots.FEATHER_CHUTE);
+			output.accept(ModItems.MYSTERY_CONCOCTION);
+			output.accept(ModItems.GOLDEN_MEAT);
+		});
+		register(BLOCKS, ModBlocks.ALPHA_ALTAR, output -> {
+			output.accept(ModBlocks.ALPHA_ALTAR);
+			output.accept(ModBlocks.SOUL_MONOLITH);
+		});
 	}
 }

@@ -163,6 +163,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			gear(context, singleplayer);
 			koro(context, singleplayer);
 			extras(context, singleplayer);
+			multiplayer(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -615,6 +616,108 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			ServerPlayer player = player(server);
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, net.minecraft.world.item.ItemStack.EMPTY);
 		});
+	}
+
+	/** A second (fake) player on the server: admin commands, two quests at once, a helper finishing someone else's boss. */
+	private static void multiplayer(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		assertServer(singleplayer, "creative tabs Drops, Gear, Blocks", server -> {
+			var registry = net.minecraft.core.registries.BuiltInRegistries.CREATIVE_MODE_TAB;
+			return registry.getValue(HuntLike.id("drops")) != null && registry.getValue(HuntLike.id("gear")) != null
+					&& registry.getValue(HuntLike.id("blocks")) != null && registry.getValue(HuntLike.id("huntlike")) == null;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+			player.teleportTo(player.getX(), player.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+					player.getBlockX(), player.getBlockZ()), player.getZ());
+			var helper = net.fabricmc.fabric.api.entity.FakePlayer.get(player.level(),
+					new com.mojang.authlib.GameProfile(java.util.UUID.fromString("00000000-0000-4000-8000-00000000beef"), "Helper"));
+			helper.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0, 0);
+			addToPlayerList(server, helper);
+		});
+		context.waitTicks(2);
+		singleplayer.getServer().runCommand("huntlike quest start Helper animal 2");
+		singleplayer.getServer().runCommand("huntlike stats Helper");
+		context.waitTicks(2);
+		assertServer(singleplayer, "command starts a quest for another player", server -> {
+			var quest = QuestManager.data(helper(server)).quest;
+			return quest != null && quest.tier == 2 && quest.phase == HuntData.PHASE_KILLING
+					&& QuestManager.data(player(server)).quest == null;
+		});
+		String name = singleplayer.getServer().computeOnServer(server -> player(server).getScoreboardName());
+		singleplayer.getServer().runCommand("huntlike boss animal 1 " + name);
+		context.waitTicks(60);
+		assertServer(singleplayer, "command summons a boss; both quests run side by side", server -> {
+			var mine = QuestManager.data(player(server)).quest;
+			var theirs = QuestManager.data(helper(server)).quest;
+			return mine != null && mine.phase == HuntData.PHASE_BOSS && BossController.findBoss(player(server), mine) != null
+					&& theirs != null && theirs.phase == HuntData.PHASE_KILLING && theirs.tier == 2;
+		});
+		int killsBefore = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).progress("animal").bossKills[0]);
+		assertServer(singleplayer, "helper's killing blow completes the owner's quest", server -> {
+			ServerPlayer owner = player(server);
+			ServerPlayer helper = helper(server);
+			Mob boss = BossController.findBoss(owner, QuestManager.data(owner).quest);
+			boss.hurtServer(owner.level(), owner.level().damageSources().playerAttack(owner), 2.0F);
+			boss.hurtServer(owner.level(), owner.level().damageSources().playerAttack(helper), 1000.0F);
+			return !boss.isAlive() && QuestManager.data(owner).quest == null
+					&& QuestManager.data(owner).progress("animal").bossKills[0] == killsBefore + 1
+					&& QuestManager.data(helper).quest != null && QuestManager.data(helper).progress("animal").bossKills[0] == 0;
+		});
+		assertServer(singleplayer, "helper's quota kill counts only for the helper", server -> {
+			ServerPlayer helper = helper(server);
+			var cow = EntityTypes.COW.create(helper.level(), EntitySpawnReason.COMMAND);
+			cow.snapTo(helper.getX() + 1, helper.getY(), helper.getZ(), 0, 0);
+			helper.level().addFreshEntity(cow);
+			int before = QuestManager.data(helper).quest.kills;
+			cow.hurtServer(helper.level(), helper.level().damageSources().playerAttack(helper), 1000.0F);
+			return QuestManager.data(helper).quest.kills == before + 1 && QuestManager.data(player(server)).quest == null;
+		});
+		singleplayer.getServer().runCommand("huntlike quest start @a animal 1");
+		context.waitTicks(2);
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		context.waitTicks(2);
+		assertServer(singleplayer, "cancel command clears every quest", server ->
+				QuestManager.data(player(server)).quest == null && QuestManager.data(helper(server)).quest == null);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer helper = helper(server);
+			removeFromPlayerList(server, helper);
+			helper.discard();
+		});
+	}
+
+	private static ServerPlayer helper(MinecraftServer server) {
+		return server.getPlayerList().getPlayer(java.util.UUID.fromString("00000000-0000-4000-8000-00000000beef"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void addToPlayerList(MinecraftServer server, ServerPlayer player) {
+		try {
+			var list = server.getPlayerList();
+			var players = net.minecraft.server.players.PlayerList.class.getDeclaredField("players");
+			var byUuid = net.minecraft.server.players.PlayerList.class.getDeclaredField("playersByUUID");
+			players.setAccessible(true);
+			byUuid.setAccessible(true);
+			((java.util.List<ServerPlayer>) players.get(list)).add(player);
+			((java.util.Map<java.util.UUID, ServerPlayer>) byUuid.get(list)).put(player.getUUID(), player);
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError("Could not add a fake player", e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void removeFromPlayerList(MinecraftServer server, ServerPlayer player) {
+		try {
+			var list = server.getPlayerList();
+			var players = net.minecraft.server.players.PlayerList.class.getDeclaredField("players");
+			var byUuid = net.minecraft.server.players.PlayerList.class.getDeclaredField("playersByUUID");
+			players.setAccessible(true);
+			byUuid.setAccessible(true);
+			((java.util.List<ServerPlayer>) players.get(list)).remove(player);
+			((java.util.Map<java.util.UUID, ServerPlayer>) byUuid.get(list)).remove(player.getUUID());
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError("Could not remove a fake player", e);
+		}
 	}
 
 	private static net.minecraft.world.entity.animal.wolf.Wolf testWolf(ServerPlayer player) {

@@ -761,10 +761,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			}
 		});
 		context.runOnClient(client -> {
+			client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
 			client.player.setYRot(90.0F);
 			client.player.setXRot(10.0F);
 		});
-		context.waitTicks(20);
+		context.waitTicks(60);
 		context.takeScreenshot("27-trophy-message");
 		context.runOnClient(client -> client.gui.hud.getChat().clearMessages(false));
 		context.waitTicks(3);

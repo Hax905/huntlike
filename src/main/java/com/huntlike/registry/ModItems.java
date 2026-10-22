@@ -26,7 +26,9 @@ public final class ModItems {
 	public static final Item THICK_HIDE = simple("thick_hide", Rarity.COMMON);
 	public static final Item LARGE_FEMUR = simple("large_femur", Rarity.UNCOMMON);
 	public static final Item GOLDEN_MOSS = simple("golden_moss", Rarity.RARE);
-	public static final Item SPIRITUAL_CATALYST = simple("spiritual_catalyst", Rarity.EPIC);
+	public static final Item SPIRITUAL_CATALYST = register("spiritual_catalyst", SpiritualCatalystItem::new,
+			new Item.Properties().rarity(Rarity.EPIC).component(net.minecraft.core.component.DataComponents.LORE,
+					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.lore())));
 
 	// Spirit Lure drop
 	public static final Item SOUL_STONE = simple("soul_stone", Rarity.UNCOMMON);

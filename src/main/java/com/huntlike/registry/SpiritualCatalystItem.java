@@ -1,0 +1,60 @@
+package com.huntlike.registry;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+
+import com.huntlike.network.HuntPayloads;
+
+/** Detect Nearby Souls: use it to highlight the nearest living entity for 3 seconds, seen only by you. */
+public class SpiritualCatalystItem extends Item {
+	public static final int HIGHLIGHT_TICKS = 60;
+	public static final double RANGE = 32.0;
+
+	public SpiritualCatalystItem(Properties properties) {
+		super(properties);
+	}
+
+	public static List<Component> lore() {
+		List<Component> lore = new ArrayList<>();
+		Lore.gray(lore, Lore.english("item.huntlike.spiritual_catalyst.desc"));
+		Lore.ability(lore, "Detect Nearby Souls", "Highlights the nearest living entity for 3 seconds.");
+		return lore;
+	}
+
+	@Override
+	public InteractionResult use(Level level, Player player, InteractionHand hand) {
+		if (player instanceof ServerPlayer serverPlayer) {
+			LivingEntity nearest = findNearest(serverPlayer);
+			if (nearest != null) {
+				ServerPlayNetworking.send(serverPlayer, new HuntPayloads.Highlight(nearest.getId(), HIGHLIGHT_TICKS));
+				level.playSound(null, player.blockPosition(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+			} else {
+				level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.6F, 0.6F);
+			}
+			serverPlayer.getCooldowns().addCooldown(player.getItemInHand(hand), HIGHLIGHT_TICKS);
+		}
+		return InteractionResult.SUCCESS;
+	}
+
+	public static LivingEntity findNearest(ServerPlayer player) {
+		return player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(RANGE),
+				entity -> entity != player && entity.isAlive() && !entity.isSpectator() && !(entity instanceof ArmorStand)
+						&& entity.distanceTo(player) <= RANGE)
+				.stream().min(Comparator.comparingDouble(entity -> entity.distanceToSqr(player))).orElse(null);
+	}
+}

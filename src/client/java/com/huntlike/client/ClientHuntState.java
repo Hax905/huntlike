@@ -17,6 +17,9 @@ public final class ClientHuntState {
 	public static boolean peaceful;
 	public static int bossTicksLeft;
 	public static int bossEntityId = -1;
+	/** Spiritual Catalyst highlight: entity id and the client tick it ends at. */
+	public static int highlightId = -1;
+	public static long highlightUntil;
 	public static List<String> huntable = new ArrayList<>();
 
 	public static void update(CompoundTag tag) {

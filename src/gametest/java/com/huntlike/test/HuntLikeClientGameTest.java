@@ -166,6 +166,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			extras(context, singleplayer);
 			multiplayer(context, singleplayer);
 			trophy(context, singleplayer);
+			catalystAndPulverizer(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -689,6 +690,57 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	}
 
 	private static net.minecraft.world.item.ItemStack trophyStack = net.minecraft.world.item.ItemStack.EMPTY;
+
+	/** Spiritual Catalyst highlights the nearest living entity (client side); the Bone Pulverizer in hand. */
+	private static void catalystAndPulverizer(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		int cowId = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+					player.getBoundingBox().inflate(40), e -> e != player)) {
+				e.discard();
+			}
+			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
+			cow.snapTo(player.getX() - 4, player.getY(), player.getZ() + 1, 0, 0);
+			cow.setNoAi(true);
+			player.level().addFreshEntity(cow);
+			var far = EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+			far.snapTo(player.getX() - 9, player.getY(), player.getZ() - 2, 0, 0);
+			far.setNoAi(true);
+			player.level().addFreshEntity(far);
+			return cow.getId();
+		});
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var stack = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.SPIRITUAL_CATALYST);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
+			stack.use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+		});
+		context.waitTicks(5);
+		boolean glowing = context.computeOnClient(client -> {
+			var cow = client.level.getEntity(cowId);
+			return cow != null && client.shouldEntityAppearGlowing(cow);
+		});
+		HuntLike.LOGGER.info("[test] Spiritual Catalyst highlights the nearest entity: {}", glowing ? "OK" : "FAILED");
+		if (!glowing) {
+			throw new AssertionError("Spiritual Catalyst highlight");
+		}
+		context.takeScreenshot("28-catalyst-highlight");
+		context.waitTicks(70);
+		boolean faded = context.computeOnClient(client -> !client.shouldEntityAppearGlowing(client.level.getEntity(cowId)));
+		HuntLike.LOGGER.info("[test] highlight fades after 3 seconds: {}", faded ? "OK" : "FAILED");
+		if (!faded) {
+			throw new AssertionError("Spiritual Catalyst highlight did not fade");
+		}
+		singleplayer.getServer().runOnServer(server -> player(server).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+				new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModGear.BONE_PULVERIZER)));
+		context.waitTicks(10);
+		context.takeScreenshot("29-pulverizer-first-person");
+		context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+		context.waitTicks(10);
+		context.takeScreenshot("30-pulverizer-third-person");
+		context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+	}
 
 	/** The 100th Tier V boss gives the Animal Hunting Trophy, which keeps its lore when placed and broken. */
 	private static void trophy(ClientGameTestContext context, TestSingleplayerContext singleplayer) {

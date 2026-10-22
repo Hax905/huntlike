@@ -54,6 +54,18 @@ public final class HuntPayloads {
 	}
 
 	/** Server to client: show the "gear obtained" popup for an item. */
+	/** Spiritual Catalyst: the client highlights one entity for a few ticks (only for this player). */
+	public record Highlight(int entityId, int ticks) implements CustomPacketPayload {
+		public static final Type<Highlight> TYPE = new Type<>(HuntLike.id("highlight"));
+		public static final StreamCodec<ByteBuf, Highlight> CODEC = StreamCodec.composite(
+				ByteBufCodecs.VAR_INT, Highlight::entityId, ByteBufCodecs.VAR_INT, Highlight::ticks, Highlight::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	public record GearToast(String itemId, String name) implements CustomPacketPayload {
 		public static final Type<GearToast> TYPE = new Type<>(HuntLike.id("gear_toast"));
 		public static final StreamCodec<ByteBuf, GearToast> CODEC = StreamCodec.composite(
@@ -69,6 +81,7 @@ public final class HuntPayloads {
 
 	public static void initialize() {
 		PayloadTypeRegistry.clientboundPlay().register(GearToast.TYPE, GearToast.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(Highlight.TYPE, Highlight.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Sync.TYPE, Sync.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(OpenMenu.TYPE, OpenMenu.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(Action.TYPE, Action.CODEC);

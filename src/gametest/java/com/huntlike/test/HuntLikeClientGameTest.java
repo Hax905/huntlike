@@ -753,8 +753,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				player.getInventory().setItem(slot, trophyStack.copy());
 			}
 		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (var e : player.level().getEntities(player, player.getBoundingBox().inflate(6))) {
+				HuntLike.LOGGER.info("[test] near trophy screenshot: {} {}", e.getType(), e.position());
+			}
+		});
+		context.runOnClient(client -> {
+			client.player.setYRot(90.0F);
+			client.player.setXRot(10.0F);
+		});
 		context.waitTicks(20);
-		context.takeScreenshot("27-trophy");
+		context.takeScreenshot("27-trophy-message");
+		context.runOnClient(client -> client.gui.getChat().clearMessages(false));
+		context.waitTicks(3);
+		context.takeScreenshot("27b-trophy-placed");
 	}
 
 	private static ServerPlayer helper(MinecraftServer server) {

@@ -756,7 +756,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			for (var e : player.level().getEntities(player, player.getBoundingBox().inflate(6))) {
-				HuntLike.LOGGER.info("[test] near trophy screenshot: {} {}", e.getType(), e.position());
+				HuntLike.LOGGER.info("[test] near trophy screenshot: {} {} alive={} age={} tags={} uuid={}", e.getType(), e.position(),
+						e.isAlive(), e.tickCount, e.entityTags(), e.getUUID());
 			}
 		});
 		context.runOnClient(client -> {

@@ -67,8 +67,11 @@ public final class ClusterQuota {
 		if (id == null) {
 			return true;
 		}
+		// Pieces killed together (a sweep) die one after another: only the last one, when every other piece is dead
+		// and none of them will still split, completes the cluster.
 		return dying.level().getEntitiesOfClass(LivingEntity.class, dying.getBoundingBox().inflate(96.0),
-				other -> other != dying && !other.isRemoved() && other.entityTags().contains(id)).isEmpty();
+				other -> other != dying && !other.isRemoved() && other.entityTags().contains(id)
+						&& (other.isAlive() || other instanceof AbstractCubeMob cube && cube.getSize() > 1)).isEmpty();
 	}
 
 	public static void onDeath(LivingEntity entity, DamageSource source) {

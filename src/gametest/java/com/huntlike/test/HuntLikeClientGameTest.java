@@ -751,13 +751,17 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			data.progress("cluster").xp = 0;
 			player(server).setAttached(QuestManager.DATA, data);
 		});
-		assertServer(singleplayer, "Icy Armor full set is Slippery", server -> {
+		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			var icy = com.huntlike.gear.ModGear.ICY;
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(icy.helmet()));
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(icy.chestplate()));
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(icy.leggings()));
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(icy.boots()));
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "Icy Armor full set is Slippery with iron armor's 15 points", server -> {
+			ServerPlayer player = player(server);
 			boolean slippery = com.huntlike.gear.GearEffects.slippery(player) && com.huntlike.gear.GearEffects.armorPieces(player) == 0;
 			HuntLike.LOGGER.info("[test] Icy armor value {}", player.getArmorValue());
 			return slippery && player.getArmorValue() == 15;

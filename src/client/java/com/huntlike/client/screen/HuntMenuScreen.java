@@ -334,8 +334,8 @@ public class HuntMenuScreen extends Screen {
 					26, 26, 26, 26);
 			if (locked) {
 				// Locked Hunts: a dark veil over the symbol and a padlock in the corner.
-				g.fill(x0, y0, x0 + size, y0 + size, 0xA0101010);
-				drawChains(g, x0, y0, size, size);
+				g.fill(x0, y0, x0 + size, y0 + size, 0x60101010);
+				drawChains(g, x0, y0, size, size, offset == 0 ? 1.5F : 1.0F);
 				int lw = offset == 0 ? 15 : 10;
 				int lh = offset == 0 ? 21 : 14;
 				g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, lw, lh);
@@ -359,15 +359,16 @@ public class HuntMenuScreen extends Screen {
 	}
 
 	/** Two iron chains crossed over a locked area (vanilla's chain texture, tiled along each diagonal). */
-	private static void drawChains(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+	private static void drawChains(GuiGraphicsExtractor g, int x, int y, int w, int h, float scale) {
 		g.enableScissor(x, y, x + w, y + h);
-		float length = (float) Math.sqrt(w * w + h * h);
+		float length = (float) Math.sqrt(w * w + h * h) / scale;
 		int segment = 16;
 		int count = (int) Math.ceil(length / segment) + 1;
 		for (int side = -1; side <= 1; side += 2) {
 			g.pose().pushMatrix();
 			g.pose().translate(x + w / 2.0F, y + h / 2.0F);
 			g.pose().rotate((float) Math.atan2(h, side * w) - (float) (Math.PI / 2));
+			g.pose().scale(scale, scale);
 			for (int i = 0; i < count; i++) {
 				g.blit(RenderPipelines.GUI_TEXTURED, CHAIN, -2, (int) (-length / 2) + i * segment - 2, 0.0F, 0.0F, 3, segment, 16, 16);
 			}
@@ -460,7 +461,7 @@ public class HuntMenuScreen extends Screen {
 		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
 		if (!unlocked) {
 			g.nextStratum();
-			drawChains(g, px + pw - 74, statsTop, 58, 50);
+			drawChains(g, px + pw - 74, statsTop, 58, 50, 1.5F);
 		}
 
 		int by = py + ph - 20;

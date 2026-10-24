@@ -16,6 +16,38 @@ public class TheVileRenderer extends SlimeRenderer {
 
 	public TheVileRenderer(EntityRendererProvider.Context context) {
 		super(context);
+		// The vanilla outer layer always uses the green slime texture: swap it for one with your Soul Cluster shell.
+		this.layers.removeIf(layer -> layer instanceof net.minecraft.client.renderer.entity.layers.SlimeOuterLayer);
+		this.addLayer(new OuterLayer(this, context.getModelSet()));
+	}
+
+	static Identifier texture(SlimeRenderState state) {
+		return state instanceof VileRenderState vile && vile.magmaCore ? MAGMA : FROST;
+	}
+
+	/** The translucent outer shell, drawn with the core's texture. */
+	static class OuterLayer extends net.minecraft.client.renderer.entity.layers.RenderLayer<SlimeRenderState,
+			net.minecraft.client.model.monster.slime.SlimeModel> {
+		private final net.minecraft.client.model.monster.slime.SlimeModel model;
+
+		OuterLayer(net.minecraft.client.renderer.entity.RenderLayerParent<SlimeRenderState,
+				net.minecraft.client.model.monster.slime.SlimeModel> parent, net.minecraft.client.model.geom.EntityModelSet models) {
+			super(parent);
+			this.model = new net.minecraft.client.model.monster.slime.SlimeModel(
+					models.bakeLayer(net.minecraft.client.model.geom.ModelLayers.SLIME_OUTER));
+		}
+
+		@Override
+		public void submit(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector,
+				int light, SlimeRenderState state, float yRot, float xRot) {
+			if (state.isInvisible) {
+				return;
+			}
+			this.model.setupAnim(state);
+			collector.submitModel(this.model, state, pose,
+					net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(texture(state)), light,
+					net.minecraft.client.renderer.entity.LivingEntityRenderer.getOverlayCoords(state, 0.0F), state.outlineColor);
+		}
 	}
 
 	/** Render state that also carries the core. */
@@ -38,6 +70,6 @@ public class TheVileRenderer extends SlimeRenderer {
 
 	@Override
 	public Identifier getTextureLocation(SlimeRenderState state) {
-		return state instanceof VileRenderState vile && vile.magmaCore ? MAGMA : FROST;
+		return texture(state);
 	}
 }

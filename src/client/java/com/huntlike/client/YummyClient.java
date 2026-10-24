@@ -1,5 +1,8 @@
 package com.huntlike.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -78,38 +81,59 @@ public final class YummyClient {
 		}
 		Minecraft client = Minecraft.getInstance();
 		Font font = client.font;
+		int gap = 3;
+		int boxH = 16;
+		int maxRowW = Math.min(g.guiWidth() - 24, 300);
+		// Lay the keys out left to right, wrapping into rows.
+		int[] widths = new int[keys.length];
 		String[] labels = new String[keys.length];
-		int box = 18;
+		List<List<Integer>> rows = new ArrayList<>();
+		List<Integer> row = new ArrayList<>();
+		int rowW = 0;
 		for (int i = 0; i < keys.length; i++) {
 			labels[i] = label(client, keys[i]);
-			box = Math.max(box, font.width(labels[i]) + 6);
+			widths[i] = Math.max(16, font.width(labels[i]) + 6);
+			int add = (row.isEmpty() ? 0 : gap) + widths[i];
+			if (!row.isEmpty() && rowW + add > maxRowW) {
+				rows.add(row);
+				row = new ArrayList<>();
+				rowW = 0;
+				add = widths[i];
+			}
+			row.add(i);
+			rowW += add;
 		}
-		int gap = 3;
-		int rowW = keys.length * (box + gap) - gap;
-		int panelW = Math.min(g.guiWidth() - 8, Math.max(rowW, 160) + 16);
-		int panelH = 60;
+		rows.add(row);
+		int panelW = maxRowW + 16;
+		int panelH = 28 + rows.size() * (boxH + gap) + 2;
 		int x = (g.guiWidth() - panelW) / 2;
-		int y = g.guiHeight() / 2 + 24;
+		int y = g.guiHeight() - 46 - panelH;
 		g.fill(x, y, x + panelW, y + panelH, 0xC0101010);
 		g.fill(x, y, x + panelW, y + 1, 0xFF6B4A2A);
 		g.centeredText(font, Component.literal("Escape the cluster!").withColor(HuntDefs.BROWN), x + panelW / 2, y + 5, 0xFFFFFFFF);
 		int barX = x + 8;
 		int barW = panelW - 16;
-		g.fill(barX, y + 17, barX + barW, y + 22, 0xFF3A2A1A);
-		g.fill(barX, y + 17, barX + Math.round(barW * progress / (float) keys.length), y + 22, 0xFF55FF55);
-		int keyX = x + (panelW - rowW) / 2;
-		int keyY = y + 30;
-		for (int i = 0; i < keys.length; i++) {
-			int bx = keyX + i * (box + gap);
-			boolean done = i < progress;
-			boolean next = i == progress;
-			int border = next ? 0xFFFFFFFF : done ? 0xFF3C6E3C : 0xFF808080;
-			int fill = next ? 0xFF4A3520 : done ? 0xFF1E3A1E : 0xFF2A2A2A;
-			g.fill(bx, keyY, bx + box, keyY + box, border);
-			g.fill(bx + 1, keyY + 1, bx + box - 1, keyY + box - 1, fill);
-			String text = labels[i];
-			int color = done ? 0xFF6FA86F : next ? 0xFFFFFF55 : 0xFFDDDDDD;
-			g.centeredText(font, Component.literal(text), bx + box / 2, keyY + (box - 8) / 2, color);
+		g.fill(barX, y + 17, barX + barW, y + 21, 0xFF3A2A1A);
+		g.fill(barX, y + 17, barX + Math.round(barW * progress / (float) keys.length), y + 21, 0xFF55FF55);
+		int keyY = y + 26;
+		for (List<Integer> r : rows) {
+			int total = -gap;
+			for (int i : r) {
+				total += widths[i] + gap;
+			}
+			int bx = x + (panelW - total) / 2;
+			for (int i : r) {
+				boolean done = i < progress;
+				boolean next = i == progress;
+				int border = next ? 0xFFFFFFFF : done ? 0xFF3C6E3C : 0xFF808080;
+				int fill = next ? 0xFF4A3520 : done ? 0xFF1E3A1E : 0xFF2A2A2A;
+				g.fill(bx, keyY, bx + widths[i], keyY + boxH, border);
+				g.fill(bx + 1, keyY + 1, bx + widths[i] - 1, keyY + boxH - 1, fill);
+				int color = done ? 0xFF6FA86F : next ? 0xFFFFFF55 : 0xFFDDDDDD;
+				g.centeredText(font, Component.literal(labels[i]), bx + widths[i] / 2, keyY + 4, color);
+				bx += widths[i] + gap;
+			}
+			keyY += boxH + gap;
 		}
 	}
 }

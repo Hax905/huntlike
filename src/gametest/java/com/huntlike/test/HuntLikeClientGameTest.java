@@ -808,10 +808,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		int ballsBefore = com.huntlike.hunt.ClusterFight.ballsThrown;
 		singleplayer.getServer().runCommand("huntlike boss cluster 5 " + name);
 		context.waitTicks(45);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var main = com.huntlike.hunt.ClusterFight.bodies(player).get(0);
+			main.setNoAi(true);
+			main.teleportTo(player.getX(), player.getY(), player.getZ() + 6);
+		});
+		context.runOnClient(client -> {
+			client.player.setYRot(0.0F);
+			client.player.setXRot(15.0F);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("45a-the-vile-close");
 		boolean core = singleplayer.getServer().computeOnServer(server ->
 				((com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0)).isMagmaCore());
 		context.waitTicks(110);
-		context.takeScreenshot("45-the-vile");
+		context.takeScreenshot("45b-the-vile-switched");
 		assertServer(singleplayer, "Thermodynamic switched the core; Baller threw a ball", server -> {
 			var vile = (com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0);
 			HuntLike.LOGGER.info("[test] core {} -> {}, balls {}", core, vile.isMagmaCore(), com.huntlike.hunt.ClusterFight.ballsThrown - ballsBefore);

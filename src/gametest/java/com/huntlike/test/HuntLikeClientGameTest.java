@@ -743,7 +743,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.setAttached(QuestManager.DATA, data);
 			QuestManager.sync(player);
 		});
-		singleplayer.getServer().runCommand("huntlike xp add 60 cluster");
+		singleplayer.getServer().runCommand("execute as " + name + " run huntlike xp add 60 cluster");
 		context.waitTicks(2);
 		check(singleplayer, "/huntlike xp add <amount> cluster", data -> data.progress("cluster").xp == 60);
 		singleplayer.getServer().runOnServer(server -> {

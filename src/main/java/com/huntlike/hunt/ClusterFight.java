@@ -13,7 +13,6 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
@@ -511,7 +510,6 @@ public final class ClusterFight {
 			jump.addOrUpdateTransientModifier(new AttributeModifier(YUMMY_JUMP, -1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
 		}
 		owner.connection.send(new ClientboundSetTitlesAnimationPacket(2, 30, 8));
-		owner.connection.send(new ClientboundSetSubtitleTextPacket(Messages.c("Press the keys to escape!", HuntDefs.GRAY)));
 		owner.connection.send(new ClientboundSetTitleTextPacket(Messages.c("Yummy!", HuntDefs.BROWN)
 				.withStyle(style -> style.withBold(true))));
 		QuestManager.playSound(owner, SoundEvents.GENERIC_EAT.value(), 0.6F);

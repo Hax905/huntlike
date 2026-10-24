@@ -40,7 +40,9 @@ import com.huntlike.registry.ModItems;
 public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
 	private static final Identifier MERCURY = HuntLike.id("textures/gui/mercury.png");
-	private static final Identifier LOCK = HuntLike.id("textures/gui/lock.png");
+	/** Vanilla's padlock (the cartography table's "locked" icon) and iron chain. */
+	private static final Identifier LOCK = Identifier.withDefaultNamespace("container/cartography_table/locked");
+	private static final Identifier CHAIN = Identifier.withDefaultNamespace("textures/block/iron_chain.png");
 
 	/** Each Hunt's symbol on the rail: the ankh for Animal, Mercury's alchemical symbol for Cluster. */
 	private static Identifier symbol(Hunt hunt) {
@@ -333,10 +335,10 @@ public class HuntMenuScreen extends Screen {
 			if (locked) {
 				// Locked Hunts: a dark veil over the symbol and a padlock in the corner.
 				g.fill(x0, y0, x0 + size, y0 + size, 0xA0101010);
-				int lw = offset == 0 ? 18 : 12;
+				drawChains(g, x0, y0, size, size);
+				int lw = offset == 0 ? 15 : 10;
 				int lh = offset == 0 ? 21 : 14;
-				g.blit(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, 0.0F, 0.0F, lw, lh, 12, 14,
-						12, 14);
+				g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, lw, lh);
 			}
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));
@@ -354,6 +356,24 @@ public class HuntMenuScreen extends Screen {
 				}
 			}
 		}
+	}
+
+	/** Two iron chains crossed over a locked area (vanilla's chain texture, tiled along each diagonal). */
+	private static void drawChains(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+		g.enableScissor(x, y, x + w, y + h);
+		float length = (float) Math.sqrt(w * w + h * h);
+		int segment = 16;
+		int count = (int) Math.ceil(length / segment) + 1;
+		for (int side = -1; side <= 1; side += 2) {
+			g.pose().pushMatrix();
+			g.pose().translate(x + w / 2.0F, y + h / 2.0F);
+			g.pose().rotate((float) Math.atan2(h, side * w) - (float) (Math.PI / 2));
+			for (int i = 0; i < count; i++) {
+				g.blit(RenderPipelines.GUI_TEXTURED, CHAIN, -2, (int) (-length / 2) + i * segment - 2, 0.0F, 0.0F, 3, segment, 16, 16);
+			}
+			g.pose().popMatrix();
+		}
+		g.disableScissor();
 	}
 
 	private void panelBox(GuiGraphicsExtractor g) {
@@ -438,6 +458,10 @@ public class HuntMenuScreen extends Screen {
 			drawAbilities(g, tier, px + 4, y, pw - 8, py + ph - 26 - y);
 		}
 		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		if (!unlocked) {
+			g.nextStratum();
+			drawChains(g, px + pw - 74, statsTop, 58, 50);
+		}
 
 		int by = py + ph - 20;
 		boolean defeated = progress.bossKills[tier.number() - 1] > 0;

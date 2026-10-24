@@ -333,9 +333,10 @@ public class HuntMenuScreen extends Screen {
 			if (locked) {
 				// Locked Hunts: a dark veil over the symbol and a padlock in the corner.
 				g.fill(x0, y0, x0 + size, y0 + size, 0xA0101010);
-				int lw = offset == 0 ? 12 : 9;
-				int lh = offset == 0 ? 14 : 10;
-				g.blit(RenderPipelines.GUI_TEXTURED, LOCK, x0 + size - lw + 2, y0 + size - lh + 2, 0.0F, 0.0F, lw, lh, 12, 14, 12, 14);
+				int lw = offset == 0 ? 18 : 12;
+				int lh = offset == 0 ? 21 : 14;
+				g.blit(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, 0.0F, 0.0F, lw, lh, 12, 14,
+						12, 14);
 			}
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));

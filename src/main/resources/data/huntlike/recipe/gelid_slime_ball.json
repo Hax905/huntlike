@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": "minecraft:packed_ice",
+    "F": "huntlike:frozen_slime_ball"
+  },
+  "pattern": [
+    " P ",
+    "PFP",
+    " P "
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:gelid_slime_ball"
+  }
+}

@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "huntlike:soul_strike"
+    "huntlike:soul_strike",
+    "huntlike:digested",
+    "huntlike:sticky_fingers"
   ]
 }

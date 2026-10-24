@@ -54,6 +54,29 @@ public final class HuntPayloads {
 	}
 
 	/** Server to client: show the "gear obtained" popup for an item. */
+	/**
+	 * Server to client: the Yummy! escape. keys is one digit per key (0 forward, 1 left, 2 back, 3 right, 4 attack,
+	 * 5 use, 6 jump); progress is how many are already pressed.
+	 */
+	public record Yummy(boolean active, String keys, int progress) implements CustomPacketPayload {
+		public static final Type<Yummy> TYPE = new Type<>(HuntLike.id("yummy"));
+		public static final StreamCodec<ByteBuf, Yummy> CODEC = StreamCodec.composite(
+				ByteBufCodecs.BOOL, Yummy::active,
+				ByteBufCodecs.STRING_UTF8, Yummy::keys,
+				ByteBufCodecs.VAR_INT, Yummy::progress,
+				Yummy::new);
+
+		public Yummy(boolean active, int[] keys, int progress) {
+			this(active, java.util.Arrays.stream(keys).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining()),
+					progress);
+		}
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	/** Spiritual Catalyst: the client highlights one entity for a few ticks (only for this player). */
 	public record Highlight(int entityId, int ticks) implements CustomPacketPayload {
 		public static final Type<Highlight> TYPE = new Type<>(HuntLike.id("highlight"));
@@ -82,6 +105,7 @@ public final class HuntPayloads {
 	public static void initialize() {
 		PayloadTypeRegistry.clientboundPlay().register(GearToast.TYPE, GearToast.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Highlight.TYPE, Highlight.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(Yummy.TYPE, Yummy.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Sync.TYPE, Sync.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(OpenMenu.TYPE, OpenMenu.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(Action.TYPE, Action.CODEC);

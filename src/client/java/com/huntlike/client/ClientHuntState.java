@@ -17,6 +17,8 @@ public final class ClientHuntState {
 	public static boolean peaceful;
 	public static int bossTicksLeft;
 	public static int bossEntityId = -1;
+	/** Every living body of a Cluster boss (empty for Animal bosses). */
+	public static int[] bossEntityIds = new int[0];
 	/** Spiritual Catalyst highlight: entity id and the client tick it ends at. */
 	public static int highlightId = -1;
 	public static long highlightUntil;
@@ -27,6 +29,7 @@ public final class ClientHuntState {
 		peaceful = tag.getBooleanOr("peaceful", false);
 		bossTicksLeft = tag.getIntOr("bossTicksLeft", 0);
 		bossEntityId = tag.getIntOr("bossEntity", -1);
+		bossEntityIds = tag.getIntArray("bossEntities").orElse(new int[0]);
 		List<String> names = new ArrayList<>();
 		ListTag list = tag.getListOrEmpty("huntable");
 		for (int i = 0; i < list.size(); i++) {

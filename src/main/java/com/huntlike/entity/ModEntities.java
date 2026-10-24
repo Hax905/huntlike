@@ -43,6 +43,41 @@ public final class ModEntities {
 					.noSave()
 					.build(CORROSIVE_STINGER_KEY));
 
+	private static final ResourceKey<EntityType<?>> CLUSTER_BALL_KEY = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id("cluster_ball"));
+
+	public static final EntityType<ClusterBall> CLUSTER_BALL = Registry.register(BuiltInRegistries.ENTITY_TYPE, CLUSTER_BALL_KEY,
+			EntityType.Builder.<ClusterBall>of(ClusterBall::new, MobCategory.MISC)
+					.sized(0.4F, 0.4F)
+					.clientTrackingRange(6)
+					.updateInterval(10)
+					.noSave()
+					.build(CLUSTER_BALL_KEY));
+
+	// Cluster Hunt bosses: slimes and magma cubes with their own names; their size comes from the fight.
+	public static final EntityType<com.huntlike.entity.cluster.Cubert> CUBERT = cluster("cubert",
+			com.huntlike.entity.cluster.Cubert::new, false);
+	public static final EntityType<com.huntlike.entity.cluster.Blucky> BLUCKY = cluster("blucky",
+			com.huntlike.entity.cluster.Blucky::new, false);
+	public static final EntityType<com.huntlike.entity.cluster.HotHead> HOT_HEAD = cluster("hot_head",
+			com.huntlike.entity.cluster.HotHead::new, true);
+	public static final EntityType<com.huntlike.entity.cluster.VarianceSlime> VARIANCE_SLIME = cluster("variance_slime",
+			com.huntlike.entity.cluster.VarianceSlime::new, false);
+	public static final EntityType<com.huntlike.entity.cluster.VarianceMagma> VARIANCE_MAGMA = cluster("variance_magma",
+			com.huntlike.entity.cluster.VarianceMagma::new, true);
+	public static final EntityType<com.huntlike.entity.cluster.TheVile> THE_VILE = cluster("the_vile",
+			com.huntlike.entity.cluster.TheVile::new, true);
+
+	private static <T extends net.minecraft.world.entity.Mob> EntityType<T> cluster(String name, EntityType.EntityFactory<T> factory,
+			boolean fireImmune) {
+		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id(name));
+		EntityType.Builder<T> builder = EntityType.Builder.of(factory, MobCategory.MONSTER).sized(0.52F, 0.52F).eyeHeight(0.325F)
+				.clientTrackingRange(10);
+		if (fireImmune) {
+			builder = builder.fireImmune();
+		}
+		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
+	}
+
 	// Hunt bosses and Herd Call animals: their own entity types, so they carry their own names (also in death
 	// messages) and can get their own models later.
 	public static final EntityType<Sylviornis> SYLVIORNIS = animal("sylviornis", Sylviornis::new, 0.4F, 0.7F);
@@ -68,5 +103,13 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(EPICYON_HAYDENI, Wolf.createAttributes());
 		FabricDefaultAttributeRegistry.register(BOS_TAURUS, Cow.createAttributes());
 		FabricDefaultAttributeRegistry.register(CANIS_LUPUS, Wolf.createAttributes());
+		var slime = net.minecraft.world.entity.ai.attributes.DefaultAttributes.getSupplier(net.minecraft.world.entity.EntityTypes.SLIME);
+		var magma = net.minecraft.world.entity.ai.attributes.DefaultAttributes.getSupplier(net.minecraft.world.entity.EntityTypes.MAGMA_CUBE);
+		FabricDefaultAttributeRegistry.register(CUBERT, slime);
+		FabricDefaultAttributeRegistry.register(BLUCKY, slime);
+		FabricDefaultAttributeRegistry.register(HOT_HEAD, magma);
+		FabricDefaultAttributeRegistry.register(VARIANCE_SLIME, slime);
+		FabricDefaultAttributeRegistry.register(VARIANCE_MAGMA, magma);
+		FabricDefaultAttributeRegistry.register(THE_VILE, slime);
 	}
 }

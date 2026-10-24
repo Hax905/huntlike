@@ -39,6 +39,12 @@ import com.huntlike.registry.ModItems;
  */
 public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
+	private static final Identifier MERCURY = HuntLike.id("textures/gui/mercury.png");
+
+	/** Each Hunt's symbol on the rail: the ankh for Animal, Mercury's alchemical symbol for Cluster. */
+	private static Identifier symbol(Hunt hunt) {
+		return HuntDefs.isCluster(hunt) ? MERCURY : ANKH;
+	}
 	private static final String[] TABS = {"Quests", "Gear", "Ranks"};
 
 	private static final int W = 360;
@@ -146,10 +152,14 @@ public class HuntMenuScreen extends Screen {
 		return best;
 	}
 
-	/** A tier can be started once its Rank is reached and the previous tier's boss has been defeated. */
+	/** A tier can be started once its Hunt is open, its Rank is reached and the previous tier's boss is defeated. */
 	private boolean tierOpen(Tier tier) {
 		HuntData.Progress progress = progress();
-		return progress.rank() >= tier.unlockRank() && previousDefeated(tier);
+		return huntOpen() && progress.rank() >= tier.unlockRank() && previousDefeated(tier);
+	}
+
+	private boolean huntOpen() {
+		return HuntDefs.huntUnlocked(ClientHuntState.data, hunt());
 	}
 
 	private boolean previousDefeated(Tier tier) {
@@ -165,6 +175,8 @@ public class HuntMenuScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
 		super.extractRenderState(g, mouseX, mouseY, delta);
+		lastMouseX = mouseX;
+		lastMouseY = mouseY;
 		hits.clear();
 		H = Math.max(180, Math.min(MAX_H, this.height - TAB_H - 8));
 		left = (this.width - W) / 2;
@@ -308,7 +320,8 @@ public class HuntMenuScreen extends Screen {
 			int y0 = sy - size / 2;
 			boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
 			sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
-			g.blit(RenderPipelines.GUI_TEXTURED, ANKH, x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6, 26, 26, 26, 26);
+			g.blit(RenderPipelines.GUI_TEXTURED, symbol(HuntDefs.HUNTS.get(index)), x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6,
+					26, 26, 26, 26);
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));
 				if (hover) {
@@ -377,7 +390,10 @@ public class HuntMenuScreen extends Screen {
 		y += 12;
 
 		if (!unlocked) {
-			String lock = progress.rank() < tier.unlockRank()
+			String lock = !huntOpen()
+					? "The " + hunt.name() + " Hunt unlocks at " + HuntDefs.ANIMAL.rankName(HuntDefs.huntUnlockRank(hunt))
+							+ " (Animal Rank " + HuntDefs.ROMAN[HuntDefs.huntUnlockRank(hunt)] + ")"
+					: progress.rank() < tier.unlockRank()
 					? "Unlocks at " + hunt.rankName(tier.unlockRank()) + " (Rank " + HuntDefs.ROMAN[tier.unlockRank()] + ")"
 					: "Defeat " + hunt.tier(tier.number() - 1).bossName() + " (Tier " + HuntDefs.ROMAN[tier.number() - 1]
 							+ ") to unlock";
@@ -438,9 +454,11 @@ public class HuntMenuScreen extends Screen {
 			}
 			lines.add(colored(ability.name(), HuntDefs.GOLD).getVisualOrderText());
 			colors.add(WHITE);
-			for (FormattedCharSequence line : this.font.split(colored(ability.description(), TEXT_GRAY), w - 14)) {
-				lines.add(line);
-				colors.add(WHITE);
+			for (String paragraph : ability.description().split("\n")) {
+				for (FormattedCharSequence line : this.font.split(colored(paragraph, TEXT_GRAY), w - 14)) {
+					lines.add(line);
+					colors.add(WHITE);
+				}
 			}
 		}
 		int lineH = 9;
@@ -545,11 +563,15 @@ public class HuntMenuScreen extends Screen {
 		if (this.minecraft.level == null) {
 			return;
 		}
-		LivingEntity entity = previews.computeIfAbsent(tier.number(), n -> {
+		int key = tier.number() + (HuntDefs.isCluster(tier) ? 10 : 0);
+		LivingEntity entity = previews.computeIfAbsent(key, n -> {
 			LivingEntity created = tier.mob().create(this.minecraft.level, EntitySpawnReason.LOAD);
 			if (created != null) {
 				// A preview never joins the world; it only needs an id the renderer can read.
 				created.setId(-1000 - n);
+				if (created instanceof net.minecraft.world.entity.monster.cubemob.AbstractCubeMob cube) {
+					cube.setSize(3, false);
+				}
 			}
 			return created;
 		});
@@ -560,13 +582,14 @@ public class HuntMenuScreen extends Screen {
 		float lookX = (x1 + x2) / 2.0F + (float) Math.sin(time * 0.7) * 80.0F;
 		float lookY = (y1 + y2) / 2.0F - 10.0F;
 		int[] scales = {0, 34, 22, 19, 18, 26};
-		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, scales[tier.number()], 0.0625F, lookX, lookY, entity);
+		int scale = HuntDefs.isCluster(tier) ? 22 : scales[tier.number()];
+		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, scale, 0.0625F, lookX, lookY, entity);
 	}
 
 	/** Drops list with item icons, drawn on top of everything. */
 	private void drawDropsPanel(GuiGraphicsExtractor g, Tier tier, int mouseX, int mouseY) {
 		HuntData.Progress progress = progress();
-		boolean concoction = ClientHuntState.data.concoction;
+		boolean concoction = ClientHuntState.data.concoction && !HuntDefs.isCluster(hunt());
 		HuntData.Quest running = activeQuest();
 		boolean daily = running != null && running.daily;
 		List<ItemStack> icons = new ArrayList<>();
@@ -579,11 +602,13 @@ public class HuntMenuScreen extends Screen {
 			names.add(Component.empty().append(seen ? new ItemStack(drop.item()).getStyledHoverName() : colored("Unknown", TEXT_DIM))
 					.append(colored("  " + chance, TEXT_GRAY)));
 		}
-		boolean seenStone = progress.dropsSeen.contains("soul_stone");
-		icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
-		names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
-				: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 * HuntDefs.chance("animal", 1, 100, concoction, daily))
-						+ " (Spirit Lure animals)", TEXT_GRAY)));
+		if (!HuntDefs.isCluster(hunt())) {
+			boolean seenStone = progress.dropsSeen.contains("soul_stone");
+			icons.add(seenStone ? new ItemStack(ModItems.SOUL_STONE) : ItemStack.EMPTY);
+			names.add(Component.empty().append(seenStone ? new ItemStack(ModItems.SOUL_STONE).getStyledHoverName()
+					: colored("Unknown", TEXT_DIM)).append(colored("  " + formatPercent(100.0 * HuntDefs.chance("animal", 1, 100,
+							concoction, daily)) + " (Spirit Lure animals)", TEXT_GRAY)));
+		}
 		int width = 0;
 		for (Component name : names) {
 			width = Math.max(width, this.font.width(name));
@@ -674,10 +699,21 @@ public class HuntMenuScreen extends Screen {
 		tokenButton = null;
 		switch (gearPage) {
 			case 1 -> drawGearMisc(g, hunt, y, mouseX, mouseY);
-			case 0 -> drawGearTrades(g, HuntDefs.ANIMAL_ARMOR, y, mouseX, mouseY);
-			default -> drawGearTrades(g, HuntDefs.ANIMAL_WEAPONS, y, mouseX, mouseY);
+			case 0 -> drawGearTradesOrNone(g, HuntDefs.trades(hunt, 0), y);
+			default -> drawGearTradesOrNone(g, HuntDefs.trades(hunt, 2), y);
 		}
 	}
+
+	private void drawGearTradesOrNone(GuiGraphicsExtractor g, List<HuntDefs.GearTrade> trades, int y) {
+		if (trades.isEmpty()) {
+			g.centeredText(this.font, colored("Nothing here yet.", TEXT_GRAY), px + pw / 2, y + 10, WHITE);
+			return;
+		}
+		drawGearTrades(g, trades, y, lastMouseX, lastMouseY);
+	}
+
+	private int lastMouseX;
+	private int lastMouseY;
 
 	private void drawGearMisc(GuiGraphicsExtractor g, Hunt hunt, int y, int mouseX, int mouseY) {
 		int cx = px + pw / 2;
@@ -686,12 +722,21 @@ public class HuntMenuScreen extends Screen {
 		g.text(this.font, colored("Balance: ", TEXT_GRAY).append(colored(String.valueOf(progress().tokens), HuntDefs.LIME)),
 				px + 8, y + 15, WHITE, false);
 		tokenButton = new int[] {px + 8, y + 28, pw - 16, 16};
-		boolean hover = button(g, px + 8, y + 28, pw - 16, 16, Component.literal("Buy 64 Tokens [10 Logs]"), true, mouseX,
-				mouseY, null);
+		int count = HuntDefs.tokenMaterialCount(hunt);
+		String material = HuntDefs.tokenMaterialName(hunt);
+		boolean hover = button(g, px + 8, y + 28, pw - 16, 16, Component.literal("Buy 64 Tokens [" + count + " " + material + "]"),
+				true, mouseX, mouseY, null);
 		if (hover) {
-			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 10 Logs -> 64 Tokens", WHITE),
-					colored("Any Overworld log works.", TEXT_GRAY),
-					colored("Shift-click: 100 Logs -> 640 Tokens", TEXT_GRAY)), mouseX, mouseY);
+			List<Component> tip = new ArrayList<>();
+			tip.add(colored("Click: " + count + " " + material + " -> 64 Tokens", WHITE));
+			if (!HuntDefs.isCluster(hunt)) {
+				tip.add(colored("Any Overworld log works.", TEXT_GRAY));
+			}
+			tip.add(colored("Shift-click: " + count * 10 + " " + material + " -> 640 Tokens", TEXT_GRAY));
+			g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
+		}
+		if (HuntDefs.isCluster(hunt)) {
+			return;
 		}
 		y += 58;
 		sprite(g, "panel_dark", px + 4, y, pw - 8, 44);

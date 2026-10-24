@@ -1,5 +1,7 @@
 package com.huntlike.test;
 
+import java.util.List;
+
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.core.BlockPos;
@@ -169,6 +171,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			trophy(context, singleplayer);
 			catalystAndPulverizer(context, singleplayer);
 			dailyRefill(context, singleplayer);
+			clusterHunt(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -696,6 +699,161 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	}
 
 	private static net.minecraft.world.item.ItemStack trophyStack = net.minecraft.world.item.ItemStack.EMPTY;
+
+	private static void killAll(TestSingleplayerContext singleplayer, java.util.function.Function<ServerPlayer, List<? extends net.minecraft.world.entity.LivingEntity>> which) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (var mob : which.apply(player)) {
+				mob.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100000.0F);
+			}
+		});
+	}
+
+	/** The Cluster Hunt: Soul Sand tokens, whole-cluster quota, Mitosis, Baller, Yummy!, Watch out! and Thermodynamic. */
+	private static void clusterHunt(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		String name = singleplayer.getServer().computeOnServer(server -> player(server).getScoreboardName());
+		assertServer(singleplayer, "cluster hunt unlocked at Animal Rank III; Spirit Lure brings slimes here", server ->
+				com.huntlike.hunt.HuntDefs.huntUnlocked(QuestManager.data(player(server)), com.huntlike.hunt.HuntDefs.CLUSTER)
+						&& com.huntlike.hunt.SpiritLure.huntableHere(player(server), com.huntlike.hunt.HuntDefs.CLUSTER)
+								.equals(List.of(EntityTypes.SLIME)));
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			give(player, net.minecraft.world.item.Items.SOUL_SAND, 5);
+		});
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("buy_tokens", "cluster", 0)));
+		context.waitTicks(5);
+		check(singleplayer, "5 Soul Sand -> 64 Cluster tokens", data -> data.progress("cluster").tokens == 64);
+
+		// Menu: the Cluster Hunt's boss cards.
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("select", "cluster", 0)));
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
+		context.waitForScreen(HuntMenuScreen.class);
+		context.waitTicks(10);
+		context.takeScreenshot("40-cluster-card");
+		for (int i = 0; i < 4; i++) {
+			context.getInput().pressKey(InputConstants.KEY_D);
+		}
+		context.waitTicks(5);
+		context.takeScreenshot("41-cluster-tier5-card");
+		for (int i = 0; i < 4; i++) {
+			context.getInput().pressKey(InputConstants.KEY_A);
+		}
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(5);
+		context.takeScreenshot("42-cluster-gear");
+		context.setScreen(() -> null);
+
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("start", "cluster", 1)));
+		context.waitTicks(5);
+		check(singleplayer, "cluster tier I started", data -> data.quest != null && data.quest.hunt.equals("cluster")
+				&& data.quest.tier == 1 && data.quest.quota == 2);
+
+		// A whole cluster counts once: a medium slime and both of its pieces = 1 point.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var slime = EntityTypes.SLIME.create(player.level(), EntitySpawnReason.COMMAND);
+			slime.setSize(2, true);
+			slime.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0, 0);
+			slime.setNoAi(true);
+			player.level().addFreshEntity(slime);
+		});
+		context.waitTicks(3);
+		killAll(singleplayer, player -> player.level().getEntitiesOfClass(net.minecraft.world.entity.monster.cubemob.Slime.class,
+				player.getBoundingBox().inflate(8), m -> m.getType() == EntityTypes.SLIME && m.isAlive()));
+		context.waitTicks(30);
+		int pieces = singleplayer.getServer().computeOnServer(server -> player(server).level().getEntitiesOfClass(
+				net.minecraft.world.entity.monster.cubemob.Slime.class, player(server).getBoundingBox().inflate(8),
+				m -> m.getType() == EntityTypes.SLIME && m.isAlive()).size());
+		HuntLike.LOGGER.info("[test] medium slime split into {} pieces", pieces);
+		check(singleplayer, "no quota point until the whole cluster is dead", data -> data.quest.kills == 0);
+		killAll(singleplayer, player -> player.level().getEntitiesOfClass(net.minecraft.world.entity.monster.cubemob.Slime.class,
+				player.getBoundingBox().inflate(8), m -> m.getType() == EntityTypes.SLIME && m.isAlive()));
+		context.waitTicks(3);
+		check(singleplayer, "whole slime cluster = 1 point", data -> data.quest.kills == 1);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var magma = EntityTypes.MAGMA_CUBE.create(player.level(), EntitySpawnReason.COMMAND);
+			magma.setSize(1, true);
+			magma.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0, 0);
+			player.level().addFreshEntity(magma);
+		});
+		context.waitTicks(3);
+		killAll(singleplayer, player -> player.level().getEntitiesOfClass(net.minecraft.world.entity.monster.cubemob.MagmaCube.class,
+				player.getBoundingBox().inflate(8), m -> m.getType() == EntityTypes.MAGMA_CUBE && m.isAlive()));
+		context.waitTicks(3);
+		check(singleplayer, "magma cube cluster = 2 points, quota full", data -> data.quest.kills == 2
+				&& data.quest.phase != HuntData.PHASE_KILLING);
+		context.waitTicks(60);
+		assertServer(singleplayer, "Cubert spawned as one main body", server -> {
+			var bodies = com.huntlike.hunt.ClusterFight.bodies(player(server));
+			return bodies.size() == 1 && bodies.get(0).getType() == com.huntlike.entity.ModEntities.CUBERT;
+		});
+		context.takeScreenshot("43-cubert");
+		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
+		context.waitTicks(2);
+		assertServer(singleplayer, "Mitosis: Cubert split into 2", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 2);
+		context.waitTicks(20);
+		context.takeScreenshot("44-cubert-split");
+		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
+		context.waitTicks(5);
+		check(singleplayer, "cluster tier I complete with Thermal Slimeballs", data -> data.quest == null
+				&& data.progress("cluster").bossKills[0] == 1 && data.progress("cluster").dropCounts.getOrDefault("thermal_slimeball", 0) >= 1);
+
+		// Tier V: The Vile.
+		int ballsBefore = com.huntlike.hunt.ClusterFight.ballsThrown;
+		singleplayer.getServer().runCommand("huntlike boss cluster 5 " + name);
+		context.waitTicks(45);
+		boolean core = singleplayer.getServer().computeOnServer(server ->
+				((com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0)).isMagmaCore());
+		context.waitTicks(110);
+		context.takeScreenshot("45-the-vile");
+		assertServer(singleplayer, "Thermodynamic switched the core; Baller threw a ball", server -> {
+			var vile = (com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0);
+			HuntLike.LOGGER.info("[test] core {} -> {}, balls {}", core, vile.isMagmaCore(), com.huntlike.hunt.ClusterFight.ballsThrown - ballsBefore);
+			return vile.isMagmaCore() != core && com.huntlike.hunt.ClusterFight.ballsThrown > ballsBefore;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var main = com.huntlike.hunt.ClusterFight.bodies(player).get(0);
+			main.hurtServer(player.level(), player.level().damageSources().playerAttack(player), main.getMaxHealth() * 0.52F);
+		});
+		context.waitTicks(5);
+		assertServer(singleplayer, "Yummy!: the owner is consumed", server -> com.huntlike.hunt.ClusterFight.isConsumed(player(server))
+				&& com.huntlike.hunt.ClusterFight.yummyKeys(player(server)).length == 15);
+		context.waitTicks(10);
+		context.takeScreenshot("46-yummy");
+		int[] keys = context.computeOnClient(client -> com.huntlike.client.YummyClient.keys.clone());
+		HuntLike.LOGGER.info("[test] Yummy! keys {}", java.util.Arrays.toString(keys));
+		singleplayer.getServer().runOnServer(server -> com.huntlike.hunt.ClusterFight.onYummyKey(player(server), (keys[0] + 1) % 7));
+		context.waitTicks(2);
+		assertServer(singleplayer, "a wrong key does nothing", server -> com.huntlike.hunt.ClusterFight.yummyProgress(player(server)) == 0);
+		for (int key : keys) {
+			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+					new com.huntlike.network.HuntPayloads.Action("yummy_key", "cluster", key)));
+		}
+		context.waitTicks(5);
+		assertServer(singleplayer, "escaped after the whole sequence", server -> !com.huntlike.hunt.ClusterFight.isConsumed(player(server)));
+		context.waitTicks(30);
+		assertServer(singleplayer, "Watch out! started (below 75%)", server -> com.huntlike.hunt.ClusterFight.isWatching(player(server)));
+		context.takeScreenshot("47-watch-out");
+		context.waitTicks(250);
+		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
+		context.waitTicks(2);
+		assertServer(singleplayer, "Mitosis: The Vile split into 4", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 4);
+		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
+		context.waitTicks(2);
+		assertServer(singleplayer, "...and does it keep going? 16", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 16);
+		context.waitTicks(20);
+		context.takeScreenshot("48-vile-sixteen");
+		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
+		context.waitTicks(5);
+		check(singleplayer, "cluster tier V complete", data -> data.quest == null && data.progress("cluster").bossKills[4] == 1);
+	}
 
 	/** Daily Quest charges: commands don't use them; a new world day refills all five. */
 	private static void dailyRefill(ClientGameTestContext context, TestSingleplayerContext singleplayer) {

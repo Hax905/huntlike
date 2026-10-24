@@ -30,6 +30,17 @@ public final class ModItems {
 			new Item.Properties().rarity(Rarity.EPIC).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.lore())));
 
+	// Cluster Hunt drops and their crafting chain (descriptions come later)
+	public static final Item THERMAL_SLIMEBALL = plain("thermal_slimeball", Rarity.COMMON);
+	public static final Item FROZEN_SLIME_BALL = plain("frozen_slime_ball", Rarity.UNCOMMON);
+	public static final Item GELID_SLIME_BALL = plain("gelid_slime_ball", Rarity.RARE);
+	public static final Item SLIMYSTEEL = plain("slimysteel", Rarity.UNCOMMON);
+	public static final Item IONIC_LIQUID = plain("ionic_liquid", Rarity.COMMON);
+	public static final Item SLIMY_CORE = plain("slimy_core", Rarity.UNCOMMON);
+	public static final Item SUBLIMATING_MAGMA = plain("sublimating_magma", Rarity.UNCOMMON);
+	public static final Item CORRODED_PALLADIUM = plain("corroded_palladium", Rarity.RARE);
+	public static final Item DIGESTED_PLATINUM_ISOTOPE = plain("digested_platinum_isotope", Rarity.EPIC);
+
 	// Spirit Lure drop
 	public static final Item SOUL_STONE = simple("soul_stone", Rarity.UNCOMMON);
 
@@ -56,6 +67,11 @@ public final class ModItems {
 		return switch (hunt) {
 			default -> ModBlocks.ANIMAL_TROPHY.asItem();
 		};
+	}
+
+	/** An item without a description line (yet). */
+	private static Item plain(String name, Rarity rarity) {
+		return register(name, Item::new, new Item.Properties().rarity(rarity));
 	}
 
 	private static Item simple(String name, Rarity rarity) {

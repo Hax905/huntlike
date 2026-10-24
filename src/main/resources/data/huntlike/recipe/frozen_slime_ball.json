@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": "minecraft:ice",
+    "T": "huntlike:thermal_slimeball"
+  },
+  "pattern": [
+    " I ",
+    "ITI",
+    " I "
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:frozen_slime_ball"
+  }
+}

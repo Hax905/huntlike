@@ -17,7 +17,15 @@ public abstract class MinecraftMixin {
 	private void huntlike$bossGlow(Entity entity, CallbackInfoReturnable<Boolean> cir) {
 		if (ClientHuntState.bossEntityId != -1 && entity.getId() == ClientHuntState.bossEntityId) {
 			cir.setReturnValue(true);
-		} else if (ClientHuntState.highlightId != -1 && entity.getId() == ClientHuntState.highlightId) {
+			return;
+		}
+		for (int id : ClientHuntState.bossEntityIds) {
+			if (entity.getId() == id) {
+				cir.setReturnValue(true);
+				return;
+			}
+		}
+		if (ClientHuntState.highlightId != -1 && entity.getId() == ClientHuntState.highlightId) {
 			if (entity.level().getGameTime() < ClientHuntState.highlightUntil) {
 				cir.setReturnValue(true);
 			} else {

@@ -163,6 +163,10 @@ public final class QuestManager {
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
 			case "buy_gear" -> buyGear(player, data, hunt, action.value());
 			case "koro_click" -> KoroManager.click(player, data);
+			case "yummy_key" -> {
+				ClusterFight.onYummyKey(player, action.value());
+				return;
+			}
 			case "hint_seen" -> {
 				data.hintSeen = true;
 				save(player, data);
@@ -174,24 +178,24 @@ public final class QuestManager {
 	}
 
 	private static void buyTokens(ServerPlayer player, HuntData data, Hunt hunt, boolean bulk) {
-		int logs = bulk ? 100 : 10;
+		int material = HuntDefs.tokenMaterialCount(hunt) * (bulk ? 10 : 1);
 		int tokens = bulk ? 640 : 64;
 		Inventory inventory = player.getInventory();
 		int have = 0;
 		for (int i = 0; i < inventory.getContainerSize(); i++) {
 			ItemStack stack = inventory.getItem(i);
-			if (stack.is(ItemTags.LOGS_THAT_BURN)) {
+			if (HuntDefs.isTokenMaterial(hunt, stack)) {
 				have += stack.getCount();
 			}
 		}
-		if (have < logs) {
-			player.sendSystemMessage(Messages.error("You need " + logs + " Logs."));
+		if (have < material) {
+			player.sendSystemMessage(Messages.error("You need " + material + " " + HuntDefs.tokenMaterialName(hunt) + "."));
 			return;
 		}
-		int left = logs;
+		int left = material;
 		for (int i = 0; i < inventory.getContainerSize() && left > 0; i++) {
 			ItemStack stack = inventory.getItem(i);
-			if (stack.is(ItemTags.LOGS_THAT_BURN)) {
+			if (HuntDefs.isTokenMaterial(hunt, stack)) {
 				int take = Math.min(left, stack.getCount());
 				stack.shrink(take);
 				left -= take;
@@ -200,8 +204,9 @@ public final class QuestManager {
 		inventory.setChanged();
 		data.progress(hunt.id()).tokens += tokens;
 		save(player, data);
-		playSound(player, SoundEvents.WOOD_PLACE, 1.0F);
+		playSound(player, HuntDefs.isCluster(hunt) ? SoundEvents.SOUL_SAND_PLACE : SoundEvents.WOOD_PLACE, 1.0F);
 	}
+
 
 	private static int count(Inventory inventory, net.minecraft.world.item.Item item) {
 		int have = 0;
@@ -221,7 +226,7 @@ public final class QuestManager {
 		if (page < 0 || page > 2) {
 			return;
 		}
-		List<HuntDefs.GearTrade> trades = HuntDefs.trades(page);
+		List<HuntDefs.GearTrade> trades = HuntDefs.trades(hunt, page);
 		if (index < 0 || index >= trades.size()) {
 			return;
 		}
@@ -304,6 +309,11 @@ public final class QuestManager {
 			return;
 		}
 		if (tierNumber < 1 || tierNumber > hunt.tiers().size()) {
+			return;
+		}
+		if (!HuntDefs.huntUnlocked(data, hunt)) {
+			player.sendSystemMessage(Messages.error("The " + hunt.name() + " Hunt unlocks at "
+					+ HuntDefs.ANIMAL.rankName(HuntDefs.huntUnlockRank(hunt)) + "."));
 			return;
 		}
 		Tier tier = hunt.tier(tierNumber);
@@ -419,8 +429,10 @@ public final class QuestManager {
 				give(owner, data, hunt, drop, count);
 			} else if (random.nextDouble() < HuntDefs.chance(hunt.id(), drop.chanceNum(), drop.chanceDen(), data.concoction, quest.daily)) {
 				give(owner, data, hunt, drop, drop.minCount());
-				owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
-				playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
+				if (drop.dropClass() > 0) {
+					owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
+					playSound(owner, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
+				}
 			}
 		}
 		for (UUID helperId : helpers) {
@@ -435,8 +447,10 @@ public final class QuestManager {
 			for (Drop drop : HuntDefs.drops(tier)) {
 				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), helperData.concoction)) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
-					helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
-					playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
+					if (drop.dropClass() > 0) {
+						helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
+						playSound(helper, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
+					}
 				}
 			}
 			save(helper, helperData);
@@ -542,6 +556,10 @@ public final class QuestManager {
 			BossController.onBossDeath(entity);
 			return;
 		}
+		if (ClusterQuota.isClusterMob(entity)) {
+			ClusterQuota.onDeath(entity, source);
+			return;
+		}
 		if (!entity.getType().builtInRegistryHolder().is(QUOTA_ANIMALS)) {
 			return;
 		}
@@ -579,6 +597,30 @@ public final class QuestManager {
 				0.6F + 0.9F * quest.kills / Math.max(1, quest.quota));
 		if (quest.kills >= quest.quota) {
 			beginSummon(killer, data, quest, entity.blockPosition());
+		}
+		save(killer, data);
+		sync(killer);
+	}
+
+	/** One lured mob slain: counts toward "I Swear It Was Self-Defense". */
+	static void countLuredKill(ServerPlayer killer, HuntData data) {
+		data.luredKills++;
+		if (data.luredKills >= SELF_DEFENSE_KILLS) {
+			award(killer, "animal/self_defense");
+		}
+		save(killer, data);
+	}
+
+	/** Adds quota points (one kill, or a whole cluster) and summons the boss once the quota is full. */
+	static void addQuotaPoints(ServerPlayer killer, HuntData data, Quest quest, int points, BlockPos killPos) {
+		quest.kills = Math.min(quest.quota, quest.kills + points);
+		SpiritLure.onQuotaKill(killer);
+		Hunt hunt = HuntDefs.hunt(quest.hunt);
+		killer.sendSystemMessage(Messages.quota(hunt, quest.kills, quest.quota), true);
+		killer.level().playSound(null, killer.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.6F,
+				0.6F + 0.9F * quest.kills / Math.max(1, quest.quota));
+		if (quest.kills >= quest.quota) {
+			beginSummon(killer, data, quest, killPos);
 		}
 		save(killer, data);
 		sync(killer);
@@ -644,7 +686,15 @@ public final class QuestManager {
 	}
 
 	private static void onEntityLoad(Entity entity, ServerLevel level) {
-		if (entity instanceof LivingEntity living && BossController.isBoss(living)) {
+		ClusterQuota.onLoad(entity);
+		if (entity instanceof LivingEntity living && BossController.isBoss(living) && ClusterFight.isBody(entity)) {
+			UUID owner = BossController.ownerOf(entity);
+			ServerPlayer player = owner == null ? null : level.getServer().getPlayerList().getPlayer(owner);
+			Quest quest = player == null ? null : data(player).quest;
+			if (quest == null || quest.phase != HuntData.PHASE_BOSS || !HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
+				entity.discard();
+			}
+		} else if (entity instanceof LivingEntity living && BossController.isBoss(living)) {
 			UUID owner = BossController.ownerOf(entity);
 			ServerPlayer player = owner == null ? null : level.getServer().getPlayerList().getPlayer(owner);
 			Quest quest = player == null ? null : data(player).quest;
@@ -687,12 +737,16 @@ public final class QuestManager {
 			tag.putInt("bossTicksLeft", (int) Math.max(0, BOSS_TIME_LIMIT - elapsed));
 			Entity boss = BossController.findBoss(player, quest);
 			tag.putInt("bossEntity", boss == null ? -1 : boss.getId());
+			if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
+				tag.putIntArray("bossEntities", ClusterFight.bodyIds(player));
+			}
 		} else {
 			tag.putInt("bossEntity", -1);
 		}
 		ListTag huntable = new ListTag();
 		List<String> names = new ArrayList<>();
-		for (EntityType<?> type : SpiritLure.huntableHere(player)) {
+		for (EntityType<?> type : SpiritLure.huntableHere(player,
+				HuntDefs.hunt(quest != null ? quest.hunt : data.selectedHunt))) {
 			String name = type.getDescription().getString();
 			if (!names.contains(name)) {
 				names.add(name);

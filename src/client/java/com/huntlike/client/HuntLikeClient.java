@@ -36,5 +36,13 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(ModEntities.EPICYON_HAYDENI, EpicyonHaydeniRenderer::new);
 		EntityRendererRegistry.register(ModEntities.BOS_TAURUS, BosTaurusRenderer::new);
 		EntityRendererRegistry.register(ModEntities.CANIS_LUPUS, CanisLupusRenderer::new);
+		EntityRendererRegistry.register(ModEntities.CLUSTER_BALL, ThrownItemRenderer::new);
+		EntityRendererRegistry.register(ModEntities.CUBERT, CubertRenderer::new);
+		EntityRendererRegistry.register(ModEntities.BLUCKY, BluckyRenderer::new);
+		EntityRendererRegistry.register(ModEntities.HOT_HEAD, HotHeadRenderer::new);
+		EntityRendererRegistry.register(ModEntities.VARIANCE_SLIME, VarianceSlimeRenderer::new);
+		EntityRendererRegistry.register(ModEntities.VARIANCE_MAGMA, VarianceMagmaRenderer::new);
+		EntityRendererRegistry.register(ModEntities.THE_VILE, TheVileRenderer::new);
+		YummyClient.initialize();
 	}
 }

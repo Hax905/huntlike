@@ -96,7 +96,11 @@ public final class BossController {
 	}
 
 	/** A boss that hasn't got closer to its owner for 5 seconds teleports next to them. */
-	private static void unstick(Mob boss, ServerPlayer owner) {
+	static void forgetStuck(UUID boss) {
+		STUCK.remove(boss);
+	}
+
+	static void unstick(Mob boss, ServerPlayer owner) {
 		double distance = boss.distanceTo(owner);
 		double[] track = STUCK.computeIfAbsent(boss.getUUID(), id -> new double[] {distance, 0});
 		if (distance < 4.0 || distance < track[0] - 0.5) {
@@ -158,6 +162,10 @@ public final class BossController {
 	}
 
 	public static void discardBoss(ServerPlayer player, Quest quest) {
+		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
+			ClusterFight.discardAll(player);
+			return;
+		}
 		Mob boss = findBoss(player, quest);
 		if (boss != null) {
 			HELPERS.remove(boss.getUUID());
@@ -201,6 +209,10 @@ public final class BossController {
 	}
 
 	private static void spawnBoss(ServerPlayer player, HuntData data, Quest quest) {
+		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
+			ClusterFight.spawn(player, data, quest);
+			return;
+		}
 		ServerLevel level = player.level();
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		Tier tier = hunt.tier(quest.tier);
@@ -251,6 +263,10 @@ public final class BossController {
 	// ---------------------------------------------------------------- the fight
 
 	public static void tickBoss(ServerPlayer player, HuntData data, Quest quest) {
+		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
+			ClusterFight.tick(player, data, quest);
+			return;
+		}
 		Mob boss = findBoss(player, quest);
 		if (boss == null || !boss.isAlive()) {
 			if (boss == null || boss.isRemoved()) {
@@ -340,6 +356,10 @@ public final class BossController {
 		if (!isBoss(entity) || !(entity instanceof Mob boss) || !entity.isAlive()) {
 			return;
 		}
+		if (ClusterFight.isBody(entity)) {
+			ClusterFight.onDamaged(entity, source);
+			return;
+		}
 		if (source.getEntity() instanceof ServerPlayer player) {
 			HELPERS.computeIfAbsent(entity.getUUID(), id -> new HashSet<>()).add(player.getUUID());
 		}
@@ -356,6 +376,10 @@ public final class BossController {
 	}
 
 	public static void onBossDeath(LivingEntity entity) {
+		if (ClusterFight.isBody(entity)) {
+			ClusterFight.onBodyDeath(entity);
+			return;
+		}
 		Set<UUID> helpers = HELPERS.remove(entity.getUUID());
 		MELEE_COOLDOWN.remove(entity.getUUID());
 		if (entity instanceof Mob mob) {

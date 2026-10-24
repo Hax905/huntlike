@@ -6,7 +6,8 @@
 		"CreeperMixin",
 		"LivingEntityMixin",
 		"MobAccessor",
-		"PowderSnowBlockMixin"
+		"PowderSnowBlockMixin",
+		"AbstractCubeMobMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

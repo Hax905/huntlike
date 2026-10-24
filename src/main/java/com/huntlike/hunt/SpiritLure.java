@@ -86,13 +86,29 @@ public final class SpiritLure {
 		}
 	}
 
-	/** Quota animals the current biome can spawn, or an empty list outside the Overworld. */
-	public static List<EntityType<?>> huntableHere(ServerPlayer player) {
+	/**
+	 * Quota mobs the Spirit Lure can bring here. Animal: the biome's quota animals (Overworld only). Cluster: slimes in the
+	 * Overworld, magma cubes in the Nether.
+	 */
+	public static List<EntityType<?>> huntableHere(ServerPlayer player, Hunt hunt) {
+		if (HuntDefs.isCluster(hunt)) {
+			return clusterTypes(player.level());
+		}
 		List<EntityType<?>> types = new ArrayList<>();
 		for (Weighted<MobSpawnSettings.SpawnerData> entry : spawnList(player.level(), player.blockPosition())) {
 			types.add(entry.value().type());
 		}
 		return types;
+	}
+
+	private static List<EntityType<?>> clusterTypes(ServerLevel level) {
+		if (level.dimension() == Level.OVERWORLD) {
+			return List.of(net.minecraft.world.entity.EntityTypes.SLIME);
+		}
+		if (level.dimension() == Level.NETHER) {
+			return List.of(net.minecraft.world.entity.EntityTypes.MAGMA_CUBE);
+		}
+		return List.of();
 	}
 
 	private static List<Weighted<MobSpawnSettings.SpawnerData>> spawnList(ServerLevel level, BlockPos pos) {
@@ -113,12 +129,15 @@ public final class SpiritLure {
 		ServerLevel level = player.level();
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		UUID id = player.getUUID();
+		boolean cluster = HuntDefs.isCluster(hunt);
 		boolean overworld = level.dimension() == Level.OVERWORLD;
-		List<Weighted<MobSpawnSettings.SpawnerData>> here = spawnList(level, player.blockPosition());
+		List<EntityType<?>> clusterHere = cluster ? clusterTypes(level) : List.of();
+		boolean dimensionOk = cluster ? !clusterHere.isEmpty() : overworld;
+		boolean nothingHere = cluster ? clusterHere.isEmpty() : spawnList(level, player.blockPosition()).isEmpty();
 
 		// No-spirits hint: once per biome or dimension, after 30 seconds there.
-		if (!overworld || here.isEmpty()) {
-			String place = overworld ? "biome:" + level.getBiome(player.blockPosition()).getRegisteredName()
+		if (!dimensionOk || nothingHere) {
+			String place = dimensionOk ? "biome:" + level.getBiome(player.blockPosition()).getRegisteredName()
 					: "dimension:" + level.dimension().identifier();
 			if (!place.equals(HINT_PLACE.get(id))) {
 				HINT_PLACE.put(id, place);
@@ -127,7 +146,7 @@ public final class SpiritLure {
 			int ticks = HINT_TICKS.merge(id, 1, Integer::sum);
 			Set<String> shown = HINTS_SHOWN.computeIfAbsent(id, k -> new HashSet<>());
 			if (ticks >= HINT_DELAY && shown.add(place)) {
-				player.sendSystemMessage(overworld ? Messages.noSpiritsBiome(hunt) : Messages.noSpiritsDimension(hunt));
+				player.sendSystemMessage(dimensionOk ? Messages.noSpiritsBiome(hunt) : Messages.noSpiritsDimension(hunt));
 				QuestManager.playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 0.5F);
 			}
 		} else {
@@ -153,7 +172,7 @@ public final class SpiritLure {
 			return;
 		}
 		TIMERS.put(id, 0);
-		if (!overworld || SPAWNS_SINCE_KILL.getOrDefault(id, 0) >= SPAWNS_PER_KILL) {
+		if (!dimensionOk || SPAWNS_SINCE_KILL.getOrDefault(id, 0) >= SPAWNS_PER_KILL) {
 			return;
 		}
 		int nearby = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(CAP_RADIUS), m -> isLuredBy(m, player)).size();
@@ -169,6 +188,22 @@ public final class SpiritLure {
 			BlockPos column = new BlockPos(x, player.blockPosition().getY(), z);
 			if (!level.isLoaded(column)) {
 				continue;
+			}
+			if (cluster) {
+				// Slimes and magma cubes come no matter the light, biome or slime chunk: any standing spot will do.
+				EntityType<?> type = clusterHere.get(0);
+				BlockPos pos = overworld ? level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+						column) : QuestManager.findGround(level, column);
+				if (pos == null || !level.noCollision(type.getSpawnAABB(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5))
+						|| !level.getFluidState(pos).isEmpty()) {
+					continue;
+				}
+				Entity entity = type.spawn(level, pos, EntitySpawnReason.NATURAL);
+				if (entity == null) {
+					continue;
+				}
+				lured(player, hunt, entity);
+				return;
 			}
 			List<Weighted<MobSpawnSettings.SpawnerData>> options = spawnList(level, column);
 			if (options.isEmpty()) {
@@ -188,18 +223,25 @@ public final class SpiritLure {
 			if (entity instanceof Mob mob) {
 				mob.setBaby(false);
 			}
-			entity.addTag(LURED_TAG);
-			if (entity instanceof Mob glowing) {
-				glowing.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20 * 5, 0, false, false));
-			}
-			SPAWNS_SINCE_KILL.merge(id, 1, Integer::sum);
-			entity.addTag(BossController.OWNER_PREFIX + id);
-			level.sendParticles(new DustParticleOptions(hunt.color(), 1.5F), entity.getX(), entity.getY() + 0.5, entity.getZ(),
-					20, 0.4, 0.5, 0.4, 0.0);
-			player.sendSystemMessage(Messages.spiritLure(hunt));
-			QuestManager.playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.8F);
+			lured(player, hunt, entity);
 			return;
 		}
+	}
+
+	/** Marks a freshly lured mob: glowing, tagged to its owner, announced. */
+	private static void lured(ServerPlayer player, Hunt hunt, Entity entity) {
+		ServerLevel level = player.level();
+		UUID id = player.getUUID();
+		entity.addTag(LURED_TAG);
+		if (entity instanceof Mob glowing) {
+			glowing.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20 * 5, 0, false, false));
+		}
+		SPAWNS_SINCE_KILL.merge(id, 1, Integer::sum);
+		entity.addTag(BossController.OWNER_PREFIX + id);
+		level.sendParticles(new DustParticleOptions(hunt.color(), 1.5F), entity.getX(), entity.getY() + 0.5, entity.getZ(),
+				20, 0.4, 0.5, 0.4, 0.0);
+		player.sendSystemMessage(Messages.spiritLure(hunt));
+		QuestManager.playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.8F);
 	}
 
 	private static EntityType<?> pick(List<Weighted<MobSpawnSettings.SpawnerData>> options, RandomSource random) {

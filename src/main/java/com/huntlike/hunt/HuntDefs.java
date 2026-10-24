@@ -30,6 +30,8 @@ public final class HuntDefs {
 	public static final int BLUE = 0x5555FF;
 	/** Experience orb green. */
 	public static final int XP_GREEN = 0x80FF20;
+	/** Cluster Hunt brown. */
+	public static final int BROWN = 0xB8743A;
 
 	public static final String[] RANK_TITLES = {"Prey", "Scout", "Tracker", "Stalker", "Trapper", "Pursuer", "Warden",
 			"Predator", "Apex Hunter", "Dread Hunter", "Slayer"};
@@ -73,7 +75,7 @@ public final class HuntDefs {
 		}
 	}
 
-	/** A Hunt type. Only Animal exists for now. */
+	/** A Hunt type: Animal, then Cluster. */
 	public record Hunt(String id, String name, int color, net.minecraft.world.BossEvent.BossBarColor barColor, List<Tier> tiers,
 			List<List<Unlock>> unlocks) {
 		public Tier tier(int number) {
@@ -118,7 +120,7 @@ public final class HuntDefs {
 					List.of(Unlock.plain("Tier I Animal Quests")),
 					List.of(Unlock.plain("Hunt Weapon: Skin Knife [Genesis]")),
 					List.of(Unlock.plain("Tier II Animal Quests"), Unlock.plain("Hunt Armor: Rotten Armor")),
-					List.of(Unlock.plain("Hunt Weapon upgrade: Meat Cutter [Act I]"), Unlock.plain("Next Hunt type"),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Meat Cutter [Act I]"), new Unlock("Next Hunt type: Cluster", BROWN),
 							new Unlock(KORO_FIRST, DARK_PURPLE)),
 					List.of(Unlock.plain("Tier III Animal Quests"), Unlock.plain("Hunt Armor upgrade: Carrion Armor")),
 					List.of(Unlock.plain("Hunt Weapon upgrade: Limb Severer [Act II]")),
@@ -129,7 +131,129 @@ public final class HuntDefs {
 					List.of(Unlock.plain("Hunt Weapon upgrade: Bone Pulverizer [Apotheosis]"), new Unlock(KORO_NEXT, DARK_PURPLE)),
 					List.of(new Unlock(KORO_NEXT, DARK_PURPLE))));
 
-	public static final List<Hunt> HUNTS = List.of(ANIMAL);
+	// ---------------------------------------------------------------- Cluster Hunt
+
+	public static final Ability STICKY_FINGERS = new Ability("Sticky Fingers", "Deals damage on every jump.");
+	public static final Ability MITOSIS = new Ability("Mitosis", "When the main body is defeated, it divides into smaller bodies.");
+	public static final Ability MITOSIS_AGAIN = new Ability("Mitosis",
+			"When the main body is defeated, it divides into smaller bodies.\nWait... does it keep going?");
+	public static final Ability BALLER = new Ability("Baller", "Shoots slimeballs slowly, dealing high damage. Bring a shield!");
+	public static final Ability YUMMY = new Ability("Yummy!",
+			"You'll be consumed by the cluster, damaging you. Move in a specific way to escape!");
+	public static final Ability WATCH_OUT = new Ability("Watch out!",
+			"You'll be attacked with flames from different directions. Guard up!");
+	public static final Ability THERMODYNAMIC = new Ability("Thermodynamic",
+			"The cluster changes its core after some time to not be effectively damaged.");
+
+	/**
+	 * How a Cluster boss splits (Mitosis): the main body, then each generation's body count per parent, health and
+	 * size. Tier I splits into 2; Tier IV into 4, then each of those into 2; Tier V into 4, then each into 4.
+	 */
+	public record ClusterSpec(int mainHealth, int mainSize, int[] splits, int[] splitHealth, int[] splitSize) {
+		public int generations() {
+			return splits.length;
+		}
+
+		/** Total health of the whole cluster, every body included. */
+		public int totalHealth() {
+			int total = mainHealth;
+			int bodies = 1;
+			for (int i = 0; i < splits.length; i++) {
+				bodies *= splits[i];
+				total += bodies * splitHealth[i];
+			}
+			return total;
+		}
+
+		/** Health still to come from a living body of this generation once it (and its splits) die. */
+		public int futureHealth(int generation) {
+			int total = 0;
+			int bodies = 1;
+			for (int i = generation; i < splits.length; i++) {
+				bodies *= splits[i];
+				total += bodies * splitHealth[i];
+			}
+			return total;
+		}
+
+		public int health(int generation) {
+			return generation == 0 ? mainHealth : splitHealth[generation - 1];
+		}
+
+		public int size(int generation) {
+			return generation == 0 ? mainSize : splitSize[generation - 1];
+		}
+	}
+
+	public static final ClusterSpec[] CLUSTER_SPECS = {
+			new ClusterSpec(30, 5, new int[] {2}, new int[] {12}, new int[] {3}),
+			new ClusterSpec(45, 5, new int[] {3}, new int[] {15}, new int[] {3}),
+			new ClusterSpec(60, 5, new int[] {4}, new int[] {18}, new int[] {3}),
+			new ClusterSpec(75, 6, new int[] {4, 2}, new int[] {20, 8}, new int[] {3, 2}),
+			new ClusterSpec(100, 6, new int[] {4, 4}, new int[] {24, 8}, new int[] {3, 2})};
+
+	public static ClusterSpec clusterSpec(Tier tier) {
+		return CLUSTER_SPECS[tier.number() - 1];
+	}
+
+	public static final Hunt CLUSTER = new Hunt("cluster", "Cluster", BROWN, net.minecraft.world.BossEvent.BossBarColor.YELLOW,
+			List.of(
+					new Tier(1, "Cubert", "The Overslime Fragment", ModEntities.CUBERT, 1.0F, CLUSTER_SPECS[0].totalHealth(), 2, 1, 0,
+							2, 2, 5, 0, List.of(STICKY_FINGERS, MITOSIS), "lore.huntlike.cluster.1"),
+					new Tier(2, "Blucky", "The Tough Slime", ModEntities.BLUCKY, 1.0F, CLUSTER_SPECS[1].totalHealth(), 3, 2, 0,
+							4, 4, 20, 2, List.of(STICKY_FINGERS, MITOSIS, BALLER), "lore.huntlike.cluster.2"),
+					new Tier(3, "Hot Head", "Angrier than Ever", ModEntities.HOT_HEAD, 1.0F, CLUSTER_SPECS[2].totalHealth(), 3, 3, 0,
+							6, 8, 75, 4, List.of(STICKY_FINGERS, MITOSIS, BALLER, YUMMY), "lore.huntlike.cluster.3"),
+					new Tier(4, "Variance", "The Demi-Soul Cluster", ModEntities.VARIANCE_SLIME, 1.0F, CLUSTER_SPECS[3].totalHealth(), 4,
+							4, 0, 8, 16, 250, 6, List.of(STICKY_FINGERS, MITOSIS_AGAIN, BALLER, YUMMY, WATCH_OUT),
+							"lore.huntlike.cluster.4"),
+					new Tier(5, "The Vile", "Soul Cluster of Conquest", ModEntities.THE_VILE, 1.0F, CLUSTER_SPECS[4].totalHealth(), 4,
+							5, 0, 10, 32, 800, 8, List.of(STICKY_FINGERS, MITOSIS_AGAIN, BALLER, YUMMY, WATCH_OUT, THERMODYNAMIC),
+							"lore.huntlike.cluster.5")),
+			List.of(
+					List.of(Unlock.plain("Tier I Cluster Quests")),
+					List.of(),
+					List.of(Unlock.plain("Tier II Cluster Quests")),
+					List.of(),
+					List.of(Unlock.plain("Tier III Cluster Quests")),
+					List.of(),
+					List.of(Unlock.plain("Tier IV Cluster Quests")),
+					List.of(),
+					List.of(Unlock.plain("Tier V Cluster Quests")),
+					List.of(),
+					List.of()));
+
+	public static final List<Hunt> HUNTS = List.of(ANIMAL, CLUSTER);
+
+	public static boolean isCluster(Hunt hunt) {
+		return hunt == CLUSTER;
+	}
+
+	public static boolean isCluster(Tier tier) {
+		return CLUSTER.tiers().contains(tier);
+	}
+
+	/** Animal Rank needed to start a Hunt (the Cluster Hunt opens at Animal Rank III). */
+	public static int huntUnlockRank(Hunt hunt) {
+		return hunt == CLUSTER ? 3 : 0;
+	}
+
+	public static boolean huntUnlocked(HuntData data, Hunt hunt) {
+		return data.progress(ANIMAL.id()).rank() >= huntUnlockRank(hunt);
+	}
+
+	/** Ritual Token trade: how many of the Hunt's material buy 64 tokens, and its name. */
+	public static int tokenMaterialCount(Hunt hunt) {
+		return hunt == CLUSTER ? 5 : 10;
+	}
+
+	public static String tokenMaterialName(Hunt hunt) {
+		return hunt == CLUSTER ? "Soul Sand" : "Logs";
+	}
+
+	public static boolean isTokenMaterial(Hunt hunt, net.minecraft.world.item.ItemStack stack) {
+		return hunt == CLUSTER ? stack.is(Items.SOUL_SAND) : stack.is(net.minecraft.tags.ItemTags.LOGS_THAT_BURN);
+	}
 
 	/** One cost line: an item and how many. */
 	public record Cost(Item item, int count) {
@@ -208,8 +332,11 @@ public final class HuntDefs {
 		return -1;
 	}
 
-	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. */
-	public static List<GearTrade> trades(int page) {
+	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. The Cluster Hunt has none yet. */
+	public static List<GearTrade> trades(Hunt hunt, int page) {
+		if (hunt != ANIMAL) {
+			return List.of();
+		}
 		return page == 0 ? ANIMAL_ARMOR : page == 1 ? ANIMAL_SPECIAL : ANIMAL_WEAPONS;
 	}
 
@@ -254,6 +381,9 @@ public final class HuntDefs {
 
 	/** Boss drops for a tier of the Animal Hunt, owner odds. */
 	public static List<Drop> drops(Tier tier) {
+		if (isCluster(tier)) {
+			return clusterDrops(tier);
+		}
 		int t = tier.number();
 		boolean five = t == 5;
 		java.util.ArrayList<Drop> list = new java.util.ArrayList<>();
@@ -273,4 +403,28 @@ public final class HuntDefs {
 		return list;
 	}
 
+
+	/** Cluster Hunt boss drops (Ice and Packed Ice show no chat message). */
+	public static List<Drop> clusterDrops(Tier tier) {
+		int t = tier.number();
+		int[][] thermal = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 5}};
+		java.util.ArrayList<Drop> list = new java.util.ArrayList<>();
+		list.add(new Drop("thermal_slimeball", ModItems.THERMAL_SLIMEBALL, thermal[t - 1][0], thermal[t - 1][1], 1, 1, 0));
+		list.add(new Drop("slimy_core", ModItems.SLIMY_CORE, 1, 1, 1, 25, 2));
+		if (t >= 2) {
+			list.add(new Drop("ionic_liquid", ModItems.IONIC_LIQUID, 1, 1, 1, 10, 1));
+		}
+		if (t >= 3) {
+			list.add(new Drop("sublimating_magma", ModItems.SUBLIMATING_MAGMA, 1, 1, 1, 25, 2));
+		}
+		if (t >= 4) {
+			list.add(new Drop("corroded_palladium", ModItems.CORRODED_PALLADIUM, 1, 1, 1, 50, 3));
+		}
+		if (t >= 5) {
+			list.add(new Drop("digested_platinum_isotope", ModItems.DIGESTED_PLATINUM_ISOTOPE, 1, 1, 1, 100, 4));
+		}
+		list.add(new Drop("ice", Items.ICE, 1, 1, 1, 2, 0));
+		list.add(new Drop("packed_ice", Items.PACKED_ICE, 1, 1, 1, 2, 0));
+		return list;
+	}
 }

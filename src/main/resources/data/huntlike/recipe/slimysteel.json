@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:iron_ingot",
+    "huntlike:ionic_liquid",
+    "minecraft:slime_block"
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:slimysteel"
+  }
+}

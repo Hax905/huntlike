@@ -52,6 +52,15 @@ public final class ModCreativeTab {
 			output.accept(ModItems.GOLDEN_MOSS);
 			output.accept(ModItems.SPIRITUAL_CATALYST);
 			output.accept(ModItems.SOUL_STONE);
+			output.accept(ModItems.THERMAL_SLIMEBALL);
+			output.accept(ModItems.FROZEN_SLIME_BALL);
+			output.accept(ModItems.GELID_SLIME_BALL);
+			output.accept(ModItems.SLIMYSTEEL);
+			output.accept(ModItems.SLIMY_CORE);
+			output.accept(ModItems.IONIC_LIQUID);
+			output.accept(ModItems.SUBLIMATING_MAGMA);
+			output.accept(ModItems.CORRODED_PALLADIUM);
+			output.accept(ModItems.DIGESTED_PLATINUM_ISOTOPE);
 		});
 		register(GEAR, ModGear.SKIN_KNIFE, output -> {
 			ModGear.WEAPONS.forEach(output::accept);

@@ -28,6 +28,22 @@ import com.huntlike.hunt.QuestManager;
 public class HuntLikeClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		// Reference: vanilla textures with "lock" or "chain" in their name, copied next to the screenshots.
+		context.runOnClient(client -> {
+			var found = client.getResourceManager().listResources("textures",
+					id -> id.getNamespace().equals("minecraft") && (id.getPath().contains("lock") || id.getPath().contains("chain")));
+			java.io.File dir = new java.io.File(client.gameDirectory, "screenshots");
+			dir.mkdirs();
+			found.forEach((id, resource) -> {
+				HuntLike.LOGGER.info("[ref] {}", id);
+				try (var in = resource.open()) {
+					java.nio.file.Files.copy(in, new java.io.File(dir, "ref-" + id.getPath().replace('/', '_')).toPath(),
+							java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+				} catch (java.io.IOException e) {
+					HuntLike.LOGGER.warn("[ref] could not copy {}", id);
+				}
+			});
+		});
 		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
 			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("time set day");

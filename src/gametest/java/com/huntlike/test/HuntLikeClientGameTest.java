@@ -588,6 +588,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] wolf health {} -> {}, damage {} -> {}", health, wolf.getMaxHealth(), damage,
 					wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
 			return wolf.getMaxHealth() == health * 2 && wolf.getHealth() == wolf.getMaxHealth()
+					&& Math.abs(wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SCALE) - 1.25) < 0.001
 					&& wolf.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage * 2
 					&& player.getMainHandItem().getCount() == 1 && hasAdvancement(player, "animal/happier_dog");
 		});

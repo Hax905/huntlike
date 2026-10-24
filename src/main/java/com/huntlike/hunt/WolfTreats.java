@@ -25,7 +25,7 @@ import com.huntlike.registry.ModItems;
 
 /**
  * Low Quality Mystery Meat instantly tames a wild wolf. A Large Femur permanently doubles a tamed wolf's
- * health and damage (once per wolf).
+ * health and damage and makes it 25% bigger (once per wolf).
  */
 public final class WolfTreats {
 	private WolfTreats() {
@@ -33,6 +33,7 @@ public final class WolfTreats {
 
 	public static final net.minecraft.resources.Identifier FEMUR_HEALTH = HuntLike.id("large_femur.health");
 	public static final net.minecraft.resources.Identifier FEMUR_DAMAGE = HuntLike.id("large_femur.damage");
+	public static final net.minecraft.resources.Identifier FEMUR_SCALE = HuntLike.id("large_femur.scale");
 
 	public static void initialize() {
 		UseEntityCallback.EVENT.register(WolfTreats::onUseEntity);
@@ -86,7 +87,12 @@ public final class WolfTreats {
 		if (damage != null) {
 			damage.addPermanentModifier(new AttributeModifier(FEMUR_DAMAGE, 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
 		}
+		AttributeInstance scale = wolf.getAttribute(Attributes.SCALE);
+		if (scale != null) {
+			scale.addPermanentModifier(new AttributeModifier(FEMUR_SCALE, 0.25, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+		}
 		wolf.setHealth(wolf.getMaxHealth());
+		player.sendSystemMessage(Messages.c(wolf.getName().getString() + " is being powered by spirits of ancestors...", 0xAAAAAA));
 		ServerLevel level = (ServerLevel) wolf.level();
 		level.sendParticles(ParticleTypes.HEART, wolf.getX(), wolf.getY() + 0.8, wolf.getZ(), 7, 0.4, 0.4, 0.4, 0.0);
 		level.playSound(null, wolf.blockPosition(), SoundEvents.GENERIC_EAT.value(), SoundSource.NEUTRAL, 1.0F, 0.8F);

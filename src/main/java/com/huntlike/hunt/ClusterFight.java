@@ -553,7 +553,7 @@ public final class ClusterFight {
 		if (fight.progress >= fight.keys.length) {
 			release(owner, fight);
 			owner.setDeltaMovement(owner.getLookAngle().scale(-0.6).add(0, 0.5, 0));
-			owner.hurtMarked = true;
+			owner.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(owner));
 			QuestManager.playSound(owner, SoundEvents.SLIME_SQUISH, 1.4F);
 		} else {
 			sendYummy(owner, fight);

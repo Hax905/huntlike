@@ -133,7 +133,8 @@ public final class HuntDefs {
 
 	// ---------------------------------------------------------------- Cluster Hunt
 
-	public static final Ability STICKY_FINGERS = new Ability("Sticky Fingers", "Deals damage on every jump.");
+	public static final Ability STICKY_FINGERS = new Ability("Sticky Fingers",
+			"Deals damage on every jump.\nThe remains of the main body also damage you when split.");
 	public static final Ability MITOSIS = new Ability("Mitosis", "When the main body is defeated, it divides into smaller bodies.");
 	public static final Ability MITOSIS_AGAIN = new Ability("Mitosis",
 			"When the main body is defeated, it divides into smaller bodies.\nWait... does it keep going?");
@@ -186,11 +187,11 @@ public final class HuntDefs {
 	}
 
 	public static final ClusterSpec[] CLUSTER_SPECS = {
-			new ClusterSpec(30, 5, new int[] {2}, new int[] {12}, new int[] {3}),
-			new ClusterSpec(45, 5, new int[] {3}, new int[] {15}, new int[] {3}),
-			new ClusterSpec(60, 5, new int[] {4}, new int[] {18}, new int[] {3}),
-			new ClusterSpec(75, 6, new int[] {4, 2}, new int[] {20, 8}, new int[] {3, 2}),
-			new ClusterSpec(100, 6, new int[] {4, 4}, new int[] {24, 8}, new int[] {3, 2})};
+			new ClusterSpec(40, 5, new int[] {2}, new int[] {12}, new int[] {3}),
+			new ClusterSpec(60, 5, new int[] {3}, new int[] {15}, new int[] {3}),
+			new ClusterSpec(80, 5, new int[] {4}, new int[] {18}, new int[] {3}),
+			new ClusterSpec(100, 6, new int[] {4, 2}, new int[] {20, 8}, new int[] {3, 2}),
+			new ClusterSpec(140, 6, new int[] {4, 4}, new int[] {24, 8}, new int[] {3, 2})};
 
 	public static ClusterSpec clusterSpec(Tier tier) {
 		return CLUSTER_SPECS[tier.number() - 1];
@@ -213,7 +214,7 @@ public final class HuntDefs {
 			List.of(
 					List.of(Unlock.plain("Tier I Cluster Quests")),
 					List.of(),
-					List.of(Unlock.plain("Tier II Cluster Quests")),
+					List.of(Unlock.plain("Tier II Cluster Quests"), Unlock.plain("Hunt Armor: Icy Armor")),
 					List.of(),
 					List.of(Unlock.plain("Tier III Cluster Quests")),
 					List.of(),
@@ -315,6 +316,12 @@ public final class HuntDefs {
 			new GearTrade("Bone Pulverizer [Apotheosis]", 9, List.of(Cost.of(ModGear.BONE_BREAKER, 1), Cost.of(ModItems.LARGE_FEMUR, 1),
 					Cost.of(Items.BONE_MEAL, 12), Cost.of(Items.OBSIDIAN, 8)), List.of(ModGear.BONE_PULVERIZER)));
 
+	/** Cluster Hunt Armor (Gear tab, Armor page). */
+	public static final List<GearTrade> CLUSTER_ARMOR = List.of(
+			new GearTrade("Icy Armor", 2, join(List.of(Cost.of(Items.IRON_HELMET, 1), Cost.of(Items.IRON_CHESTPLATE, 1),
+					Cost.of(Items.IRON_LEGGINGS, 1), Cost.of(Items.IRON_BOOTS, 1)), Cost.of(Items.ICE, 16),
+					Cost.of(ModItems.THERMAL_SLIMEBALL, 8)), ModGear.ICY.pieces()));
+
 	/** Key stored in a player's seen list once they've obtained a piece of Hunt gear. */
 	public static String gearSeenId(Item item) {
 		return "gear:" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath();
@@ -322,7 +329,7 @@ public final class HuntDefs {
 
 	/** The Rank that unlocks the trade giving this gear, or -1 if it isn't Hunt gear. */
 	public static int gearRank(Item item) {
-		for (List<GearTrade> list : List.of(ANIMAL_ARMOR, ANIMAL_WEAPONS)) {
+		for (List<GearTrade> list : List.of(ANIMAL_ARMOR, ANIMAL_WEAPONS, CLUSTER_ARMOR)) {
 			for (GearTrade trade : list) {
 				if (trade.result().contains(item)) {
 					return trade.rank();
@@ -334,8 +341,8 @@ public final class HuntDefs {
 
 	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. The Cluster Hunt has none yet. */
 	public static List<GearTrade> trades(Hunt hunt, int page) {
-		if (hunt != ANIMAL) {
-			return List.of();
+		if (hunt == CLUSTER) {
+			return page == 0 ? CLUSTER_ARMOR : List.of();
 		}
 		return page == 0 ? ANIMAL_ARMOR : page == 1 ? ANIMAL_SPECIAL : ANIMAL_WEAPONS;
 	}

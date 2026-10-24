@@ -40,6 +40,7 @@ import com.huntlike.registry.ModItems;
 public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
 	private static final Identifier MERCURY = HuntLike.id("textures/gui/mercury.png");
+	private static final Identifier LOCK = HuntLike.id("textures/gui/lock.png");
 
 	/** Each Hunt's symbol on the rail: the ankh for Animal, Mercury's alchemical symbol for Cluster. */
 	private static Identifier symbol(Hunt hunt) {
@@ -111,6 +112,11 @@ public class HuntMenuScreen extends Screen {
 			if (HuntDefs.HUNTS.get(i).id().equals(data.selectedHunt)) {
 				this.huntIndex = i;
 			}
+		}
+		// A Hunt that is still locked never stays selected: the menu opens on the Animal Hunt instead.
+		if (!HuntDefs.huntUnlocked(data, hunt())) {
+			this.huntIndex = 0;
+			ClientPlayNetworking.send(new HuntPayloads.Action("select", hunt().id(), 0));
 		}
 		this.rankView = progress().rank();
 		this.questTier = highestUnlockedTier();
@@ -320,13 +326,30 @@ public class HuntMenuScreen extends Screen {
 			int y0 = sy - size / 2;
 			boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
 			sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
-			g.blit(RenderPipelines.GUI_TEXTURED, symbol(HuntDefs.HUNTS.get(index)), x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6,
+			Hunt railHunt = HuntDefs.HUNTS.get(index);
+			boolean locked = !HuntDefs.huntUnlocked(ClientHuntState.data, railHunt);
+			g.blit(RenderPipelines.GUI_TEXTURED, symbol(railHunt), x0 + 3, y0 + 3, 0.0F, 0.0F, size - 6, size - 6,
 					26, 26, 26, 26);
+			if (locked) {
+				// Locked Hunts: a dark veil over the symbol and a padlock in the corner.
+				g.fill(x0, y0, x0 + size, y0 + size, 0xA0101010);
+				int lw = offset == 0 ? 12 : 9;
+				int lh = offset == 0 ? 14 : 10;
+				g.blit(RenderPipelines.GUI_TEXTURED, LOCK, x0 + size - lw + 2, y0 + size - lh + 2, 0.0F, 0.0F, lw, lh, 12, 14, 12, 14);
+			}
 			if (offset == 0) {
 				hits.add(new Hit(x0, y0, size, size, this::openPanel));
 				if (hover) {
-					g.setTooltipForNextFrame(this.font, Component.literal(HuntDefs.HUNTS.get(index).name() + " Hunt")
-							.withColor(HuntDefs.HUNTS.get(index).color()), mouseX, mouseY);
+					if (locked) {
+						g.setComponentTooltipForNextFrame(this.font, List.of(
+								Component.literal(railHunt.name() + " Hunt").withColor(railHunt.color()),
+								colored("Locked: unlocks at " + HuntDefs.ANIMAL.rankName(HuntDefs.huntUnlockRank(railHunt))
+										+ " (Animal Rank " + HuntDefs.ROMAN[HuntDefs.huntUnlockRank(railHunt)] + ")", HuntDefs.RED)),
+								mouseX, mouseY);
+					} else {
+						g.setTooltipForNextFrame(this.font, Component.literal(railHunt.name() + " Hunt").withColor(railHunt.color()),
+								mouseX, mouseY);
+					}
 				}
 			}
 		}

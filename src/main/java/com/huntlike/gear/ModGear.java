@@ -84,18 +84,21 @@ public final class ModGear {
 	// ---------------------------------------------------------------- armor
 
 	/** One Hunt Armor set. defense is helmet, chestplate, leggings, boots; animalReduction needs the full set. */
-	public record ArmorSet(String id, double[] defense, double toughness, int health, float animalReduction,
+	public record ArmorSet(String hunt, String id, double[] defense, double toughness, int health, float animalReduction,
 			float lungeResistance, Item helmet, Item chestplate, Item leggings, Item boots) {
 		public List<Item> pieces() {
 			return List.of(helmet, chestplate, leggings, boots);
 		}
 	}
 
-	public static final ArmorSet ROTTEN = armorSet("rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.05F, 0, Rarity.UNCOMMON);
-	public static final ArmorSet CARRION = armorSet("carrion", new double[] {2.5, 6.5, 5.5, 2.5}, 0, 2, 0.10F, 0, Rarity.RARE);
-	public static final ArmorSet ECOCIDE = armorSet("ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.15F, 0.20F, Rarity.EPIC);
+	public static final ArmorSet ROTTEN = armorSet("animal", "rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.05F, 0, Rarity.UNCOMMON);
+	public static final ArmorSet CARRION = armorSet("animal", "carrion", new double[] {2.5, 6.5, 5.5, 2.5}, 0, 2, 0.10F, 0, Rarity.RARE);
+	public static final ArmorSet ECOCIDE = armorSet("animal", "ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.15F, 0.20F, Rarity.EPIC);
 
-	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE);
+	/** Cluster Hunt Armor I: iron armor stats, Slippery, and less damage from Cluster creatures (full set). */
+	public static final ArmorSet ICY = armorSet("cluster", "icy", new double[] {2, 6, 5, 2}, 0, 0, 0.05F, 0, Rarity.UNCOMMON);
+
+	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE, ICY);
 
 	public static ArmorSet armorSetOf(Item item) {
 		for (ArmorSet set : ARMOR_SETS) {
@@ -106,8 +109,9 @@ public final class ModGear {
 		return null;
 	}
 
-	private static ArmorSet armorSet(String id, double[] defense, double toughness, int health, float reduction, float lunge,
-			Rarity rarity) {
+	private static ArmorSet armorSet(String hunt, String id, double[] defense, double toughness, int health, float reduction,
+			float lunge, Rarity rarity) {
+		boolean cluster = hunt.equals("cluster");
 		ResourceKey<EquipmentAsset> asset = ResourceKey.create(EquipmentAssets.ROOT_ID, HuntLike.id(id));
 		Map<ArmorType, Integer> vanillaDefense = new HashMap<>();
 		vanillaDefense.put(ArmorType.HELMET, (int) defense[0]);
@@ -118,10 +122,16 @@ public final class ModGear {
 		ArmorMaterial material = new ArmorMaterial(37, vanillaDefense, 25, SoundEvents.ARMOR_EQUIP_LEATHER, (float) toughness, 0.0F,
 				ItemTags.REPAIRS_LEATHER_ARMOR, asset);
 		List<Component> lore = new ArrayList<>();
-		ability(lore, "Egg Shell", "Attacks that involve Eggs are nullified.");
-		ability(lore, "Animalistic", "The armor reacts to familiar tendencies of species and reduces damage from Animal creatures.");
-		lore.add(Component.empty());
-		Lore.gray(lore, "-" + percent(reduction) + "% damage from Animal creatures (full set).");
+		if (cluster) {
+			ability(lore, "Slippery", "Decreases damage from Sticky Fingers.");
+			lore.add(Component.empty());
+			Lore.gray(lore, "-" + percent(reduction) + "% damage from Cluster creatures (full set).");
+		} else {
+			ability(lore, "Egg Shell", "Attacks that involve Eggs are nullified.");
+			ability(lore, "Animalistic", "The armor reacts to familiar tendencies of species and reduces damage from Animal creatures.");
+			lore.add(Component.empty());
+			Lore.gray(lore, "-" + percent(reduction) + "% damage from Animal creatures (full set).");
+		}
 		if (lunge > 0) {
 			Lore.gray(lore, "-" + percent(lunge) + "% Animalia Lunge knockback per piece.");
 		}
@@ -137,8 +147,10 @@ public final class ModGear {
 				attributes.add(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(HuntLike.id("toughness." + names[i]), toughness,
 						AttributeModifier.Operation.ADD_VALUE), groups[i]);
 			}
-			attributes.add(Attributes.MAX_HEALTH, new AttributeModifier(HuntLike.id("health." + names[i]), health,
-					AttributeModifier.Operation.ADD_VALUE), groups[i]);
+			if (health > 0) {
+				attributes.add(Attributes.MAX_HEALTH, new AttributeModifier(HuntLike.id("health." + names[i]), health,
+						AttributeModifier.Operation.ADD_VALUE), groups[i]);
+			}
 			Item.Properties properties = new Item.Properties()
 					.humanoidArmor(material, types[i])
 					.attributes(attributes.build())
@@ -147,7 +159,7 @@ public final class ModGear {
 					.component(DataComponents.LORE, new ItemLore(lore));
 			items[i] = ModItems.register(id + "_" + names[i], Item::new, properties);
 		}
-		return new ArmorSet(id, defense, toughness, health, reduction, lunge, items[0], items[1], items[2], items[3]);
+		return new ArmorSet(hunt, id, defense, toughness, health, reduction, lunge, items[0], items[1], items[2], items[3]);
 	}
 
 	/** 0.15 -> "15", 0.0125 -> "1.25". */

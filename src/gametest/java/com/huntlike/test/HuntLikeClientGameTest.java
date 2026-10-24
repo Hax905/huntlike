@@ -712,6 +712,56 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	/** The Cluster Hunt: Soul Sand tokens, whole-cluster quota, Mitosis, Baller, Yummy!, Watch out! and Thermodynamic. */
 	private static void clusterHunt(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
 		String name = singleplayer.getServer().computeOnServer(server -> player(server).getScoreboardName());
+		// Locked: below Animal Rank III the rail shows a padlock, and a selected Cluster Hunt reopens on Animal.
+		int savedXp = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).progress("animal").xp);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.progress("animal").xp = 0;
+			data.selectedHunt = "cluster";
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
+		});
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
+		context.waitForScreen(HuntMenuScreen.class);
+		context.waitTicks(10);
+		context.getInput().pressKey(InputConstants.KEY_S);
+		context.waitTicks(5);
+		context.takeScreenshot("39-cluster-locked");
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
+		context.waitForScreen(HuntMenuScreen.class);
+		context.waitTicks(5);
+		check(singleplayer, "a locked Hunt reopens on Animal", data -> data.selectedHunt.equals("animal"));
+		context.setScreen(() -> null);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.progress("animal").xp = savedXp;
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
+		});
+		singleplayer.getServer().runCommand("huntlike xp add 60 cluster");
+		context.waitTicks(2);
+		check(singleplayer, "/huntlike xp add <amount> cluster", data -> data.progress("cluster").xp == 60);
+		singleplayer.getServer().runOnServer(server -> {
+			HuntData data = QuestManager.data(player(server));
+			data.progress("cluster").xp = 0;
+			player(server).setAttached(QuestManager.DATA, data);
+		});
+		assertServer(singleplayer, "Icy Armor full set is Slippery", server -> {
+			ServerPlayer player = player(server);
+			var icy = com.huntlike.gear.ModGear.ICY;
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(icy.helmet()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(icy.chestplate()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(icy.leggings()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(icy.boots()));
+			boolean slippery = com.huntlike.gear.GearEffects.slippery(player) && com.huntlike.gear.GearEffects.armorPieces(player) == 0;
+			HuntLike.LOGGER.info("[test] Icy armor value {}", player.getArmorValue());
+			return slippery && player.getArmorValue() == 15;
+		});
 		assertServer(singleplayer, "cluster hunt unlocked at Animal Rank III; Spirit Lure brings slimes here", server ->
 				com.huntlike.hunt.HuntDefs.huntUnlocked(QuestManager.data(player(server)), com.huntlike.hunt.HuntDefs.CLUSTER)
 						&& com.huntlike.hunt.SpiritLure.huntableHere(player(server), com.huntlike.hunt.HuntDefs.CLUSTER)

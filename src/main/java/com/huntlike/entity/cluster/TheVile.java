@@ -69,6 +69,12 @@ public class TheVile extends Slime {
 		this.entityData.set(MAGMA_CORE, magma);
 	}
 
+	/** Soul particles, like soul sand, instead of slime when it jumps and lands. */
+	@Override
+	protected net.minecraft.core.particles.ParticleOptions getParticleType() {
+		return net.minecraft.core.particles.ParticleTypes.SOUL;
+	}
+
 	@Override
 	public boolean canFreeze() {
 		return false;

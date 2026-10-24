@@ -17,6 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import com.huntlike.entity.BossEgg;
 import com.huntlike.hunt.BossAbilities;
 import com.huntlike.hunt.BossController;
+import com.huntlike.hunt.ClusterFight;
+import com.huntlike.hunt.ClusterQuota;
 import com.huntlike.hunt.QuestManager;
 
 /** What the Animal Hunt Weapons and Armor do in a fight. */
@@ -31,8 +33,19 @@ public final class GearEffects {
 	/** Animal mobs (the quota animals), Animal bosses and their herds. */
 	public static boolean isAnimal(Entity entity) {
 		return entity.getType().builtInRegistryHolder().is(QuestManager.QUOTA_ANIMALS)
-				|| entity instanceof LivingEntity living && BossController.isBoss(living)
+				|| entity instanceof LivingEntity living && BossController.isBoss(living) && !ClusterFight.isBody(entity)
 				|| BossAbilities.isHerd(entity);
+	}
+
+	/** Cluster mobs: slimes, magma cubes and the Cluster bosses' bodies. */
+	public static boolean isCluster(Entity entity) {
+		return ClusterQuota.isClusterMob(entity) || ClusterFight.isBody(entity);
+	}
+
+	/** Slippery: a full set of Cluster Hunt Armor. */
+	public static boolean slippery(Player player) {
+		ModGear.ArmorSet set = fullSet(player);
+		return set != null && set.hunt().equals("cluster");
 	}
 
 	/** Called with every damage amount, before armor: Biohazard, Momentum, Fracture and Animalistic. */
@@ -55,7 +68,13 @@ public final class GearEffects {
 		}
 		if (target instanceof Player player && attacker != null && isAnimal(attacker) && !source.is(BossAbilities.SOUL_STRIKE)) {
 			ModGear.ArmorSet set = fullSet(player);
-			if (set != null) {
+			if (set != null && set.hunt().equals("animal")) {
+				amount *= 1.0F - set.animalReduction();
+			}
+		}
+		if (target instanceof Player player && attacker != null && isCluster(attacker)) {
+			ModGear.ArmorSet set = fullSet(player);
+			if (set != null && set.hunt().equals("cluster")) {
 				amount *= 1.0F - set.animalReduction();
 			}
 		}
@@ -87,7 +106,8 @@ public final class GearEffects {
 	public static int armorPieces(Player player) {
 		int pieces = 0;
 		for (EquipmentSlot slot : ARMOR_SLOTS) {
-			if (ModGear.armorSetOf(player.getItemBySlot(slot).getItem()) != null) {
+			ModGear.ArmorSet set = ModGear.armorSetOf(player.getItemBySlot(slot).getItem());
+			if (set != null && set.hunt().equals("animal")) {
 				pieces++;
 			}
 		}

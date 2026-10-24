@@ -101,6 +101,20 @@ public final class SpiritLure {
 		return types;
 	}
 
+	/** Slimes are only lured in land biomes: no oceans or rivers. */
+	private static boolean solidBiome(ServerLevel level, BlockPos pos) {
+		var biome = level.getBiome(pos);
+		return !biome.is(net.minecraft.tags.BiomeTags.IS_OCEAN) && !biome.is(net.minecraft.tags.BiomeTags.IS_DEEP_OCEAN)
+				&& !biome.is(net.minecraft.tags.BiomeTags.IS_RIVER);
+	}
+
+	/** A dry spot standing on a solid block (no water, lava or leaves underneath). */
+	private static boolean solidGround(ServerLevel level, BlockPos pos) {
+		BlockPos below = pos.below();
+		return level.getFluidState(pos).isEmpty() && level.getFluidState(below).isEmpty()
+				&& level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP);
+	}
+
 	private static List<EntityType<?>> clusterTypes(ServerLevel level) {
 		if (level.dimension() == Level.OVERWORLD) {
 			return List.of(net.minecraft.world.entity.EntityTypes.SLIME);
@@ -133,7 +147,8 @@ public final class SpiritLure {
 		boolean overworld = level.dimension() == Level.OVERWORLD;
 		List<EntityType<?>> clusterHere = cluster ? clusterTypes(level) : List.of();
 		boolean dimensionOk = cluster ? !clusterHere.isEmpty() : overworld;
-		boolean nothingHere = cluster ? clusterHere.isEmpty() : spawnList(level, player.blockPosition()).isEmpty();
+		boolean nothingHere = cluster ? clusterHere.isEmpty() || overworld && !solidBiome(level, player.blockPosition())
+				: spawnList(level, player.blockPosition()).isEmpty();
 
 		// No-spirits hint: once per biome or dimension, after 30 seconds there.
 		if (!dimensionOk || nothingHere) {
@@ -194,8 +209,8 @@ public final class SpiritLure {
 				EntityType<?> type = clusterHere.get(0);
 				BlockPos pos = overworld ? level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
 						column) : QuestManager.findGround(level, column);
-				if (pos == null || !level.noCollision(type.getSpawnAABB(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5))
-						|| !level.getFluidState(pos).isEmpty()) {
+				if (pos == null || (overworld && !solidBiome(level, pos)) || !solidGround(level, pos)
+						|| !level.noCollision(type.getSpawnAABB(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5))) {
 					continue;
 				}
 				Entity entity = type.spawn(level, pos, EntitySpawnReason.NATURAL);

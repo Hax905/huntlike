@@ -26,7 +26,7 @@ import com.huntlike.hunt.QuestManager;
 
 /**
  * Operator commands:
- * /huntlike xp|tokens add &lt;amount&gt;, /huntlike reset,
+ * /huntlike xp|tokens add &lt;amount&gt; [hunt], /huntlike reset,
  * /huntlike quest start &lt;players&gt; &lt;hunt&gt; &lt;tier&gt;, /huntlike quest cancel &lt;players&gt;,
  * /huntlike stats [player], /huntlike boss &lt;hunt&gt; &lt;tier&gt; [players].
  */
@@ -40,10 +40,12 @@ public final class HuntCommand {
 						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
 						.then(Commands.literal("xp").then(Commands.literal("add")
 								.then(Commands.argument("amount", IntegerArgumentType.integer(0))
-										.executes(ctx -> add(ctx, true)))))
+										.executes(ctx -> add(ctx, true, HuntDefs.ANIMAL))
+										.then(huntArgument().executes(ctx -> add(ctx, true, hunt(ctx)))))))
 						.then(Commands.literal("tokens").then(Commands.literal("add")
 								.then(Commands.argument("amount", IntegerArgumentType.integer(0))
-										.executes(ctx -> add(ctx, false)))))
+										.executes(ctx -> add(ctx, false, HuntDefs.ANIMAL))
+										.then(huntArgument().executes(ctx -> add(ctx, false, hunt(ctx)))))))
 						.then(Commands.literal("reset").executes(HuntCommand::reset))
 						.then(Commands.literal("quest")
 								.then(Commands.literal("start")
@@ -179,11 +181,11 @@ public final class HuntCommand {
 				.append(Component.literal(value).withStyle(ChatFormatting.WHITE));
 	}
 
-	private static int add(CommandContext<CommandSourceStack> ctx, boolean xp) throws CommandSyntaxException {
+	private static int add(CommandContext<CommandSourceStack> ctx, boolean xp, Hunt hunt) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		int amount = IntegerArgumentType.getInteger(ctx, "amount");
 		HuntData data = QuestManager.data(player);
-		HuntData.Progress progress = data.progress("animal");
+		HuntData.Progress progress = data.progress(hunt.id());
 		if (xp) {
 			progress.xp += amount;
 		} else {
@@ -191,7 +193,8 @@ public final class HuntCommand {
 		}
 		player.setAttached(QuestManager.DATA, data);
 		QuestManager.sync(player);
-		ctx.getSource().sendSuccess(() -> Component.literal("Added " + amount + (xp ? " Animal XP." : " Animal Ritual Tokens.")), false);
+		ctx.getSource().sendSuccess(() -> Component.literal("Added " + amount + " " + hunt.name()
+				+ (xp ? " XP." : " Ritual Tokens.")), false);
 		return 1;
 	}
 

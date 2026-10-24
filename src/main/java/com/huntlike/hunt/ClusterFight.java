@@ -67,6 +67,9 @@ public final class ClusterFight {
 			HuntLike.id("sticky_fingers"));
 
 	private static final int BALLER_INTERVAL = 20 * 5;
+	/** Sticky Fingers: damage per main-body jump (Tiers I-III / IV-V). */
+	public static final float JUMP_DAMAGE_LOW = 3.0F;
+	public static final float JUMP_DAMAGE_HIGH = 4.0F;
 	private static final float BALLER_DAMAGE = 8.0F;
 	private static final int DIGEST_INTERVAL = 40;
 	private static final int WATCH_ROUNDS = 3;
@@ -279,6 +282,10 @@ public final class ClusterFight {
 				switchCore(vile, level);
 			}
 		}
+		// Sticky Fingers, second line: once split, every living body deals 1 damage per second.
+		if (main == null && elapsed % 20 == 0 && !player.isCreative() && !player.isSpectator() && player.isAlive()) {
+			stick(player, bodies.get(0), level, bodies.size());
+		}
 		tickYummy(player, main, fight, level);
 		tickWatch(player, main, tier, fight, level);
 	}
@@ -327,7 +334,8 @@ public final class ClusterFight {
 			}
 			level.playSound(null, entity.blockPosition(), entity instanceof MagmaCube ? SoundEvents.MAGMA_CUBE_SQUISH
 					: SoundEvents.SLIME_SQUISH, SoundSource.HOSTILE, 1.6F, 0.6F);
-			level.sendParticles(ParticleTypes.ITEM_SLIME, entity.getX(), entity.getY() + 0.5, entity.getZ(), 40, 0.6, 0.4, 0.6, 0.1);
+			level.sendParticles(entity instanceof TheVile ? ParticleTypes.SOUL : ParticleTypes.ITEM_SLIME, entity.getX(),
+					entity.getY() + 0.5, entity.getZ(), 40, 0.6, 0.4, 0.6, 0.1);
 		}
 		if (spawned > 0) {
 			return;
@@ -435,9 +443,17 @@ public final class ClusterFight {
 		if (fight != null && fight.yummyActive) {
 			return;
 		}
+		stick(owner, body, level, quest.tier <= 3 ? JUMP_DAMAGE_LOW : JUMP_DAMAGE_HIGH);
+	}
+
+	/** Sticky Fingers damage; Slippery (a full set of Cluster Hunt Armor) limits each hit to 1. */
+	private static void stick(ServerPlayer owner, Mob body, ServerLevel level, float amount) {
+		if (com.huntlike.gear.GearEffects.slippery(owner)) {
+			amount = Math.min(amount, 1.0F);
+		}
 		DamageSource source = new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(STICKY_FINGERS),
 				body);
-		owner.hurtServer(level, source, quest.tier <= 3 ? 1.0F : 2.0F);
+		owner.hurtServer(level, source, amount);
 	}
 
 	/** A consumed player isn't also hit by touching the boss. */

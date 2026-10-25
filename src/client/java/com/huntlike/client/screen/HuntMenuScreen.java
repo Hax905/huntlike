@@ -334,8 +334,7 @@ public class HuntMenuScreen extends Screen {
 					26, 26, 26, 26);
 			if (locked) {
 				// Locked Hunts: a dark veil over the symbol and a padlock in the corner.
-				g.fill(x0, y0, x0 + size, y0 + size, 0x60101010);
-				drawChains(g, x0, y0, size, size, offset == 0 ? 1.5F : 1.0F);
+				g.fill(x0, y0, x0 + size, y0 + size, 0x90101010);
 				int lw = offset == 0 ? 15 : 10;
 				int lh = offset == 0 ? 21 : 14;
 				g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, lw, lh);
@@ -459,9 +458,10 @@ public class HuntMenuScreen extends Screen {
 			drawAbilities(g, tier, px + 4, y, pw - 8, py + ph - 26 - y);
 		}
 		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
-		if (!unlocked) {
+		if (!huntOpen()) {
+			// A locked Hunt: two chains cross its whole panel, corner to corner.
 			g.nextStratum();
-			drawChains(g, px + pw - 74, statsTop, 58, 50, 1.5F);
+			drawChains(g, px, py, pw, ph, 2.0F);
 		}
 
 		int by = py + ph - 20;

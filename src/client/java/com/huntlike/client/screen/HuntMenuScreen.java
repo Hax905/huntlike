@@ -311,12 +311,9 @@ public class HuntMenuScreen extends Screen {
 	private void drawRail(GuiGraphicsExtractor g, int mouseX, int mouseY) {
 		int cx = ix + 46;
 		int cy = iy + ih / 2;
-		// Slanted rail: leans right toward the selected symbol, then back.
-		for (int y = iy; y < iy + ih; y++) {
-			double t = Math.abs(y - cy) / (double) (ih / 2);
-			int x = (int) Math.round(cx - 12 * t);
-			g.fill(x - 1, y, x + 1, y + 1, RAIL);
-		}
+		// Slanted rail: leans right toward the selected symbol, then back. Two straight, smooth segments.
+		line(g, railX(iy, cx, cy), iy, cx, cy, RAIL);
+		line(g, cx, cy, railX(iy + ih, cx, cy), iy + ih, RAIL);
 		for (int offset = -1; offset <= 1; offset++) {
 			int index = huntIndex + offset;
 			if (index < 0 || index >= HuntDefs.HUNTS.size()) {
@@ -324,7 +321,8 @@ public class HuntMenuScreen extends Screen {
 			}
 			int sy = cy + offset * 56;
 			int size = offset == 0 ? 32 : 22;
-			int x0 = cx - size / 2;
+			// Each symbol sits centered on the rail.
+			int x0 = Math.round(railX(sy, cx, cy)) - size / 2;
 			int y0 = sy - size / 2;
 			boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
 			sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
@@ -355,6 +353,23 @@ public class HuntMenuScreen extends Screen {
 				}
 			}
 		}
+	}
+
+	/** Where the rail passes at height y: at cx in the middle, 12 pixels further left at the top and bottom. */
+	private float railX(float y, int cx, int cy) {
+		return cx - 12.0F * Math.abs(y - cy) / (ih / 2.0F);
+	}
+
+	/** A 2-pixel line drawn as one rotated bar, so slanted lines stay smooth instead of stair-stepped. */
+	private static void line(GuiGraphicsExtractor g, float x1, float y1, float x2, float y2, int color) {
+		float dx = x2 - x1;
+		float dy = y2 - y1;
+		int length = Math.round((float) Math.sqrt(dx * dx + dy * dy));
+		g.pose().pushMatrix();
+		g.pose().translate(x1, y1);
+		g.pose().rotate((float) Math.atan2(dy, dx));
+		g.fill(0, -1, length, 1, color);
+		g.pose().popMatrix();
 	}
 
 	/** Two iron chains crossed over a locked area (vanilla's chain texture, tiled along each diagonal). */

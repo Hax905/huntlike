@@ -915,6 +915,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		boolean core = singleplayer.getServer().computeOnServer(server ->
 				((com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0)).isMagmaCore());
 		context.waitTicks(110);
+		for (int i = 0; i < 20 && com.huntlike.hunt.ClusterFight.ballsThrown == ballsBefore; i++) {
+			context.waitTicks(10);
+		}
 		context.takeScreenshot("45b-the-vile-switched");
 		assertServer(singleplayer, "Thermodynamic switched the core; Baller threw a ball", server -> {
 			var vile = (com.huntlike.entity.cluster.TheVile) com.huntlike.hunt.ClusterFight.bodies(player(server)).get(0);

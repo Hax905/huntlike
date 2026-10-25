@@ -128,11 +128,17 @@ public final class ModGear {
 		vanillaDefense.put(ArmorType.LEGGINGS, (int) defense[2]);
 		vanillaDefense.put(ArmorType.BOOTS, (int) defense[3]);
 		vanillaDefense.put(ArmorType.BODY, (int) defense[1]);
-		ArmorMaterial material = new ArmorMaterial(37, vanillaDefense, 25, SoundEvents.ARMOR_EQUIP_LEATHER, (float) toughness, 0.0F,
+		ArmorMaterial material = new ArmorMaterial(37, vanillaDefense, 25, SoundEvents.ARMOR_EQUIP_LEATHER, (float) toughness, (float) knockback,
 				ItemTags.REPAIRS_LEATHER_ARMOR, asset);
 		List<Component> lore = new ArrayList<>();
 		if (cluster) {
 			ability(lore, "Slippery", "Decreases damage from Sticky Fingers.");
+			if (!id.equals("icy")) {
+				ability(lore, "Better Than Ever!", "After being eaten by a Cluster boss, come back better than ever!");
+			}
+			if (id.equals("thermal")) {
+				ability(lore, "Room Temperature", "Won't be able to be burnt or frozen.");
+			}
 			if (!id.equals("icy")) {
 				ability(lore, "Better Than Ever!", "After being eaten by a Cluster boss, come back better than ever!");
 			}
@@ -160,6 +166,10 @@ public final class ModGear {
 					AttributeModifier.Operation.ADD_VALUE), groups[i]);
 			if (toughness > 0) {
 				attributes.add(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(HuntLike.id("toughness." + names[i]), toughness,
+						AttributeModifier.Operation.ADD_VALUE), groups[i]);
+			}
+			if (knockback > 0) {
+				attributes.add(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(HuntLike.id("knockback." + names[i]), knockback,
 						AttributeModifier.Operation.ADD_VALUE), groups[i]);
 			}
 			if (health > 0) {

@@ -775,13 +775,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return player.getArmorValue() == 20 && Math.abs(toughness - 6.0) < 0.01 && com.huntlike.gear.GearEffects.betterThanEver(player)
 					&& !com.huntlike.gear.GearEffects.roomTemperature(player);
 		});
-		wear(singleplayer, com.huntlike.gear.ModGear.THERMAL);
+		assertServer(singleplayer, "Thermodynamic lore: each ability once, each marked (full set)", server -> {
+			var lore = new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModGear.THERMODYNAMIC.helmet())
+					.get(net.minecraft.core.component.DataComponents.LORE).lines();
+			List<String> lines = lore.stream().map(net.minecraft.network.chat.Component::getString).toList();
+			HuntLike.LOGGER.info("[test] Thermodynamic lore {}", lines);
+			return java.util.Collections.frequency(lines, "Better Than Ever!") == 1
+					&& java.util.Collections.frequency(lines, "Room Temperature") == 1
+					&& java.util.Collections.frequency(lines, "(full set)") == 3;
+		});
+		wear(singleplayer, com.huntlike.gear.ModGear.THERMODYNAMIC);
 		context.waitTicks(3);
-		assertServer(singleplayer, "Thermal Armor: 20 armor, 12 toughness, 0.4 knockback resistance, Room Temperature", server -> {
+		assertServer(singleplayer, "Thermodynamic Armor: 20 armor, 12 toughness, 0.4 knockback resistance, Room Temperature", server -> {
 			ServerPlayer player = player(server);
 			double toughness = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
 			double knockback = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE);
-			HuntLike.LOGGER.info("[test] Thermal armor {} toughness {} knockback {}", player.getArmorValue(), toughness, knockback);
+			HuntLike.LOGGER.info("[test] Thermodynamic armor {} toughness {} knockback {}", player.getArmorValue(), toughness, knockback);
 			return player.getArmorValue() == 20 && Math.abs(toughness - 12.0) < 0.01 && Math.abs(knockback - 0.4) < 0.01
 					&& com.huntlike.gear.GearEffects.roomTemperature(player);
 		});

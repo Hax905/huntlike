@@ -92,7 +92,7 @@ public final class ClusterFight {
 		boolean watch25;
 		boolean watchActive;
 		int watchTicks;
-		/** Better Than Ever!: earned by escaping Yummy! in Gel or Thermal Armor; ends with the fight. */
+		/** Better Than Ever!: earned by escaping Yummy! in Gel or Thermodynamic Armor; ends with the fight. */
 		boolean betterThanEver;
 	}
 

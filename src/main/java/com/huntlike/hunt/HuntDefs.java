@@ -218,7 +218,7 @@ public final class HuntDefs {
 					List.of(),
 					List.of(Unlock.plain("Tier III Cluster Quests"), Unlock.plain("Hunt Armor: Gel Armor")),
 					List.of(),
-					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor: Thermal Armor")),
+					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor: Thermodynamic Armor")),
 					List.of(),
 					List.of(Unlock.plain("Tier V Cluster Quests")),
 					List.of(),
@@ -323,9 +323,9 @@ public final class HuntDefs {
 					Cost.of(ModItems.THERMAL_SLIMEBALL, 8)), ModGear.ICY.pieces()),
 			new GearTrade("Gel Armor", 4, join(set(ModGear.ICY), Cost.of(ModItems.FROZEN_SLIME_BALL, 4), Cost.of(Items.SLIME_BLOCK, 8),
 					Cost.of(ModItems.SLIMYSTEEL, 4)), ModGear.GEL.pieces()),
-			new GearTrade("Thermal Armor", 6, join(set(ModGear.GEL), Cost.of(ModItems.GELID_SLIME_BALL, 2),
+			new GearTrade("Thermodynamic Armor", 6, join(set(ModGear.GEL), Cost.of(ModItems.GELID_SLIME_BALL, 2),
 					Cost.of(ModItems.SUBLIMATING_MAGMA, 2), Cost.of(ModItems.CORRODED_PALLADIUM, 1), Cost.of(Items.DIAMOND, 4)),
-					ModGear.THERMAL.pieces()));
+					ModGear.THERMODYNAMIC.pieces()));
 
 	/** Key stored in a player's seen list once they've obtained a piece of Hunt gear. */
 	public static String gearSeenId(Item item) {

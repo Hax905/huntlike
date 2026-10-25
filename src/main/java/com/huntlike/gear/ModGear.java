@@ -100,11 +100,11 @@ public final class ModGear {
 	public static final ArmorSet ICY = armorSet("cluster", "icy", new double[] {2, 6, 5, 2}, 0, 0, 0.05F, 0, 0, Rarity.UNCOMMON);
 	/** Cluster Hunt Armor II: diamond armor, 1.5 toughness per piece, Slippery and Better Than Ever!. */
 	public static final ArmorSet GEL = armorSet("cluster", "gel", new double[] {3, 8, 6, 3}, 1.5, 0, 0.08F, 0, 0, Rarity.RARE);
-	/** Cluster Hunt Armor III: netherite armor stats, Slippery, Better Than Ever! and Room Temperature. */
-	public static final ArmorSet THERMAL = armorSet("cluster", "thermal", new double[] {3, 8, 6, 3}, 3, 0, 0.15F, 0, 0.1, Rarity.EPIC);
+	/** Cluster Hunt Armor III (Thermodynamic): netherite armor stats, Slippery, Better Than Ever! and Room Temperature. */
+	public static final ArmorSet THERMODYNAMIC = armorSet("cluster", "thermodynamic", new double[] {3, 8, 6, 3}, 3, 0, 0.15F, 0, 0.1, Rarity.EPIC);
 
-	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE, ICY, GEL, THERMAL);
-	public static final List<ArmorSet> CLUSTER_SETS = List.of(ICY, GEL, THERMAL);
+	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE, ICY, GEL, THERMODYNAMIC);
+	public static final List<ArmorSet> CLUSTER_SETS = List.of(ICY, GEL, THERMODYNAMIC);
 
 	/** Better Than Ever!: after escaping Yummy!, Temperature is this much more effective until the boss perishes. */
 	public static final float BETTER_THAN_EVER = 0.20F;
@@ -133,23 +133,22 @@ public final class ModGear {
 		List<Component> lore = new ArrayList<>();
 		if (cluster) {
 			ability(lore, "Slippery", "Decreases damage from Sticky Fingers.");
+			Lore.gray(lore, FULL_SET);
 			if (!id.equals("icy")) {
 				ability(lore, "Better Than Ever!", "After being eaten by a Cluster boss, come back better than ever!");
+				Lore.gray(lore, FULL_SET);
 			}
-			if (id.equals("thermal")) {
+			if (id.equals("thermodynamic")) {
 				ability(lore, "Room Temperature", "Won't be able to be burnt or frozen.");
-			}
-			if (!id.equals("icy")) {
-				ability(lore, "Better Than Ever!", "After being eaten by a Cluster boss, come back better than ever!");
-			}
-			if (id.equals("thermal")) {
-				ability(lore, "Room Temperature", "Won't be able to be burnt or frozen.");
+				Lore.gray(lore, FULL_SET);
 			}
 			lore.add(Component.empty());
 			Lore.gray(lore, "-" + percent(reduction) + "% damage from Cluster creatures (full set).");
 		} else {
 			ability(lore, "Egg Shell", "Attacks that involve Eggs are nullified.");
+			Lore.gray(lore, FULL_SET);
 			ability(lore, "Animalistic", "The armor reacts to familiar tendencies of species and reduces damage from Animal creatures.");
+			Lore.gray(lore, FULL_SET);
 			lore.add(Component.empty());
 			Lore.gray(lore, "-" + percent(reduction) + "% damage from Animal creatures (full set).");
 		}
@@ -192,6 +191,9 @@ public final class ModGear {
 		java.math.BigDecimal value = java.math.BigDecimal.valueOf(Math.round(fraction * 10000) / 100.0).stripTrailingZeros();
 		return value.toPlainString();
 	}
+
+	/** Shown under every ability that needs all four pieces of one set. */
+	private static final String FULL_SET = "(full set)";
 
 	private static void ability(List<Component> lore, String name, String description) {
 		Lore.ability(lore, name, description);

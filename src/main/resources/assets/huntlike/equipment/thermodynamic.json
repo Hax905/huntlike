@@ -2,12 +2,12 @@
   "layers": {
     "humanoid": [
       {
-        "texture": "huntlike:thermal"
+        "texture": "huntlike:thermodynamic"
       }
     ],
     "humanoid_leggings": [
       {
-        "texture": "huntlike:thermal"
+        "texture": "huntlike:thermodynamic"
       }
     ]
   }

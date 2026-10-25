@@ -48,15 +48,15 @@ public final class GearEffects {
 		return set != null && set.hunt().equals("cluster");
 	}
 
-	/** Better Than Ever!: a full set of Gel or Thermal Armor. */
+	/** Better Than Ever!: a full set of Gel or Thermodynamic Armor. */
 	public static boolean betterThanEver(Player player) {
 		ModGear.ArmorSet set = fullSet(player);
-		return set == ModGear.GEL || set == ModGear.THERMAL;
+		return set == ModGear.GEL || set == ModGear.THERMODYNAMIC;
 	}
 
-	/** Room Temperature: a full set of Thermal Armor. */
+	/** Room Temperature: a full set of Thermodynamic Armor. */
 	public static boolean roomTemperature(Player player) {
-		return fullSet(player) == ModGear.THERMAL;
+		return fullSet(player) == ModGear.THERMODYNAMIC;
 	}
 
 	/**

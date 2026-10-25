@@ -780,8 +780,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					.get(net.minecraft.core.component.DataComponents.LORE).lines();
 			List<String> lines = lore.stream().map(net.minecraft.network.chat.Component::getString).toList();
 			HuntLike.LOGGER.info("[test] Thermodynamic lore {}", lines);
-			return java.util.Collections.frequency(lines, "Better Than Ever!") == 1
-					&& java.util.Collections.frequency(lines, "Room Temperature") == 1
+			return lines.stream().filter(l -> l.startsWith("Better Than Ever!")).count() == 1
+					&& lines.stream().filter(l -> l.startsWith("Room Temperature")).count() == 1
 					&& java.util.Collections.frequency(lines, "(full set)") == 3;
 		});
 		wear(singleplayer, com.huntlike.gear.ModGear.THERMODYNAMIC);

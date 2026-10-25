@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "huntlike:thermal"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "huntlike:thermal"
+      }
+    ]
+  }
+}

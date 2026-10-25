@@ -116,6 +116,7 @@ public final class QuestManager {
 		ServerTickEvents.END_SERVER_TICK.register(QuestManager::tick);
 		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.KoroWhakamateItem::tick);
 		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.HideBoots::tick);
+		ServerTickEvents.END_SERVER_TICK.register(com.huntlike.gear.GearEffects::tick);
 		ServerLivingEntityEvents.AFTER_DEATH.register(QuestManager::onDeath);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(BossController::allowDamage);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(com.huntlike.gear.GearEffects::allowDamage);

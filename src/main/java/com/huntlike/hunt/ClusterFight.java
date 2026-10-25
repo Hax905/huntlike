@@ -92,6 +92,32 @@ public final class ClusterFight {
 		boolean watch25;
 		boolean watchActive;
 		int watchTicks;
+		/** Better Than Ever!: earned by escaping Yummy! in Gel or Thermal Armor; ends with the fight. */
+		boolean betterThanEver;
+	}
+
+	/** Players set on fire by a Cluster boss (Watch out!): Room Temperature doesn't put that fire out. */
+	private static final Set<UUID> BOSS_BURNING = new HashSet<>();
+	/** Yummy!'s Slowness I after escaping, in ticks. */
+	public static final int YUMMY_SLOWNESS_TICKS = 5 * 20;
+
+	public static boolean bossBurning(ServerPlayer player) {
+		if (player.getRemainingFireTicks() <= 0) {
+			BOSS_BURNING.remove(player.getUUID());
+			return false;
+		}
+		return BOSS_BURNING.contains(player.getUUID());
+	}
+
+	/** Better Than Ever! is active for this player's fight. */
+	public static boolean betterThanEver(ServerPlayer owner) {
+		Fight fight = FIGHTS.get(owner.getUUID());
+		return fight != null && fight.betterThanEver;
+	}
+
+	/** Multiplier for Temperature damage (scythes): 1.2 with Better Than Ever!, else 1. */
+	public static float temperatureMultiplier(ServerPlayer owner) {
+		return betterThanEver(owner) ? 1.0F + com.huntlike.gear.ModGear.BETTER_THAN_EVER : 1.0F;
 	}
 
 	private static final Map<UUID, Fight> FIGHTS = new HashMap<>();
@@ -566,6 +592,14 @@ public final class ClusterFight {
 		QuestManager.playSound(owner, SoundEvents.SLIME_JUMP, 0.8F + fight.progress * 0.08F);
 		if (fight.progress >= fight.keys.length) {
 			release(owner, fight);
+			owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS,
+					YUMMY_SLOWNESS_TICKS, 0));
+			if (com.huntlike.gear.GearEffects.betterThanEver(owner) && !fight.betterThanEver) {
+				fight.betterThanEver = true;
+				owner.sendSystemMessage(Messages.c("Better Than Ever! Your Temperature is 20% more effective until the boss perishes.",
+						HuntDefs.BROWN));
+				QuestManager.playSound(owner, SoundEvents.PLAYER_LEVELUP, 1.2F);
+			}
 			owner.setDeltaMovement(owner.getLookAngle().scale(-0.6).add(0, 0.5, 0));
 			owner.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(owner));
 			QuestManager.playSound(owner, SoundEvents.SLIME_SQUISH, 1.4F);
@@ -631,8 +665,9 @@ public final class ClusterFight {
 				if (blocking(owner, main)) {
 					level.playSound(null, owner.blockPosition(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
 				} else if (!owner.isCreative() && !owner.isSpectator()) {
-					owner.hurtServer(level, level.damageSources().mobAttack(main), tier.number() / 2.0F);
+					owner.hurtServer(level, level.damageSources().mobAttack(main), tier.number());
 					owner.setRemainingFireTicks(Math.max(owner.getRemainingFireTicks(), 60));
+					BOSS_BURNING.add(owner.getUUID());
 				}
 			}
 		}

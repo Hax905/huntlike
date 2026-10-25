@@ -129,5 +129,13 @@
   "item.huntlike.icy_helmet": "Icy Helmet",
   "item.huntlike.icy_chestplate": "Icy Chestplate",
   "item.huntlike.icy_leggings": "Icy Leggings",
-  "item.huntlike.icy_boots": "Icy Boots"
+  "item.huntlike.icy_boots": "Icy Boots",
+  "item.huntlike.gel_helmet": "Gel Helmet",
+  "item.huntlike.gel_chestplate": "Gel Chestplate",
+  "item.huntlike.gel_leggings": "Gel Leggings",
+  "item.huntlike.gel_boots": "Gel Boots",
+  "item.huntlike.thermal_helmet": "Thermal Helmet",
+  "item.huntlike.thermal_chestplate": "Thermal Chestplate",
+  "item.huntlike.thermal_leggings": "Thermal Leggings",
+  "item.huntlike.thermal_boots": "Thermal Boots"
 }

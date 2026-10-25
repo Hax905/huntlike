@@ -48,6 +48,37 @@ public final class GearEffects {
 		return set != null && set.hunt().equals("cluster");
 	}
 
+	/** Better Than Ever!: a full set of Gel or Thermal Armor. */
+	public static boolean betterThanEver(Player player) {
+		ModGear.ArmorSet set = fullSet(player);
+		return set == ModGear.GEL || set == ModGear.THERMAL;
+	}
+
+	/** Room Temperature: a full set of Thermal Armor. */
+	public static boolean roomTemperature(Player player) {
+		return fullSet(player) == ModGear.THERMAL;
+	}
+
+	/**
+	 * Room Temperature, every tick: no burning, freezing or Slowness. Fire from a Cluster boss (Watch out!) still burns.
+	 */
+	public static void tick(net.minecraft.server.MinecraftServer server) {
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			if (!roomTemperature(player)) {
+				continue;
+			}
+			if (player.getRemainingFireTicks() > 0 && !ClusterFight.bossBurning(player)) {
+				player.clearFire();
+			}
+			if (player.getTicksFrozen() > 0) {
+				player.setTicksFrozen(0);
+			}
+			if (player.hasEffect(MobEffects.SLOWNESS)) {
+				player.removeEffect(MobEffects.SLOWNESS);
+			}
+		}
+	}
+
 	/** Called with every damage amount, before armor: Biohazard, Momentum, Fracture and Animalistic. */
 	public static float adjustDamage(LivingEntity target, DamageSource source, float amount) {
 		Entity attacker = source.getEntity();
@@ -83,6 +114,15 @@ public final class GearEffects {
 
 	/** Egg Shell: a full set of Animal Hunt Armor ignores Egg Blaster's eggs. */
 	public static boolean allowDamage(LivingEntity entity, DamageSource source, float amount) {
+		if (entity instanceof Player player && roomTemperature(player)) {
+			if (source.is(net.minecraft.tags.DamageTypeTags.IS_FREEZING)) {
+				return false;
+			}
+			if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE) && !(source.getEntity() != null && isCluster(source.getEntity()))
+					&& !(player instanceof ServerPlayer serverPlayer && ClusterFight.bossBurning(serverPlayer))) {
+				return false;
+			}
+		}
 		if (entity instanceof Player player && source.getDirectEntity() instanceof BossEgg) {
 			return armorPieces(player) < 4;
 		}

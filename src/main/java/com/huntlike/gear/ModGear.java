@@ -91,14 +91,23 @@ public final class ModGear {
 		}
 	}
 
-	public static final ArmorSet ROTTEN = armorSet("animal", "rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.05F, 0, Rarity.UNCOMMON);
-	public static final ArmorSet CARRION = armorSet("animal", "carrion", new double[] {2.5, 6.5, 5.5, 2.5}, 0, 2, 0.10F, 0, Rarity.RARE);
-	public static final ArmorSet ECOCIDE = armorSet("animal", "ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.15F, 0.20F, Rarity.EPIC);
+	//                                                                   armor per piece        tough. health reduction lunge
+	public static final ArmorSet ROTTEN = armorSet("animal", "rotten", new double[] {2, 6, 5, 2}, 0, 1, 0.10F, 0, 0, Rarity.UNCOMMON);
+	public static final ArmorSet CARRION = armorSet("animal", "carrion", new double[] {2, 6, 5, 2}, 0, 2, 0.20F, 0, 0, Rarity.RARE);
+	public static final ArmorSet ECOCIDE = armorSet("animal", "ecocide", new double[] {3, 8, 6, 3}, 2, 3, 0.30F, 0.20F, 0, Rarity.EPIC);
 
 	/** Cluster Hunt Armor I: iron armor stats, Slippery, and less damage from Cluster creatures (full set). */
-	public static final ArmorSet ICY = armorSet("cluster", "icy", new double[] {2, 6, 5, 2}, 0, 0, 0.05F, 0, Rarity.UNCOMMON);
+	public static final ArmorSet ICY = armorSet("cluster", "icy", new double[] {2, 6, 5, 2}, 0, 0, 0.05F, 0, 0, Rarity.UNCOMMON);
+	/** Cluster Hunt Armor II: diamond armor, 1.5 toughness per piece, Slippery and Better Than Ever!. */
+	public static final ArmorSet GEL = armorSet("cluster", "gel", new double[] {3, 8, 6, 3}, 1.5, 0, 0.08F, 0, 0, Rarity.RARE);
+	/** Cluster Hunt Armor III: netherite armor stats, Slippery, Better Than Ever! and Room Temperature. */
+	public static final ArmorSet THERMAL = armorSet("cluster", "thermal", new double[] {3, 8, 6, 3}, 3, 0, 0.15F, 0, 0.1, Rarity.EPIC);
 
-	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE, ICY);
+	public static final List<ArmorSet> ARMOR_SETS = List.of(ROTTEN, CARRION, ECOCIDE, ICY, GEL, THERMAL);
+	public static final List<ArmorSet> CLUSTER_SETS = List.of(ICY, GEL, THERMAL);
+
+	/** Better Than Ever!: after escaping Yummy!, Temperature is this much more effective until the boss perishes. */
+	public static final float BETTER_THAN_EVER = 0.20F;
 
 	public static ArmorSet armorSetOf(Item item) {
 		for (ArmorSet set : ARMOR_SETS) {
@@ -110,7 +119,7 @@ public final class ModGear {
 	}
 
 	private static ArmorSet armorSet(String hunt, String id, double[] defense, double toughness, int health, float reduction,
-			float lunge, Rarity rarity) {
+			float lunge, double knockback, Rarity rarity) {
 		boolean cluster = hunt.equals("cluster");
 		ResourceKey<EquipmentAsset> asset = ResourceKey.create(EquipmentAssets.ROOT_ID, HuntLike.id(id));
 		Map<ArmorType, Integer> vanillaDefense = new HashMap<>();
@@ -124,6 +133,12 @@ public final class ModGear {
 		List<Component> lore = new ArrayList<>();
 		if (cluster) {
 			ability(lore, "Slippery", "Decreases damage from Sticky Fingers.");
+			if (!id.equals("icy")) {
+				ability(lore, "Better Than Ever!", "After being eaten by a Cluster boss, come back better than ever!");
+			}
+			if (id.equals("thermal")) {
+				ability(lore, "Room Temperature", "Won't be able to be burnt or frozen.");
+			}
 			lore.add(Component.empty());
 			Lore.gray(lore, "-" + percent(reduction) + "% damage from Cluster creatures (full set).");
 		} else {

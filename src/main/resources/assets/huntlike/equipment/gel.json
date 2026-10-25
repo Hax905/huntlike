@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "huntlike:gel"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "huntlike:gel"
+      }
+    ]
+  }
+}

@@ -766,6 +766,43 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] Icy armor value {}", player.getArmorValue());
 			return slippery && player.getArmorValue() == 15;
 		});
+		wear(singleplayer, com.huntlike.gear.ModGear.GEL);
+		context.waitTicks(3);
+		assertServer(singleplayer, "Gel Armor: 20 armor, 6 toughness, Better Than Ever!", server -> {
+			ServerPlayer player = player(server);
+			double toughness = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
+			HuntLike.LOGGER.info("[test] Gel armor {} toughness {}", player.getArmorValue(), toughness);
+			return player.getArmorValue() == 20 && Math.abs(toughness - 6.0) < 0.01 && com.huntlike.gear.GearEffects.betterThanEver(player)
+					&& !com.huntlike.gear.GearEffects.roomTemperature(player);
+		});
+		wear(singleplayer, com.huntlike.gear.ModGear.THERMAL);
+		context.waitTicks(3);
+		assertServer(singleplayer, "Thermal Armor: 20 armor, 12 toughness, 0.4 knockback resistance, Room Temperature", server -> {
+			ServerPlayer player = player(server);
+			double toughness = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
+			double knockback = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE);
+			HuntLike.LOGGER.info("[test] Thermal armor {} toughness {} knockback {}", player.getArmorValue(), toughness, knockback);
+			return player.getArmorValue() == 20 && Math.abs(toughness - 12.0) < 0.01 && Math.abs(knockback - 0.4) < 0.01
+					&& com.huntlike.gear.GearEffects.roomTemperature(player);
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setRemainingFireTicks(100);
+			player.setTicksFrozen(100);
+			player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS, 200, 0));
+		});
+		context.waitTicks(2);
+		assertServer(singleplayer, "Room Temperature: no burning, freezing, Slowness or lava damage", server -> {
+			ServerPlayer player = player(server);
+			boolean lava = com.huntlike.gear.GearEffects.allowDamage(player, player.level().damageSources().lava(), 4.0F);
+			boolean freeze = com.huntlike.gear.GearEffects.allowDamage(player, player.level().damageSources().freeze(), 1.0F);
+			HuntLike.LOGGER.info("[test] Room Temperature fire {} frozen {} slow {} lava {} freeze {}", player.getRemainingFireTicks(),
+					player.getTicksFrozen(), player.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS), lava, freeze);
+			return player.getRemainingFireTicks() <= 0 && player.getTicksFrozen() == 0
+					&& !player.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS) && !lava && !freeze;
+		});
+		wear(singleplayer, com.huntlike.gear.ModGear.ICY);
+		context.waitTicks(3);
 		assertServer(singleplayer, "cluster hunt unlocked at Animal Rank III; Spirit Lure brings slimes here", server ->
 				com.huntlike.hunt.HuntDefs.huntUnlocked(QuestManager.data(player(server)), com.huntlike.hunt.HuntDefs.CLUSTER)
 						&& com.huntlike.hunt.SpiritLure.huntableHere(player(server), com.huntlike.hunt.HuntDefs.CLUSTER)
@@ -858,7 +895,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		check(singleplayer, "cluster tier I complete with Thermal Slimeballs", data -> data.quest == null
 				&& data.progress("cluster").bossKills[0] == 1 && data.progress("cluster").dropCounts.getOrDefault("thermal_slimeball", 0) >= 1);
 
-		// Tier V: The Vile.
+		// Tier V: The Vile (in Gel Armor, for Better Than Ever!).
+		wear(singleplayer, com.huntlike.gear.ModGear.GEL);
 		int ballsBefore = com.huntlike.hunt.ClusterFight.ballsThrown;
 		singleplayer.getServer().runCommand("huntlike boss cluster 5 " + name);
 		context.waitTicks(45);
@@ -904,6 +942,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		context.waitTicks(5);
 		assertServer(singleplayer, "escaped after the whole sequence", server -> !com.huntlike.hunt.ClusterFight.isConsumed(player(server)));
+		assertServer(singleplayer, "escaping Yummy!: Slowness I for 5 s; Gel's Better Than Ever! makes Temperature x1.2", server -> {
+			ServerPlayer player = player(server);
+			var slow = player.getEffect(net.minecraft.world.effect.MobEffects.SLOWNESS);
+			HuntLike.LOGGER.info("[test] after Yummy! slowness {} multiplier {}", slow,
+					com.huntlike.hunt.ClusterFight.temperatureMultiplier(player));
+			return slow != null && slow.getAmplifier() == 0 && slow.getDuration() > 80
+					&& Math.abs(com.huntlike.hunt.ClusterFight.temperatureMultiplier(player) - 1.2F) < 0.001F;
+		});
+		singleplayer.getServer().runOnServer(server -> player(server).setHealth(player(server).getMaxHealth()));
 		context.waitTicks(30);
 		assertServer(singleplayer, "Watch out! started (below 75%)", server -> com.huntlike.hunt.ClusterFight.isWatching(player(server)));
 		context.takeScreenshot("47-watch-out");
@@ -919,6 +966,18 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
 		context.waitTicks(5);
 		check(singleplayer, "cluster tier V complete", data -> data.quest == null && data.progress("cluster").bossKills[4] == 1);
+		assertServer(singleplayer, "Better Than Ever! ends when the boss perishes", server ->
+				!com.huntlike.hunt.ClusterFight.betterThanEver(player(server)));
+	}
+
+	private static void wear(TestSingleplayerContext singleplayer, com.huntlike.gear.ModGear.ArmorSet set) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(set.helmet()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(set.chestplate()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(set.leggings()));
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(set.boots()));
+		});
 	}
 
 	/** Daily Quest charges: commands don't use them; a new world day refills all five. */

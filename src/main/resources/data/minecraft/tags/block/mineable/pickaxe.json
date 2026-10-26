@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "huntlike:alpha_altar",
-    "huntlike:soul_monolith"
+    "huntlike:soul_monolith",
+    "huntlike:upgraded_soul_monolith"
   ]
 }

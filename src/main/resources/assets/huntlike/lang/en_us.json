@@ -168,5 +168,7 @@
   "advancements.huntlike.cluster.pet_tame.title": "They actually do grow very fast!",
   "advancements.huntlike.cluster.pet_tame.description": "Befriend a slime and make it grow at the same time!",
   "advancements.huntlike.cluster.pet_magma.title": "Slimes take the heat!",
-  "advancements.huntlike.cluster.pet_magma.description": "Scorch your slime into a Magma Cube! (He didn't feel pain.)"
+  "advancements.huntlike.cluster.pet_magma.description": "Scorch your slime into a Magma Cube! (He didn't feel pain.)",
+  "block.huntlike.upgraded_soul_monolith": "Soul Monolith ★",
+  "block.huntlike.upgraded_soul_monolith.desc": "Nearby players gain Resistance I and Regeneration I. Creepers keep their distance."
 }

@@ -34,6 +34,13 @@ public final class ModBlocks {
 					.requiresCorrectToolForDrops().lightLevel(state -> 10),
 			Rarity.EPIC);
 
+	/** Soul Monolith ★: 4 Soul Stones + 4 Slimy Cores around a Monolith. One block more reach, plus Regeneration I. */
+	public static final Block UPGRADED_SOUL_MONOLITH = register("upgraded_soul_monolith",
+			properties -> new com.huntlike.block.SoulMonolithBlock(properties, true),
+			BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_BLUE).strength(4.0F, 1200.0F).sound(SoundType.STONE)
+					.requiresCorrectToolForDrops().lightLevel(state -> 12),
+			Rarity.EPIC);
+
 	/** Given once, at the 100th Tier V Animal boss. */
 	public static final Block ANIMAL_TROPHY = registerTrophy("animal_trophy");
 

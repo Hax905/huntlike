@@ -2,5 +2,143 @@
   "parent": "minecraft:item/handheld",
   "textures": {
     "layer0": "huntlike:item/scythe_of_sublimation_frost"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.3333,
+        1.3333,
+        1.3333
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.6667,
+        0.6667,
+        0.6667
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1.3333,
+        1.3333,
+        1.3333
+      ]
+    },
+    "head": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        13,
+        7
+      ],
+      "scale": [
+        1.3333,
+        1.3333,
+        1.3333
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        55
+      ],
+      "translation": [
+        0,
+        6.36,
+        0.59
+      ],
+      "scale": [
+        1.4167,
+        1.4167,
+        1.4167
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -55
+      ],
+      "translation": [
+        0,
+        6.36,
+        0.59
+      ],
+      "scale": [
+        1.4167,
+        1.4167,
+        1.4167
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        25
+      ],
+      "translation": [
+        1.13,
+        4.8,
+        2.14
+      ],
+      "scale": [
+        1.1333,
+        1.1333,
+        1.1333
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -25
+      ],
+      "translation": [
+        1.13,
+        4.8,
+        2.14
+      ],
+      "scale": [
+        1.1333,
+        1.1333,
+        1.1333
+      ]
+    }
   }
 }

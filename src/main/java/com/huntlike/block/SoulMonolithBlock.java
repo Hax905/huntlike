@@ -21,18 +21,32 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Soul Monolith: every player inside its 17x17x17 cube (8 blocks out in every direction) has Resistance I;
- * several Monoliths don't stack. Creepers flee from it and can't explode inside its area.
+ * several Monoliths don't stack. Creepers flee from it and can't explode inside its area. The upgraded Soul Monolith ★
+ * (4 Soul Stones + 4 Slimy Cores) reaches 1 block further and also gives Regeneration I.
  */
 public class SoulMonolithBlock extends Block {
 	public static final int RADIUS = 8;
+	/** The upgraded Monolith's reach. */
+	public static final int UPGRADED_RADIUS = 9;
 	private static final int INTERVAL = 5;
 	private static final int FLEE_RADIUS = 12;
 
 	/** Monoliths known to be active, per dimension. */
 	private static final Map<ResourceKey<Level>, Set<BlockPos>> ACTIVE = new HashMap<>();
 
+	private final boolean upgraded;
+
 	public SoulMonolithBlock(Properties properties) {
+		this(properties, false);
+	}
+
+	public SoulMonolithBlock(Properties properties, boolean upgraded) {
 		super(properties);
+		this.upgraded = upgraded;
+	}
+
+	public int radius() {
+		return upgraded ? UPGRADED_RADIUS : RADIUS;
 	}
 
 	@Override
@@ -57,9 +71,17 @@ public class SoulMonolithBlock extends Block {
 	@Override
 	protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
 		ACTIVE.computeIfAbsent(level.dimension(), key -> new HashSet<>()).add(pos.immutable());
-		AABB area = area(pos);
+		AABB area = area(pos, radius());
 		for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, area)) {
 			player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 40, 0, true, false, true));
+			if (upgraded) {
+				// Regeneration only heals on whole multiples of its interval: refresh it before it runs low, not every
+				// few ticks, so it keeps healing at the Regeneration I rate.
+				MobEffectInstance regen = player.getEffect(MobEffects.REGENERATION);
+				if (regen == null || regen.getAmplifier() == 0 && regen.getDuration() <= 60) {
+					player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 0, true, false, true));
+				}
+			}
 		}
 		Vec3 center = Vec3.atCenterOf(pos);
 		for (Creeper creeper : level.getEntitiesOfClass(Creeper.class, area.inflate(FLEE_RADIUS - RADIUS))) {
@@ -74,9 +96,9 @@ public class SoulMonolithBlock extends Block {
 		level.scheduleTick(pos, this, INTERVAL);
 	}
 
-	private static AABB area(BlockPos pos) {
-		return new AABB(pos.getX() - RADIUS, pos.getY() - RADIUS, pos.getZ() - RADIUS,
-				pos.getX() + RADIUS + 1, pos.getY() + RADIUS + 1, pos.getZ() + RADIUS + 1);
+	private static AABB area(BlockPos pos, int radius) {
+		return new AABB(pos.getX() - radius, pos.getY() - radius, pos.getZ() - radius,
+				pos.getX() + radius + 1, pos.getY() + radius + 1, pos.getZ() + radius + 1);
 	}
 
 	/** Whether a position is inside an active Monolith's cube. */
@@ -87,8 +109,9 @@ public class SoulMonolithBlock extends Block {
 		}
 		monoliths.removeIf(pos -> level.isLoaded(pos) && !(level.getBlockState(pos).getBlock() instanceof SoulMonolithBlock));
 		for (BlockPos pos : monoliths) {
-			if (Math.abs(at.getX() - pos.getX()) <= RADIUS && Math.abs(at.getY() - pos.getY()) <= RADIUS
-					&& Math.abs(at.getZ() - pos.getZ()) <= RADIUS) {
+			int radius = level.getBlockState(pos).getBlock() instanceof SoulMonolithBlock monolith ? monolith.radius() : RADIUS;
+			if (Math.abs(at.getX() - pos.getX()) <= radius && Math.abs(at.getY() - pos.getY()) <= radius
+					&& Math.abs(at.getZ() - pos.getZ()) <= radius) {
 				return true;
 			}
 		}

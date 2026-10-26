@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": "huntlike:soul_stone",
+    "C": "huntlike:slimy_core",
+    "M": "huntlike:soul_monolith"
+  },
+  "pattern": [
+    "SCS",
+    "CMC",
+    "SCS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:upgraded_soul_monolith"
+  }
+}

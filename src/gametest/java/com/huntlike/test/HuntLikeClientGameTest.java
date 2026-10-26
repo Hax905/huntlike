@@ -174,6 +174,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			clusterHunt(context, singleplayer);
 			scythes(context, singleplayer);
 			slimePet(context, singleplayer);
+			upgradedMonolith(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -1195,6 +1196,39 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		return "status " + state.status + " big " + state.big + " ionic " + state.ionic + " magma " + state.magma + " heat " + state.heat
 				+ " chest " + state.chest + " page " + state.page + " pieces [" + pieces.toString().trim() + "]";
+	}
+
+	/** Soul Monolith ★: a block more reach and Regeneration I; the Beef Jerky is in the creative tab. */
+	private static void upgradedMonolith(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.removeEffect(net.minecraft.world.effect.MobEffects.REGENERATION);
+			player.removeEffect(net.minecraft.world.effect.MobEffects.RESISTANCE);
+			player.level().setBlockAndUpdate(player.blockPosition().offset(9, 0, 0),
+					com.huntlike.registry.ModBlocks.UPGRADED_SOUL_MONOLITH.defaultBlockState());
+			player.hurtServer(player.level(), player.level().damageSources().generic(), 6.0F);
+		});
+		context.waitTicks(80);
+		assertServer(singleplayer, "Soul Monolith ★ reaches 9 blocks and gives Resistance I and Regeneration I", server -> {
+			ServerPlayer player = player(server);
+			HuntLike.LOGGER.info("[test] near Soul Monolith ★: resistance {} regeneration {} health {}",
+					player.hasEffect(net.minecraft.world.effect.MobEffects.RESISTANCE),
+					player.hasEffect(net.minecraft.world.effect.MobEffects.REGENERATION), player.getHealth());
+			return player.hasEffect(net.minecraft.world.effect.MobEffects.RESISTANCE)
+					&& player.hasEffect(net.minecraft.world.effect.MobEffects.REGENERATION);
+		});
+		singleplayer.getServer().runOnServer(server -> player(server).level().setBlockAndUpdate(
+				player(server).blockPosition().offset(9, 0, 0), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState()));
+		boolean inTab = context.computeOnClient(client -> {
+			var tabs = net.minecraft.core.registries.BuiltInRegistries.CREATIVE_MODE_TAB;
+			for (var tab : tabs) {
+				if (tab.getDisplayItems().stream().anyMatch(stack -> stack.is(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY))) {
+					return true;
+				}
+			}
+			return false;
+		});
+		HuntLike.LOGGER.info("[test] Warm and Slimy Beef Jerky in a creative tab: {}", inTab ? "OK" : "FAILED");
 	}
 
 	/** The Cluster Hunt's slime pet: taming, upgrades, riding, the menu, splitting, regrowing, Magma Cube, the core and reviving. */

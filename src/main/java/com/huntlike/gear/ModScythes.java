@@ -184,7 +184,6 @@ public final class ModScythes {
 		SWEEPING.add(player.getUUID());
 		try {
 			for (LivingEntity entity : hit) {
-				entity.knockback(0.4, Math.sin(player.getYRot() * (Math.PI / 180.0)), -Math.cos(player.getYRot() * (Math.PI / 180.0)));
 				entity.hurtServer(level, level.damageSources().playerAttack(player), base);
 			}
 		} finally {

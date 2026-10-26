@@ -34,11 +34,11 @@ public class PetChestLayer<M extends EntityModel<? super PetRenderState>> extend
 			return;
 		}
 		pose.pushPose();
-		// Model space: y points down and the slime's feet are at 24 pixels. Sit the chest on the floor of the shell, centered.
+		// Model space: y points down, the shell spans 16 to 24 pixels. Centre the chest (14 pixels tall) in the body.
 		float scale = CHEST_PIXELS / 14.0F;
-		pose.translate(0.0F, (24.0F - 0.4F) / 16.0F, 0.0F);
+		pose.translate(0.0F, 20.0F / 16.0F, 0.0F);
 		pose.scale(-scale, -scale, scale);
-		pose.translate(-0.5F, 0.0F, -0.5F);
+		pose.translate(-0.5F, -7.0F / 16.0F, -0.5F);
 		this.chest.setupAnim(0.0F);
 		collector.submitModel(this.chest, 0.0F, pose, RenderTypes.entityCutout(TEXTURE), light,
 				LivingEntityRenderer.getOverlayCoords(state, 0.0F), state.outlineColor);

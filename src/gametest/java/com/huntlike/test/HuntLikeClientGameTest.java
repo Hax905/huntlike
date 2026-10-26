@@ -1050,7 +1050,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		assertServer(singleplayer, "Sublimation: sneak + right-click switches to Freezing once (2 s cooldown)", server -> {
 			var stack = player(server).getMainHandItem();
 			var model = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA);
-			return com.huntlike.gear.ModScythes.isFrost(stack) && model != null && Boolean.TRUE.equals(model.getBoolean(0))
+			var lore = stack.get(net.minecraft.core.component.DataComponents.LORE).lines();
+			HuntLike.LOGGER.info("[test] Slimy Falx lore {}", lore.stream().map(net.minecraft.network.chat.Component::getString).toList());
+			return lore.get(0).getString().equals("Sweeping Weapon")
+					&& lore.get(lore.size() - 1).getStyle().getColor().getValue() == com.huntlike.gear.ModScythes.FREEZING_COLOR
+					&& com.huntlike.gear.ModScythes.isFrost(stack) && model != null && Boolean.TRUE.equals(model.getBoolean(0))
 					&& player(server).getCooldowns().isOnCooldown(stack);
 		});
 		context.runOnClient(client -> {

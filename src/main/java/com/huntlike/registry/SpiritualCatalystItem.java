@@ -35,6 +35,7 @@ public class SpiritualCatalystItem extends Item {
 
 	public static List<Component> compassLore() {
 		List<Component> lore = new ArrayList<>();
+		Lore.gray(lore, "Find the three nearest souls to you!");
 		Lore.ability(lore, "Detect Nearby Souls", "Highlights the 3 nearest living entities for 3 seconds.");
 		return lore;
 	}

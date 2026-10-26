@@ -102,6 +102,7 @@ public final class ModScythes {
 	/** Tooltip: description, abilities, then the Cluster stats (Temperature shows the current state). */
 	public static List<Component> lore(Stats stats, boolean frost) {
 		List<Component> lore = new ArrayList<>();
+		lore.add(Component.literal("Sweeping Weapon").withStyle(style -> style.withColor(ChatFormatting.GRAY).withItalic(false)));
 		Lore.gray(lore, stats.description());
 		Lore.ability(lore, "Slice and Dice", "Cluster kills count double towards the quota.");
 		if (stats.sweep() > 0) {
@@ -117,10 +118,20 @@ public final class ModScythes {
 			lore.add(stat("+" + stats.sweep() + " Attack Sweep", ChatFormatting.BLUE));
 		}
 		if (stats.temperature() > 0) {
-			lore.add(frost ? stat("Temperature: -" + stats.temperature() + "° (Freezing)", ChatFormatting.AQUA)
-					: stat("Temperature: +" + stats.temperature() + "° (Searing)", ChatFormatting.GOLD));
+			lore.add(temperatureLine(stats, frost));
 		}
 		return lore;
+	}
+
+	/** Searing in orange, Freezing in light blue. */
+	public static final int SEARING_COLOR = 0xFF9933;
+	public static final int FREEZING_COLOR = 0x8CD9FF;
+
+	public static Component temperatureLine(Stats stats, boolean frost) {
+		return frost ? Component.literal("Temperature: -" + stats.temperature() + "° (Freezing)")
+				.withStyle(style -> style.withColor(FREEZING_COLOR).withItalic(false))
+				: Component.literal("Temperature: +" + stats.temperature() + "° (Searing)")
+						.withStyle(style -> style.withColor(SEARING_COLOR).withItalic(false));
 	}
 
 	private static Component stat(String text, ChatFormatting color) {
@@ -245,8 +256,6 @@ public final class ModScythes {
 				0.4, 0.4, 0.4, 0.02);
 		level.playSound(null, player.blockPosition(), frost ? SoundEvents.GLASS_BREAK : SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS,
 				0.7F, 1.2F);
-		player.sendSystemMessage(frost ? Component.literal("Temperature: -" + stats(stack).temperature() + "° (Freezing)")
-				.withStyle(ChatFormatting.AQUA) : Component.literal("Temperature: +" + stats(stack).temperature() + "° (Searing)")
-				.withStyle(ChatFormatting.GOLD), true);
+		player.sendSystemMessage(temperatureLine(stats(stack), frost), true);
 	}
 }

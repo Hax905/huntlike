@@ -20,6 +20,7 @@ public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, PetRende
 	public PetMagmaRenderer(EntityRendererProvider.Context context) {
 		super(context, new MagmaCubeModel(context.bakeLayer(ModelLayers.MAGMA_CUBE)));
 		this.resolver = context.getItemModelResolver();
+		this.addLayer(new PetChestLayer<>(this, context.getModelSet()));
 	}
 
 	@Override

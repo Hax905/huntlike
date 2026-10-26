@@ -1,7 +1,6 @@
 package com.huntlike.client.pet;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.EntityModelSet;
@@ -43,9 +42,9 @@ public class PetChestLayer<M extends EntityModel<? super PetRenderState>> extend
 		pose.pushPose();
 		// Model space points down; the shell spans 16 to 24 pixels. The item is a 1-block cube centred on the origin.
 		pose.translate(0.0F, 20.0F / 16.0F, 0.0F);
-		pose.mulPose(Axis.ZP.rotationDegrees(180.0F));
+		// Turned upright again (a half turn around Z is flipping x and y).
 		float scale = CHEST_PIXELS / 16.0F;
-		pose.scale(scale, scale, scale);
+		pose.scale(-scale, -scale, scale);
 		state.chestItem.submit(pose, collector, light, OverlayTexture.NO_OVERLAY, state.outlineColor);
 		pose.popPose();
 	}

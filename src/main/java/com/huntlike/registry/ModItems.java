@@ -45,14 +45,8 @@ public final class ModItems {
 	public static final Item SOUL_STONE = simple("soul_stone", Rarity.UNCOMMON);
 
 	/** Eaten once for better rare-drop odds. */
-	public static final Item MYSTERY_CONCOCTION = register("mystery_concoction", MysteryConcoctionItem::new,
-			new Item.Properties().rarity(Rarity.EPIC).stacksTo(16)
-					.food(new net.minecraft.world.food.FoodProperties(2, 0.2F, true))
-					.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(List.of(
-							net.minecraft.network.chat.Component.literal("The type of meal you regret to eat...")
-									.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.GRAY).withItalic(false)),
-							net.minecraft.network.chat.Component.literal("But just one bite wouldn't kill me!")
-									.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.RED).withItalic(false))))));
+	public static final Item MYSTERY_CONCOCTION = register("mystery_concoction", MysteryConcoctionItem::concoction,
+			oneTime("The type of meal you regret to eat...", "But just one bite wouldn't kill me!"));
 
 	/** Eaten instantly: 8 hunger, 8 saturation. */
 	public static final Item GOLDEN_MEAT = register("golden_meat", Item::new,
@@ -62,9 +56,22 @@ public final class ModItems {
 					.food(new net.minecraft.world.food.FoodProperties(8, 8.0F, false),
 							net.minecraft.world.item.component.Consumables.defaultFood().consumeSeconds(0.0F).build()));
 
-	/** Cluster Hunt snack: 6 hunger, 6 saturation. */
-	public static final Item WARM_AND_SLIMY_BEEF_JERKY = register("warm_and_slimy_beef_jerky", Item::new,
-			new Item.Properties().rarity(Rarity.COMMON).food(new net.minecraft.world.food.FoodProperties(6, 6.0F, false)));
+	/** Eaten once for better Cluster rare-drop odds. */
+	public static final Item WARM_AND_SLIMY_BEEF_JERKY = register("warm_and_slimy_beef_jerky", MysteryConcoctionItem::jerky,
+			oneTime("The slimy feel makes you want to never touch it again.", "But it looks like such a gummy!"));
+
+	/** A One-time Consumable luck food: Epic, stacks to 16, 2 hunger, always edible, gray then red description. */
+	private static Item.Properties oneTime(String gray, String red) {
+		return new Item.Properties().rarity(Rarity.EPIC).stacksTo(16)
+				.food(new net.minecraft.world.food.FoodProperties(2, 0.2F, true))
+				.component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(List.of(
+						net.minecraft.network.chat.Component.literal("One-time Consumable")
+								.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.GRAY).withItalic(false)),
+						net.minecraft.network.chat.Component.literal(gray)
+								.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.GRAY).withItalic(false)),
+						net.minecraft.network.chat.Component.literal(red)
+								.withStyle(style -> style.withColor(net.minecraft.ChatFormatting.RED).withItalic(false)))));
+	}
 
 	/** Detect Nearby Souls, three at a time (Spiritual Catalyst in a compass recipe). */
 	public static final Item SPIRITUAL_COMPASS = register("spiritual_compass", p -> new SpiritualCatalystItem(p, 3),

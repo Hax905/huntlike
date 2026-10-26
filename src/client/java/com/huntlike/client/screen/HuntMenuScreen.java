@@ -653,7 +653,7 @@ public class HuntMenuScreen extends Screen {
 	/** Drops list with item icons, drawn on top of everything. */
 	private void drawDropsPanel(GuiGraphicsExtractor g, Tier tier, int mouseX, int mouseY) {
 		HuntData.Progress progress = progress();
-		boolean concoction = ClientHuntState.data.concoction && !HuntDefs.isCluster(hunt());
+		boolean concoction = HuntDefs.luck(ClientHuntState.data, hunt().id());
 		HuntData.Quest running = activeQuest();
 		boolean daily = running != null && running.daily;
 		List<ItemStack> icons = new ArrayList<>();
@@ -700,7 +700,7 @@ public class HuntMenuScreen extends Screen {
 			g.text(this.font, names.get(i), x + 22, ry + 2, WHITE, false);
 		}
 		if (concoction) {
-			g.text(this.font, colored("Mystery Concoction: odds improved", 0xFF55FF), x + 6, y + h - 11 - (daily ? 11 : 0), WHITE, false);
+			g.text(this.font, colored(HuntDefs.isCluster(hunt()) ? "Warm and Slimy Beef Jerky: odds improved" : "Mystery Concoction: odds improved", 0xFF55FF), x + 6, y + h - 11 - (daily ? 11 : 0), WHITE, false);
 		}
 		if (daily) {
 			g.text(this.font, colored("Daily Quest: rare-drop odds +50%", HuntDefs.PINK), x + 6, y + h - 11, WHITE, false);

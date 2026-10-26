@@ -1122,15 +1122,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		// Warm and Slimy Beef Jerky and the 10,000 lured kills.
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
-			var jerky = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY);
+			var jerky = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY, 2);
 			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, jerky);
 			jerky.finishUsingItem(player.level(), player);
+			var left = jerky.finishUsingItem(player.level(), player);
+			HuntLike.LOGGER.info("[test] Beef Jerky: jerky {} left {} cluster odds 1/{}", QuestManager.data(player).jerky, left.getCount(),
+					com.huntlike.hunt.HuntDefs.odds("cluster", 1, 25, com.huntlike.hunt.HuntDefs.luck(QuestManager.data(player), "cluster")));
+			if (!QuestManager.data(player).jerky || left.getCount() != 1
+					|| com.huntlike.hunt.HuntDefs.odds("cluster", 1, 25, com.huntlike.hunt.HuntDefs.luck(QuestManager.data(player), "cluster")) != 24) {
+				throw new AssertionError("Beef Jerky: once, Cluster odds 1/25 -> 1/24");
+			}
 			HuntData data = QuestManager.data(player);
 			data.luredKills = com.huntlike.hunt.QuestManager.NOT_SELF_DEFENSE_KILLS - 1;
 			QuestManager.countLuredKill(player, data);
 		});
 		context.waitTicks(3);
-		assertServer(singleplayer, "Ew! It needs salt. and Ok ok, it might not be just self-defense", server ->
+		assertServer(singleplayer, "The texture was nice at least and Ok ok, it might not be just self-defense", server ->
 				done(player(server), "cluster/jerky") && done(player(server), "animal/not_self_defense"));
 	}
 

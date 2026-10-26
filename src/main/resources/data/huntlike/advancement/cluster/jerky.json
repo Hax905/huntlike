@@ -1,13 +1,8 @@
 {
   "parent": "huntlike:animal/root",
   "criteria": {
-    "eat": {
-      "trigger": "minecraft:consume_item",
-      "conditions": {
-        "item": {
-          "items": "huntlike:warm_and_slimy_beef_jerky"
-        }
-      }
+    "done": {
+      "trigger": "minecraft:impossible"
     }
   },
   "display": {
@@ -25,7 +20,7 @@
   },
   "requirements": [
     [
-      "eat"
+      "done"
     ]
   ]
 }

@@ -1,5 +1,8 @@
 package com.huntlike.registry;
 
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
@@ -14,16 +17,41 @@ import com.huntlike.hunt.HuntData;
 import com.huntlike.hunt.Messages;
 import com.huntlike.hunt.QuestManager;
 
-/** Eaten once: every rare drop's odds improve from 1/X to 1/(X-1) for that player, permanently. */
+/**
+ * One-time Consumable: eaten once, every rare drop of one Hunt goes from 1/X to 1/(X-1) for that player, permanently.
+ * Mystery Concoction (Animal) and Warm and Slimy Beef Jerky (Cluster).
+ */
 public class MysteryConcoctionItem extends Item {
-	public MysteryConcoctionItem(Properties properties) {
+	private final Predicate<HuntData> eaten;
+	private final BiConsumer<HuntData, Boolean> setEaten;
+	private final String creatures;
+	private final String refusal;
+	private final String advancement;
+
+	public MysteryConcoctionItem(Properties properties, Predicate<HuntData> eaten, BiConsumer<HuntData, Boolean> setEaten,
+			String creatures, String refusal, String advancement) {
 		super(properties);
+		this.eaten = eaten;
+		this.setEaten = setEaten;
+		this.creatures = creatures;
+		this.refusal = refusal;
+		this.advancement = advancement;
+	}
+
+	public static MysteryConcoctionItem concoction(Properties properties) {
+		return new MysteryConcoctionItem(properties, data -> data.concoction, (data, value) -> data.concoction = value, "Animal",
+				"You would never eat this again...", "animal/never_again");
+	}
+
+	public static MysteryConcoctionItem jerky(Properties properties) {
+		return new MysteryConcoctionItem(properties, data -> data.jerky, (data, value) -> data.jerky = value, "Cluster",
+				"You would never let that be near your mouth again...", "cluster/jerky");
 	}
 
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
-		if (player instanceof ServerPlayer serverPlayer && QuestManager.data(serverPlayer).concoction) {
-			serverPlayer.sendSystemMessage(Messages.c("You would never eat this again...", 0xAAAAAA));
+		if (player instanceof ServerPlayer serverPlayer && eaten.test(QuestManager.data(serverPlayer))) {
+			serverPlayer.sendSystemMessage(Messages.c(refusal, 0xAAAAAA));
 			return InteractionResult.FAIL;
 		}
 		return super.use(level, player, hand);
@@ -33,14 +61,14 @@ public class MysteryConcoctionItem extends Item {
 	public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
 		if (entity instanceof ServerPlayer player) {
 			HuntData data = QuestManager.data(player);
-			if (data.concoction) {
-				player.sendSystemMessage(Messages.c("You would never eat this again...", 0xAAAAAA));
+			if (eaten.test(data)) {
+				player.sendSystemMessage(Messages.c(refusal, 0xAAAAAA));
 				return stack;
 			}
-			data.concoction = true;
-			QuestManager.award(player, "animal/never_again");
+			setEaten.accept(data, true);
+			QuestManager.award(player, advancement);
 			player.setAttached(QuestManager.DATA, data);
-			player.sendSystemMessage(Messages.c("Deities laugh at your act and favor your luck on Animal creatures!", 0xFF55FF));
+			player.sendSystemMessage(Messages.c("Deities laugh at your act and favor your luck on " + creatures + " creatures!", 0xFF55FF));
 			QuestManager.playSound(player, SoundEvents.ZOMBIE_VILLAGER_CURE, 1.4F);
 			QuestManager.sync(player);
 		}

@@ -24,6 +24,8 @@ public final class HuntData {
 	public String selectedHunt = "animal";
 	/** Ate the Mystery Concoction: rare drops roll at 1/(X-1). */
 	public boolean concoction;
+	/** Warm and Slimy Beef Jerky eaten: better Cluster rare-drop odds. */
+	public boolean jerky;
 	/** Opened a Hunt menu panel once in this world: the "click a symbol" hint stays hidden. */
 	public boolean hintSeen;
 	/** Koro: chapters finished (0-4), and steps shown of the chapter in progress (0 = not started). */
@@ -78,6 +80,7 @@ public final class HuntData {
 		CompoundTag tag = new CompoundTag();
 		tag.putString("selected", selectedHunt);
 		tag.putBoolean("concoction", concoction);
+		tag.putBoolean("jerky", jerky);
 		tag.putBoolean("hintSeen", hintSeen);
 		tag.putInt("koroDone", koroDone);
 		tag.putInt("luredKills", luredKills);
@@ -123,6 +126,7 @@ public final class HuntData {
 		HuntData data = new HuntData();
 		data.selectedHunt = tag.getStringOr("selected", "animal");
 		data.concoction = tag.getBooleanOr("concoction", false);
+		data.jerky = tag.getBooleanOr("jerky", false);
 		data.hintSeen = tag.getBooleanOr("hintSeen", false);
 		data.koroDone = tag.getIntOr("koroDone", 0);
 		data.luredKills = tag.getIntOr("luredKills", 0);

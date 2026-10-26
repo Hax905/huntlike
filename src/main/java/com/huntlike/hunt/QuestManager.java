@@ -429,7 +429,7 @@ public final class QuestManager {
 			if (drop.guaranteed()) {
 				int count = drop.minCount() + random.nextInt(drop.maxCount() - drop.minCount() + 1);
 				give(owner, data, hunt, drop, count);
-			} else if (random.nextDouble() < HuntDefs.chance(hunt.id(), drop.chanceNum(), drop.chanceDen(), data.concoction, quest.daily)) {
+			} else if (random.nextDouble() < HuntDefs.chance(hunt.id(), drop.chanceNum(), drop.chanceDen(), HuntDefs.luck(data, hunt.id()), quest.daily)) {
 				give(owner, data, hunt, drop, drop.minCount());
 				if (drop.dropClass() > 0) {
 					owner.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));
@@ -447,7 +447,7 @@ public final class QuestManager {
 			}
 			HuntData helperData = data(helper);
 			for (Drop drop : HuntDefs.drops(tier)) {
-				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), helperData.concoction)) < drop.chanceNum()) {
+				if (!drop.guaranteed() && random.nextInt(HuntDefs.odds(hunt.id(), drop.chanceNum(), drop.chanceDen(), HuntDefs.luck(helperData, hunt.id()))) < drop.chanceNum()) {
 					give(helper, helperData, hunt, drop, drop.minCount());
 					if (drop.dropClass() > 0) {
 						helper.sendSystemMessage(Messages.rareDrop(drop.dropClass(), new ItemStack(drop.item()).getStyledHoverName()));

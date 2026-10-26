@@ -395,7 +395,12 @@ public final class HuntDefs {
 	 * "1 in X-1": 1/10 becomes 1/9, and 2/25 (1 in 12.5) becomes 2/23 (1 in 11.5).
 	 */
 	public static int odds(String hunt, int num, int den, boolean concoction) {
-		return concoction && "animal".equals(hunt) ? Math.max(num, den - num) : den;
+		return concoction && ("animal".equals(hunt) || "cluster".equals(hunt)) ? Math.max(num, den - num) : den;
+	}
+
+	/** The player's luck item for this Hunt: Mystery Concoction (Animal) or Warm and Slimy Beef Jerky (Cluster). */
+	public static boolean luck(HuntData data, String hunt) {
+		return "cluster".equals(hunt) ? data.jerky : "animal".equals(hunt) && data.concoction;
 	}
 
 	/** Daily Quest bonus to rare-drop chances (applied after the Mystery Concoction). */

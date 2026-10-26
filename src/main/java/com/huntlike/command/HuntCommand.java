@@ -163,6 +163,7 @@ public final class HuntCommand {
 		}
 		source.sendSuccess(() -> line("Lured mobs slain", String.valueOf(data.luredKills), 0xAAAAAA), false);
 		source.sendSuccess(() -> line("Mystery Concoction", data.concoction ? "eaten" : "not eaten", 0xAAAAAA), false);
+		source.sendSuccess(() -> line("Warm and Slimy Beef Jerky", data.jerky ? "eaten" : "not eaten", 0xAAAAAA), false);
 		source.sendSuccess(() -> line("Koro chapters", data.koroDone + " / 4", 0xAAAAAA), false);
 		HuntData.Quest quest = data.quest;
 		String questText = quest == null ? "none"

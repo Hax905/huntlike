@@ -1294,7 +1294,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			ServerPlayer player = player(server);
 			var pet = petPieces(server).get(0);
 			pet.setNoAi(true);
-			pet.teleportTo(player.getX() + 5.0, player.getY(), player.getZ());
+			pet.teleportTo(player.getX() + 3.5, player.getY(), player.getZ());
 			pet.setYRot(90.0F);
 			pet.yBodyRot = 90.0F;
 		});
@@ -1302,8 +1302,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			client.player.setYRot(-90.0F);
 			client.player.setXRot(12.0F);
 		});
+		context.runOnClient(client -> client.options.hideGui = true);
 		context.waitTicks(15);
 		context.takeScreenshot("56b-pet-with-chest");
+		context.runOnClient(client -> client.options.hideGui = false);
 		int chestPetId = singleplayer.getServer().computeOnServer(server -> petPieces(server).get(0).getId());
 		String clientChest = context.computeOnClient(client -> {
 			var entity = client.level.getEntity(chestPetId);

@@ -101,7 +101,7 @@
   "item.huntlike.hermes_boots": "Hermes Boots [Apotheosis]",
   "item.huntlike.feather_chute": "FeatherChute",
   "block.huntlike.animal_trophy": "Animal Hunting Trophy",
-  "item.huntlike.thermal_slimeball": "Thermal Slimeball",
+  "item.huntlike.thermal_slimeball": "Thermal Slime Ball",
   "item.huntlike.frozen_slime_ball": "Frozen Slime Ball",
   "item.huntlike.gelid_slime_ball": "Gelid Slime Ball",
   "item.huntlike.slimysteel": "Slimysteel",
@@ -109,7 +109,6 @@
   "item.huntlike.slimy_core": "Slimy Core",
   "item.huntlike.sublimating_magma": "Sublimating Magma",
   "item.huntlike.corroded_palladium": "Corroded Palladium",
-  "item.huntlike.digested_platinum_isotope": "Digested Platinum Isotope",
   "entity.huntlike.cubert": "Cubert",
   "entity.huntlike.blucky": "Blucky",
   "entity.huntlike.hot_head": "Hot Head",
@@ -170,5 +169,15 @@
   "advancements.huntlike.cluster.pet_magma.title": "Slimes take the heat!",
   "advancements.huntlike.cluster.pet_magma.description": "Scorch your slime into a Magma Cube! (He didn't feel pain.)",
   "block.huntlike.upgraded_soul_monolith": "Soul Monolith ★",
-  "block.huntlike.upgraded_soul_monolith.desc": "Nearby players gain Resistance I and Regeneration I. Creepers keep their distance."
+  "block.huntlike.upgraded_soul_monolith.desc": "Nearby players gain Resistance I and Regeneration I. Creepers keep their distance.",
+  "item.huntlike.slime_washed_holmium": "Slime-Washed Holmium",
+  "item.huntlike.thermal_slimeball.desc": "It feels lukewarm!",
+  "item.huntlike.frozen_slime_ball.desc": "It looks like an ice cream scoop!",
+  "item.huntlike.gelid_slime_ball.desc": "Colder than the word cold!",
+  "item.huntlike.slimysteel.desc": "Iron processed by a slime turns into slimysteel, a stronger and sharper resource!",
+  "item.huntlike.ionic_liquid.desc": "It makes funny things happen!",
+  "item.huntlike.slimy_core.desc": "As humans have DNA, slimes have cores that can practically reconstruct them.",
+  "item.huntlike.sublimating_magma.desc": "The huge source of heat!",
+  "item.huntlike.corroded_palladium.desc": "A great catalyst for chemical reactions. If it just was in a better state...",
+  "item.huntlike.slime_washed_holmium.desc": "It felt more magnetic when it came out of the cold slime. Now it feels normal."
 }

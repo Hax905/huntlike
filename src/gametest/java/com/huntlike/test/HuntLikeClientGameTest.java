@@ -1237,6 +1237,17 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		if (!inTab) {
 			throw new AssertionError("Beef Jerky missing from the creative tabs");
 		}
+		assertServer(singleplayer, "Cluster drop descriptions; Slime-Washed Holmium is the Tier V 1/100 drop", server -> {
+			var thermal = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.THERMAL_SLIMEBALL);
+			var holmium = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.SLIME_WASHED_HOLMIUM);
+			var lore = holmium.get(net.minecraft.core.component.DataComponents.LORE);
+			HuntLike.LOGGER.info("[test] {} / {}: {}", thermal.getHoverName().getString(), holmium.getHoverName().getString(),
+					lore == null ? "no lore" : lore.lines().stream().map(net.minecraft.network.chat.Component::getString).toList());
+			boolean dropped = com.huntlike.hunt.HuntDefs.clusterDrops(com.huntlike.hunt.HuntDefs.CLUSTER.tier(5)).stream()
+					.anyMatch(drop -> drop.item() == com.huntlike.registry.ModItems.SLIME_WASHED_HOLMIUM && drop.chanceDen() == 100);
+			return thermal.getHoverName().getString().equals("Thermal Slime Ball") && lore != null
+					&& lore.lines().get(0).getString().startsWith("It felt more magnetic") && dropped;
+		});
 	}
 
 	/** The Cluster Hunt's slime pet: taming, upgrades, riding, the menu, splitting, regrowing, Magma Cube, the core and reviving. */

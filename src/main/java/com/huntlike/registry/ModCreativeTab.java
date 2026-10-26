@@ -60,7 +60,7 @@ public final class ModCreativeTab {
 			output.accept(ModItems.IONIC_LIQUID);
 			output.accept(ModItems.SUBLIMATING_MAGMA);
 			output.accept(ModItems.CORRODED_PALLADIUM);
-			output.accept(ModItems.DIGESTED_PLATINUM_ISOTOPE);
+			output.accept(ModItems.SLIME_WASHED_HOLMIUM);
 		});
 		register(GEAR, ModGear.SKIN_KNIFE, output -> {
 			ModGear.WEAPONS.forEach(output::accept);

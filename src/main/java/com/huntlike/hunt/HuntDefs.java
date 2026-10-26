@@ -456,7 +456,7 @@ public final class HuntDefs {
 			list.add(new Drop("corroded_palladium", ModItems.CORRODED_PALLADIUM, 1, 1, 1, 50, 3));
 		}
 		if (t >= 5) {
-			list.add(new Drop("digested_platinum_isotope", ModItems.DIGESTED_PLATINUM_ISOTOPE, 1, 1, 1, 100, 4));
+			list.add(new Drop("slime_washed_holmium", ModItems.SLIME_WASHED_HOLMIUM, 1, 1, 1, 100, 4));
 		}
 		list.add(new Drop("ice", Items.ICE, 1, 1, 1, 2, 0));
 		list.add(new Drop("packed_ice", Items.PACKED_ICE, 1, 1, 1, 2, 0));

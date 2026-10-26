@@ -30,16 +30,16 @@ public final class ModItems {
 			new Item.Properties().rarity(Rarity.EPIC).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.lore())));
 
-	// Cluster Hunt drops and their crafting chain (descriptions come later)
-	public static final Item THERMAL_SLIMEBALL = plain("thermal_slimeball", Rarity.COMMON);
-	public static final Item FROZEN_SLIME_BALL = plain("frozen_slime_ball", Rarity.UNCOMMON);
-	public static final Item GELID_SLIME_BALL = plain("gelid_slime_ball", Rarity.RARE);
-	public static final Item SLIMYSTEEL = plain("slimysteel", Rarity.UNCOMMON);
-	public static final Item IONIC_LIQUID = plain("ionic_liquid", Rarity.COMMON);
-	public static final Item SLIMY_CORE = plain("slimy_core", Rarity.UNCOMMON);
-	public static final Item SUBLIMATING_MAGMA = plain("sublimating_magma", Rarity.UNCOMMON);
-	public static final Item CORRODED_PALLADIUM = plain("corroded_palladium", Rarity.RARE);
-	public static final Item DIGESTED_PLATINUM_ISOTOPE = plain("digested_platinum_isotope", Rarity.EPIC);
+	// Cluster Hunt drops and their crafting chain
+	public static final Item THERMAL_SLIMEBALL = simple("thermal_slimeball", Rarity.COMMON);
+	public static final Item FROZEN_SLIME_BALL = simple("frozen_slime_ball", Rarity.UNCOMMON);
+	public static final Item GELID_SLIME_BALL = simple("gelid_slime_ball", Rarity.RARE);
+	public static final Item SLIMYSTEEL = simple("slimysteel", Rarity.UNCOMMON);
+	public static final Item IONIC_LIQUID = simple("ionic_liquid", Rarity.COMMON);
+	public static final Item SLIMY_CORE = simple("slimy_core", Rarity.UNCOMMON);
+	public static final Item SUBLIMATING_MAGMA = simple("sublimating_magma", Rarity.UNCOMMON);
+	public static final Item CORRODED_PALLADIUM = simple("corroded_palladium", Rarity.RARE);
+	public static final Item SLIME_WASHED_HOLMIUM = simple("slime_washed_holmium", Rarity.EPIC);
 
 	// Spirit Lure drop
 	public static final Item SOUL_STONE = simple("soul_stone", Rarity.UNCOMMON);
@@ -81,7 +81,7 @@ public final class ModItems {
 	/** What's left of a slime pet whose every piece died. Can't burn in fire or lava. */
 	public static final Item SLIME_PET_CORE = register("slime_pet_core", Item::new, new Item.Properties().rarity(Rarity.RARE)
 			.stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true).component(net.minecraft.core.component.DataComponents.LORE,
-					new net.minecraft.world.item.component.ItemLore(Lore.wrapGray("Surround it with slime balls in a crafting table to bring your slime back."))));
+					new net.minecraft.world.item.component.ItemLore(Lore.wrapGray("Revive with slime!"))));
 	/** The core after the revive recipe: used on the ground, the pet comes back. */
 	public static final Item REVIVED_SLIME_PET_CORE = register("revived_slime_pet_core", com.huntlike.pet.RevivedCoreItem::new,
 			new Item.Properties().rarity(Rarity.RARE).stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true).component(net.minecraft.core.component.DataComponents.LORE,

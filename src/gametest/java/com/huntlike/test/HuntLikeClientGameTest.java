@@ -839,8 +839,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("40-cluster-card");
 		for (int i = 0; i < 4; i++) {
 			context.getInput().pressKey(InputConstants.KEY_D);
+			context.waitTicks(5);
+			if (i < 3) {
+				context.takeScreenshot("40" + (char) ('b' + i) + "-cluster-tier" + (i + 2) + "-card");
+			}
 		}
-		context.waitTicks(5);
 		context.takeScreenshot("41-cluster-tier5-card");
 		for (int i = 0; i < 4; i++) {
 			context.getInput().pressKey(InputConstants.KEY_A);

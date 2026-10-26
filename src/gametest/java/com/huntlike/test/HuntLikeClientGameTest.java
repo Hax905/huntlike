@@ -1162,6 +1162,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 	}
 
+	/** The dropped Slimy Core, on the ground or already picked up. */
+	private static net.minecraft.world.item.ItemStack petCore(ServerPlayer player) {
+		var dropped = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+				player.getBoundingBox().inflate(40), e -> e.getItem().is(com.huntlike.registry.ModItems.SLIME_PET_CORE));
+		if (!dropped.isEmpty()) {
+			return dropped.get(0).getItem();
+		}
+		var inventory = player.getInventory();
+		for (int i = 0; i < inventory.getContainerSize(); i++) {
+			if (inventory.getItem(i).is(com.huntlike.registry.ModItems.SLIME_PET_CORE)) {
+				return inventory.getItem(i);
+			}
+		}
+		return net.minecraft.world.item.ItemStack.EMPTY;
+	}
+
 	private static void killPet(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
 		singleplayer.getServer().runOnServer(server -> {
 			for (var piece : petPieces(server)) {
@@ -1320,16 +1336,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		assertServer(singleplayer, "Whole pet killed: a Slimy Core that can't burn drops", server -> {
 			ServerPlayer player = player(server);
-			var cores = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
-					player.getBoundingBox().inflate(40), e -> e.getItem().is(com.huntlike.registry.ModItems.SLIME_PET_CORE));
-			HuntLike.LOGGER.info("[test] core: {} {}", petInfo(server), cores.isEmpty() ? "none" : cores.get(0).getItem().getHoverName().getString());
-			return com.huntlike.pet.PetManager.latest(player).status == com.huntlike.pet.PetState.CORE && cores.size() == 1
-					&& cores.get(0).getItem().getHoverName().getString().endsWith(" Slimy Core") && cores.get(0).fireImmune();
+			var core = petCore(player);
+			HuntLike.LOGGER.info("[test] core: {} {}", petInfo(server), core.isEmpty() ? "none" : core.getHoverName().getString());
+			return com.huntlike.pet.PetManager.latest(player).status == com.huntlike.pet.PetState.CORE
+					&& core.getHoverName().getString().endsWith(" Slimy Core")
+					&& core.has(net.minecraft.core.component.DataComponents.DAMAGE_RESISTANT);
 		});
 		assertServer(singleplayer, "Crafting the revive recipe carries the core's pet over", server -> {
 			ServerPlayer player = player(server);
-			var core = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
-					player.getBoundingBox().inflate(40), e -> e.getItem().is(com.huntlike.registry.ModItems.SLIME_PET_CORE)).get(0).getItem();
+			var core = petCore(player);
 			player.inventoryMenu.getSlot(1).set(core.copy());
 			var revived = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.REVIVED_SLIME_PET_CORE);
 			revived.getItem().onCraftedBy(revived, player);

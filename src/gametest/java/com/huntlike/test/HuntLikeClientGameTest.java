@@ -1302,10 +1302,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			client.player.setYRot(-90.0F);
 			client.player.setXRot(12.0F);
 		});
-		context.runOnClient(client -> client.options.hideGui = true);
+		context.runOnClient(client -> client.gui.hud.getChat().clearMessages(false));
 		context.waitTicks(15);
 		context.takeScreenshot("56b-pet-with-chest");
-		context.runOnClient(client -> client.options.hideGui = false);
 		int chestPetId = singleplayer.getServer().computeOnServer(server -> petPieces(server).get(0).getId());
 		String clientChest = context.computeOnClient(client -> {
 			var entity = client.level.getEntity(chestPetId);

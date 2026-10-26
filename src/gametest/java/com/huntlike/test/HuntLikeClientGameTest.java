@@ -1304,6 +1304,19 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(15);
 		context.takeScreenshot("56b-pet-with-chest");
+		int chestPetId = singleplayer.getServer().computeOnServer(server -> petPieces(server).get(0).getId());
+		String clientChest = context.computeOnClient(client -> {
+			var entity = client.level.getEntity(chestPetId);
+			if (!(entity instanceof com.huntlike.pet.PetCube cube)) {
+				return "no entity " + entity;
+			}
+			var renderer = client.getEntityRenderDispatcher().getRenderer(cube);
+			var state = client.getEntityRenderDispatcher().extractEntity(cube, 0.0F);
+			return "client hasChest " + cube.hasChest() + " size " + cube.getSize() + " renderer " + renderer.getClass().getSimpleName()
+					+ " state " + state.getClass().getSimpleName()
+					+ (state instanceof com.huntlike.client.pet.PetRenderState pState ? " chest " + pState.chest : "");
+		});
+		HuntLike.LOGGER.info("[test] pet chest on the client: {}", clientChest);
 		assertServer(singleplayer, "The big pet shows its chest", server -> petPieces(server).get(0).hasChest());
 		singleplayer.getServer().runOnServer(server -> petPieces(server).get(0).setNoAi(false));
 

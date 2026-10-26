@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:cluster/tier3",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:frozen_slime_ball"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.tier4.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.tier4.description"
+    },
+    "hidden": true,
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

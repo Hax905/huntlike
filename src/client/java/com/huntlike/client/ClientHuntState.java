@@ -20,8 +20,8 @@ public final class ClientHuntState {
 	/** Every living body of a Cluster boss (empty for Animal bosses). */
 	public static int[] bossEntityIds = new int[0];
 	/** Spiritual Catalyst highlight: entity id and the client tick it ends at. */
-	public static int highlightId = -1;
-	public static long highlightUntil;
+	/** Entities highlighted by the Spiritual Catalyst or Compass: id -> game time the glow ends. */
+	public static final java.util.Map<Integer, Long> highlights = new java.util.HashMap<>();
 	public static List<String> huntable = new ArrayList<>();
 
 	public static void update(CompoundTag tag) {

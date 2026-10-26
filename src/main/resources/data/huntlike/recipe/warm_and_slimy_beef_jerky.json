@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:rotten_flesh",
+    "minecraft:rotten_flesh",
+    "minecraft:rotten_flesh",
+    "huntlike:thermal_slimeball",
+    "huntlike:thermal_slimeball",
+    "huntlike:thermal_slimeball",
+    "huntlike:thermal_slimeball",
+    "huntlike:thermal_slimeball",
+    "huntlike:thermal_slimeball"
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:warm_and_slimy_beef_jerky"
+  }
+}

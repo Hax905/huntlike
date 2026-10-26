@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/conquest",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:slime_ball"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.tier1.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.tier1.description"
+    },
+    "hidden": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

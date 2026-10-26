@@ -25,8 +25,18 @@ public class SpiritualCatalystItem extends Item {
 	public static final int HIGHLIGHT_TICKS = 60;
 	public static final double RANGE = 32.0;
 
-	public SpiritualCatalystItem(Properties properties) {
+	/** How many souls one use highlights (1 for the Catalyst, 3 for the Spiritual Compass). */
+	private final int souls;
+
+	public SpiritualCatalystItem(Properties properties, int souls) {
 		super(properties);
+		this.souls = souls;
+	}
+
+	public static List<Component> compassLore() {
+		List<Component> lore = new ArrayList<>();
+		Lore.ability(lore, "Detect Nearby Souls", "Highlights the 3 nearest living entities for 3 seconds.");
+		return lore;
 	}
 
 	public static List<Component> lore() {
@@ -39,9 +49,11 @@ public class SpiritualCatalystItem extends Item {
 	@Override
 	public InteractionResult use(Level level, Player player, InteractionHand hand) {
 		if (player instanceof ServerPlayer serverPlayer) {
-			LivingEntity nearest = findNearest(serverPlayer);
-			if (nearest != null) {
-				ServerPlayNetworking.send(serverPlayer, new HuntPayloads.Highlight(nearest.getId(), HIGHLIGHT_TICKS));
+			List<LivingEntity> nearest = findNearest(serverPlayer, souls);
+			if (!nearest.isEmpty()) {
+				for (LivingEntity soul : nearest) {
+					ServerPlayNetworking.send(serverPlayer, new HuntPayloads.Highlight(soul.getId(), HIGHLIGHT_TICKS));
+				}
 				level.playSound(null, player.blockPosition(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
 			} else {
 				level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.6F, 0.6F);
@@ -52,9 +64,14 @@ public class SpiritualCatalystItem extends Item {
 	}
 
 	public static LivingEntity findNearest(ServerPlayer player) {
+		List<LivingEntity> nearest = findNearest(player, 1);
+		return nearest.isEmpty() ? null : nearest.get(0);
+	}
+
+	public static List<LivingEntity> findNearest(ServerPlayer player, int count) {
 		return player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(RANGE),
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator() && !(entity instanceof ArmorStand)
 						&& entity.distanceTo(player) <= RANGE)
-				.stream().min(Comparator.comparingDouble(entity -> entity.distanceToSqr(player))).orElse(null);
+				.stream().sorted(Comparator.comparingDouble(entity -> entity.distanceToSqr(player))).limit(count).toList();
 	}
 }

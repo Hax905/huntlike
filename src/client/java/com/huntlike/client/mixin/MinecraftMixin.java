@@ -25,11 +25,12 @@ public abstract class MinecraftMixin {
 				return;
 			}
 		}
-		if (ClientHuntState.highlightId != -1 && entity.getId() == ClientHuntState.highlightId) {
-			if (entity.level().getGameTime() < ClientHuntState.highlightUntil) {
+		Long until = ClientHuntState.highlights.get(entity.getId());
+		if (until != null) {
+			if (entity.level().getGameTime() < until) {
 				cir.setReturnValue(true);
 			} else {
-				ClientHuntState.highlightId = -1;
+				ClientHuntState.highlights.remove(entity.getId());
 			}
 		}
 	}

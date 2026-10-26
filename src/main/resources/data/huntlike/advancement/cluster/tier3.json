@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:cluster/tier2",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:magma_cream"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.tier3.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.tier3.description"
+    },
+    "hidden": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

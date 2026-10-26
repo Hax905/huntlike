@@ -104,6 +104,7 @@ public final class QuestManager {
 
 	/** Lured mobs slain for "I swear it was Self-Defense". */
 	public static final int SELF_DEFENSE_KILLS = 1000;
+	public static final int NOT_SELF_DEFENSE_KILLS = 10000;
 	public static final TagKey<EntityType<?>> QUOTA_ANIMALS = TagKey.create(Registries.ENTITY_TYPE, HuntLike.id("animal_quota"));
 
 	public static final int BOSS_TIME_LIMIT = 20 * 60 * 5;
@@ -347,7 +348,7 @@ public final class QuestManager {
 		player.sendSystemMessage(Messages.started(hunt, tierNumber, quest.daily));
 		playSound(player, SoundEvents.ENCHANTMENT_TABLE_USE, 1.0F);
 		playSound(player, SoundEvents.BEACON_ACTIVATE, 1.2F);
-		award(player, hunt.id() + "/conquest");
+		award(player, "animal/conquest");
 	}
 
 	/** Admin start: no token cost, no Rank or previous-boss requirement. False if a quest is already running. */
@@ -572,11 +573,7 @@ public final class QuestManager {
 		}
 		HuntData data = data(killer);
 		if (SpiritLure.isLuredBy(entity, killer)) {
-			data.luredKills++;
-			if (data.luredKills >= SELF_DEFENSE_KILLS) {
-				award(killer, "animal/self_defense");
-			}
-			save(killer, data);
+			countLuredKill(killer, data);
 		}
 		if (SpiritLure.isLuredBy(entity, killer) && killer.getRandom().nextDouble() < HuntDefs.chance("animal", 1, 100,
 				data.concoction, data.quest != null && data.quest.daily)) {
@@ -604,10 +601,13 @@ public final class QuestManager {
 	}
 
 	/** One lured mob slain: counts toward "I Swear It Was Self-Defense". */
-	static void countLuredKill(ServerPlayer killer, HuntData data) {
+	public static void countLuredKill(ServerPlayer killer, HuntData data) {
 		data.luredKills++;
 		if (data.luredKills >= SELF_DEFENSE_KILLS) {
 			award(killer, "animal/self_defense");
+		}
+		if (data.luredKills >= NOT_SELF_DEFENSE_KILLS) {
+			award(killer, "animal/not_self_defense");
 		}
 		save(killer, data);
 	}

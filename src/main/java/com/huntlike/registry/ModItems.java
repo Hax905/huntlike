@@ -26,7 +26,7 @@ public final class ModItems {
 	public static final Item THICK_HIDE = simple("thick_hide", Rarity.COMMON);
 	public static final Item LARGE_FEMUR = simple("large_femur", Rarity.UNCOMMON);
 	public static final Item GOLDEN_MOSS = simple("golden_moss", Rarity.RARE);
-	public static final Item SPIRITUAL_CATALYST = register("spiritual_catalyst", SpiritualCatalystItem::new,
+	public static final Item SPIRITUAL_CATALYST = register("spiritual_catalyst", p -> new SpiritualCatalystItem(p, 1),
 			new Item.Properties().rarity(Rarity.EPIC).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.lore())));
 
@@ -61,6 +61,15 @@ public final class ModItems {
 							Lore.wrapGray("You don't even want to chew.")))
 					.food(new net.minecraft.world.food.FoodProperties(8, 8.0F, false),
 							net.minecraft.world.item.component.Consumables.defaultFood().consumeSeconds(0.0F).build()));
+
+	/** Cluster Hunt snack: 6 hunger, 6 saturation. */
+	public static final Item WARM_AND_SLIMY_BEEF_JERKY = register("warm_and_slimy_beef_jerky", Item::new,
+			new Item.Properties().rarity(Rarity.COMMON).food(new net.minecraft.world.food.FoodProperties(6, 6.0F, false)));
+
+	/** Detect Nearby Souls, three at a time (Spiritual Catalyst in a compass recipe). */
+	public static final Item SPIRITUAL_COMPASS = register("spiritual_compass", p -> new SpiritualCatalystItem(p, 3),
+			new Item.Properties().rarity(Rarity.EPIC).stacksTo(1).component(net.minecraft.core.component.DataComponents.LORE,
+					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.compassLore())));
 
 	/** The Hunting Trophy block item of a Hunt. */
 	public static Item trophy(String hunt) {

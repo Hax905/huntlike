@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:cluster/tier5",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:scythe_of_sublimation"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.slayer.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.slayer.description"
+    },
+    "hidden": true,
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

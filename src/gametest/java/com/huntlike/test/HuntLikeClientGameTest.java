@@ -172,6 +172,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			catalystAndPulverizer(context, singleplayer);
 			dailyRefill(context, singleplayer);
 			clusterHunt(context, singleplayer);
+			scythes(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -980,6 +981,158 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		check(singleplayer, "cluster tier V complete", data -> data.quest == null && data.progress("cluster").bossKills[4] == 1);
 		assertServer(singleplayer, "Better Than Ever! ends when the boss perishes", server ->
 				!com.huntlike.hunt.ClusterFight.betterThanEver(player(server)));
+	}
+
+	private static boolean done(ServerPlayer player, String path) {
+		var advancement = player.level().getServer().getAdvancements().get(HuntLike.id(path));
+		return advancement != null && player.getAdvancements().getOrStartProgress(advancement).isDone();
+	}
+
+	private static net.minecraft.world.entity.LivingEntity spawnTest(ServerPlayer player, net.minecraft.world.entity.EntityType<?> type,
+			double dx, double dz, float health) {
+		var entity = (net.minecraft.world.entity.Mob) type.create(player.level(), EntitySpawnReason.COMMAND);
+		if (entity instanceof net.minecraft.world.entity.monster.cubemob.AbstractCubeMob cube) {
+			cube.setSize(1, true);
+		}
+		entity.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(health);
+		entity.setHealth(health);
+		entity.snapTo(player.getX() + dx, player.getY(), player.getZ() + dz, 0, 0);
+		entity.setNoAi(true);
+		player.level().addFreshEntity(entity);
+		return entity;
+	}
+
+	/** Cluster Hunt Weapons, the Spiritual Compass, Beef Jerky and the new advancements. */
+	private static void scythes(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		assertServer(singleplayer, "Cluster boss advancements; The Hunt Begins is shared", server -> {
+			ServerPlayer player = player(server);
+			return done(player, "cluster/tier1") && done(player, "cluster/tier5") && done(player, "animal/conquest");
+		});
+		int[] ids = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			wearNothing(player);
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+					player.getBoundingBox().inflate(40), e -> e != player)) {
+				e.discard();
+			}
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModScythes.SLIMY_FALX));
+			var slime = spawnTest(player, EntityTypes.SLIME, 2.0, 0.0, 100.0F);
+			var near = spawnTest(player, EntityTypes.PIG, 2.0, 2.5, 10.0F);
+			var far = spawnTest(player, EntityTypes.PIG, 2.0, 5.5, 10.0F);
+			var magma = spawnTest(player, EntityTypes.MAGMA_CUBE, -2.0, 0.0, 100.0F);
+			return new int[] {slime.getId(), near.getId(), far.getId(), magma.getId()};
+		});
+		context.waitTicks(25);
+		singleplayer.getServer().runOnServer(server -> player(server).attack(player(server).level().getEntity(ids[0])));
+		context.waitTicks(25);
+		singleplayer.getServer().runOnServer(server -> player(server).attack(player(server).level().getEntity(ids[3])));
+		context.waitTicks(2);
+		float[] searing = singleplayer.getServer().computeOnServer(server -> {
+			var level = player(server).level();
+			float[] health = new float[4];
+			for (int i = 0; i < 4; i++) {
+				health[i] = ((net.minecraft.world.entity.LivingEntity) level.getEntity(ids[i])).getHealth();
+			}
+			HuntLike.LOGGER.info("[test] Slimy Falx (Searing) hit: slime {}, pig in sweep {}, far pig {}, magma cube {}",
+					health[0], health[1], health[2], health[3]);
+			return health;
+		});
+		assertServer(singleplayer, "Slimy Falx, Searing: slime takes (4 + 4) x 1.05; the sweep hits a pig 3 blocks away for 4, not one 6 away",
+				server -> Math.abs(searing[0] - (100.0F - 8.4F)) < 0.05F && Math.abs(searing[1] - 6.0F) < 0.05F && searing[2] == 10.0F);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setShiftKeyDown(true);
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			player.setShiftKeyDown(false);
+		});
+		assertServer(singleplayer, "Sublimation: sneak + right-click switches to Freezing once (2 s cooldown)", server -> {
+			var stack = player(server).getMainHandItem();
+			var model = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA);
+			return com.huntlike.gear.ModScythes.isFrost(stack) && model != null && Boolean.TRUE.equals(model.getBoolean(0))
+					&& player(server).getCooldowns().isOnCooldown(stack);
+		});
+		context.runOnClient(client -> {
+			client.player.setYRot(90.0F);
+			client.player.setXRot(10.0F);
+		});
+		context.waitTicks(25);
+		context.takeScreenshot("50-scythe-frost");
+		singleplayer.getServer().runOnServer(server -> player(server).attack(player(server).level().getEntity(ids[3])));
+		context.waitTicks(2);
+		assertServer(singleplayer, "Freezing hits the magma cube harder than Searing did", server -> {
+			float now = ((net.minecraft.world.entity.LivingEntity) player(server).level().getEntity(ids[3])).getHealth();
+			float searingHit = 100.0F - searing[3];
+			float freezingHit = searing[3] - now;
+			HuntLike.LOGGER.info("[test] magma cube: Searing hit {}, Freezing hit {}", searingHit, freezingHit);
+			return freezingHit > searingHit + 0.1F;
+		});
+
+		// Slice and Dice: a cluster finished with a scythe counts double.
+		singleplayer.getServer().runCommand("huntlike quest start @a cluster 1");
+		context.waitTicks(3);
+		int slimeId = singleplayer.getServer().computeOnServer(server -> spawnTest(player(server), EntityTypes.SLIME, 2.0, -1.0, 1.0F).getId());
+		context.waitTicks(25);
+		singleplayer.getServer().runOnServer(server -> player(server).attack(player(server).level().getEntity(slimeId)));
+		context.waitTicks(3);
+		check(singleplayer, "Slice and Dice: a slime cluster killed with a scythe = 2 quota points", data -> data.quest != null
+				&& data.quest.kills == 2);
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+
+		// Spiritual Compass: the 3 nearest souls glow.
+		int[] pigs = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+					player.getBoundingBox().inflate(40), e -> e != player)) {
+				e.discard();
+			}
+			int[] result = new int[4];
+			double[] distance = {3, 5, 7, 12};
+			for (int i = 0; i < 4; i++) {
+				result[i] = spawnTest(player, EntityTypes.PIG, -distance[i], 0.0, 10.0F).getId();
+			}
+			return result;
+		});
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var stack = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.SPIRITUAL_COMPASS);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
+			stack.use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+		});
+		context.waitTicks(5);
+		boolean compass = context.computeOnClient(client -> client.shouldEntityAppearGlowing(client.level.getEntity(pigs[0]))
+				&& client.shouldEntityAppearGlowing(client.level.getEntity(pigs[1]))
+				&& client.shouldEntityAppearGlowing(client.level.getEntity(pigs[2]))
+				&& !client.shouldEntityAppearGlowing(client.level.getEntity(pigs[3])));
+		HuntLike.LOGGER.info("[test] Spiritual Compass highlights the 3 nearest souls: {}", compass ? "OK" : "FAILED");
+		if (!compass) {
+			throw new AssertionError("Spiritual Compass");
+		}
+		context.takeScreenshot("51-spiritual-compass");
+
+		// Warm and Slimy Beef Jerky and the 10,000 lured kills.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var jerky = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, jerky);
+			jerky.finishUsingItem(player.level(), player);
+			HuntData data = QuestManager.data(player);
+			data.luredKills = com.huntlike.hunt.QuestManager.NOT_SELF_DEFENSE_KILLS - 1;
+			QuestManager.countLuredKill(player, data);
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "Ew! It needs salt. and Ok ok, it might not be just self-defense", server ->
+				done(player(server), "cluster/jerky") && done(player(server), "animal/not_self_defense"));
+	}
+
+	private static void wearNothing(ServerPlayer player) {
+		for (var slot : new net.minecraft.world.entity.EquipmentSlot[] {net.minecraft.world.entity.EquipmentSlot.HEAD,
+				net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.LEGS,
+				net.minecraft.world.entity.EquipmentSlot.FEET, net.minecraft.world.entity.EquipmentSlot.OFFHAND}) {
+			player.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+		}
 	}
 
 	private static void wear(TestSingleplayerContext singleplayer, com.huntlike.gear.ModGear.ArmorSet set) {

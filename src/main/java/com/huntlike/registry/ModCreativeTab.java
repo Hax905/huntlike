@@ -61,9 +61,11 @@ public final class ModCreativeTab {
 			output.accept(ModItems.SUBLIMATING_MAGMA);
 			output.accept(ModItems.CORRODED_PALLADIUM);
 			output.accept(ModItems.DIGESTED_PLATINUM_ISOTOPE);
+			output.accept(ModItems.WARM_AND_SLIMY_BEEF_JERKY);
 		});
 		register(GEAR, ModGear.SKIN_KNIFE, output -> {
 			ModGear.WEAPONS.forEach(output::accept);
+			com.huntlike.gear.ModScythes.SCYTHES.forEach(output::accept);
 			ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
 			output.accept(ModKoro.WOODEN_BELL);
 			output.accept(ModKoro.GOLDEN_BELL);
@@ -73,6 +75,7 @@ public final class ModCreativeTab {
 			output.accept(HideBoots.FEATHER_CHUTE);
 			output.accept(ModItems.MYSTERY_CONCOCTION);
 			output.accept(ModItems.GOLDEN_MEAT);
+			output.accept(ModItems.SPIRITUAL_COMPASS);
 		});
 		register(BLOCKS, ModBlocks.ALPHA_ALTAR, output -> {
 			output.accept(ModBlocks.ALPHA_ALTAR);

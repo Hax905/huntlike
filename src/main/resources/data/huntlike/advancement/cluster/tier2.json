@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:cluster/tier1",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:slime_block"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.tier2.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.tier2.description"
+    },
+    "hidden": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

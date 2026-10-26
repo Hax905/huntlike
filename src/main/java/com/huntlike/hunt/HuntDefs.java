@@ -213,15 +213,15 @@ public final class HuntDefs {
 							"lore.huntlike.cluster.5")),
 			List.of(
 					List.of(Unlock.plain("Tier I Cluster Quests")),
-					List.of(),
+					List.of(Unlock.plain("Hunt Weapon: Slick Kama [Genesis]")),
 					List.of(Unlock.plain("Tier II Cluster Quests"), Unlock.plain("Hunt Armor: Icy Armor")),
-					List.of(),
-					List.of(Unlock.plain("Tier III Cluster Quests"), Unlock.plain("Hunt Armor: Gel Armor")),
-					List.of(),
-					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor: Thermodynamic Armor")),
-					List.of(),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Polished Khopesh [Act I]")),
+					List.of(Unlock.plain("Tier III Cluster Quests"), Unlock.plain("Hunt Armor upgrade: Gel Armor")),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Slimy Falx [Act II]")),
+					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor upgrade: Thermodynamic Armor")),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Slimysteel Glaive [Act III]")),
 					List.of(Unlock.plain("Tier V Cluster Quests")),
-					List.of(),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Scythe of Sublimation [Apotheosis]")),
 					List.of()));
 
 	public static final List<Hunt> HUNTS = List.of(ANIMAL, CLUSTER);
@@ -327,6 +327,22 @@ public final class HuntDefs {
 					Cost.of(ModItems.SUBLIMATING_MAGMA, 2), Cost.of(ModItems.CORRODED_PALLADIUM, 1), Cost.of(Items.DIAMOND, 4)),
 					ModGear.THERMODYNAMIC.pieces()));
 
+	/** Cluster Hunt Weapons (Gear tab, Weapons page). */
+	public static final List<GearTrade> CLUSTER_WEAPONS = List.of(
+			new GearTrade("Slick Kama [Genesis]", 1, List.of(Cost.of(Items.IRON_HOE, 1), Cost.of(ModItems.THERMAL_SLIMEBALL, 6)),
+					List.of(com.huntlike.gear.ModScythes.SLICK_KAMA)),
+			new GearTrade("Polished Khopesh [Act I]", 3, List.of(Cost.of(com.huntlike.gear.ModScythes.SLICK_KAMA, 1),
+					Cost.of(ModItems.FROZEN_SLIME_BALL, 4), Cost.of(Items.IRON_INGOT, 5)), List.of(com.huntlike.gear.ModScythes.POLISHED_KHOPESH)),
+			new GearTrade("Slimy Falx [Act II]", 5, List.of(Cost.of(com.huntlike.gear.ModScythes.POLISHED_KHOPESH, 1),
+					Cost.of(ModItems.SLIMYSTEEL, 2), Cost.of(ModItems.IONIC_LIQUID, 1), Cost.of(Items.DIAMOND, 2)),
+					List.of(com.huntlike.gear.ModScythes.SLIMY_FALX)),
+			new GearTrade("Slimysteel Glaive [Act III]", 7, List.of(Cost.of(com.huntlike.gear.ModScythes.SLIMY_FALX, 1),
+					Cost.of(ModItems.GELID_SLIME_BALL, 1), Cost.of(ModItems.SUBLIMATING_MAGMA, 2), Cost.of(ModItems.CORRODED_PALLADIUM, 1)),
+					List.of(com.huntlike.gear.ModScythes.SLIMYSTEEL_GLAIVE)),
+			new GearTrade("Scythe of Sublimation [Apotheosis]", 9, List.of(Cost.of(com.huntlike.gear.ModScythes.SLIMYSTEEL_GLAIVE, 1),
+					Cost.of(ModItems.CORRODED_PALLADIUM, 1), Cost.of(ModItems.SLIMY_CORE, 1), Cost.of(Items.OBSIDIAN, 8)),
+					List.of(com.huntlike.gear.ModScythes.SCYTHE_OF_SUBLIMATION)));
+
 	/** Key stored in a player's seen list once they've obtained a piece of Hunt gear. */
 	public static String gearSeenId(Item item) {
 		return "gear:" + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath();
@@ -334,7 +350,7 @@ public final class HuntDefs {
 
 	/** The Rank that unlocks the trade giving this gear, or -1 if it isn't Hunt gear. */
 	public static int gearRank(Item item) {
-		for (List<GearTrade> list : List.of(ANIMAL_ARMOR, ANIMAL_WEAPONS, CLUSTER_ARMOR)) {
+		for (List<GearTrade> list : List.of(ANIMAL_ARMOR, ANIMAL_WEAPONS, CLUSTER_ARMOR, CLUSTER_WEAPONS)) {
 			for (GearTrade trade : list) {
 				if (trade.result().contains(item)) {
 					return trade.rank();
@@ -347,7 +363,7 @@ public final class HuntDefs {
 	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. The Cluster Hunt has none yet. */
 	public static List<GearTrade> trades(Hunt hunt, int page) {
 		if (hunt == CLUSTER) {
-			return page == 0 ? CLUSTER_ARMOR : List.of();
+			return page == 0 ? CLUSTER_ARMOR : page == 2 ? CLUSTER_WEAPONS : List.of();
 		}
 		return page == 0 ? ANIMAL_ARMOR : page == 1 ? ANIMAL_SPECIAL : ANIMAL_WEAPONS;
 	}

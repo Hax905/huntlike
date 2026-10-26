@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:cluster/tier4",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:gelid_slime_ball"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.tier5.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.tier5.description"
+    },
+    "hidden": true,
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

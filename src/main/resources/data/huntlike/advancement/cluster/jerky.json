@@ -1,0 +1,31 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "eat": {
+      "trigger": "minecraft:consume_item",
+      "conditions": {
+        "item": {
+          "items": "huntlike:warm_and_slimy_beef_jerky"
+        }
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:warm_and_slimy_beef_jerky"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.jerky.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.jerky.description"
+    },
+    "hidden": true,
+    "frame": "task"
+  },
+  "requirements": [
+    [
+      "eat"
+    ]
+  ]
+}

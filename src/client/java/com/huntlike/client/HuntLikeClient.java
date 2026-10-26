@@ -20,8 +20,7 @@ public class HuntLikeClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.OpenMenu.TYPE,
 				(payload, context) -> context.client().gui.setScreen(new HuntMenuScreen(payload.tab())));
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.Highlight.TYPE, (payload, context) -> {
-			ClientHuntState.highlightId = payload.entityId();
-			ClientHuntState.highlightUntil = context.client().level.getGameTime() + payload.ticks();
+			ClientHuntState.highlights.put(payload.entityId(), context.client().level.getGameTime() + payload.ticks());
 		});
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.GearToast.TYPE, (payload, context) -> {
 			var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(net.minecraft.resources.Identifier.parse(payload.itemId()));

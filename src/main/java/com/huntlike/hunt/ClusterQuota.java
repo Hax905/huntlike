@@ -87,6 +87,7 @@ public final class ClusterQuota {
 				|| QuestManager.isPeaceful(killer) || !clusterFinished(entity)) {
 			return;
 		}
-		QuestManager.addQuotaPoints(killer, data, quest, points(entity), entity.blockPosition());
+		QuestManager.addQuotaPoints(killer, data, quest, points(entity) * com.huntlike.gear.ModScythes.quotaMultiplier(killer),
+				entity.blockPosition());
 	}
 }

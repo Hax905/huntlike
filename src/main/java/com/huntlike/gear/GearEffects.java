@@ -82,6 +82,13 @@ public final class GearEffects {
 	/** Called with every damage amount, before armor: Biohazard, Momentum, Fracture and Animalistic. */
 	public static float adjustDamage(LivingEntity target, DamageSource source, float amount) {
 		Entity attacker = source.getEntity();
+		if (attacker instanceof ServerPlayer player && source.getDirectEntity() == player
+				&& ModScythes.stats(player.getMainHandItem()) != null) {
+			ModScythes.maybeSweep(player, target, source, amount);
+			if (isCluster(target)) {
+				amount = ModScythes.clusterDamage(player, player.getMainHandItem(), target, amount);
+			}
+		}
 		if (attacker instanceof ServerPlayer player && source.getDirectEntity() == player && isAnimal(target)) {
 			int stage = ModGear.weaponStage(player.getMainHandItem().getItem());
 			if (stage > 0) {

@@ -6,14 +6,13 @@ import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.monster.slime.MagmaCubeModel;
 import net.minecraft.client.renderer.entity.AbstractCubeMobRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.state.SlimeRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 
 import com.huntlike.pet.PetMagma;
 
 /** The Magma Cube pet: the vanilla magma cube look, always fully lit. */
-public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, SlimeRenderState, MagmaCubeModel> {
+public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, PetRenderState, MagmaCubeModel> {
 	private static final Identifier TEXTURE = Identifier.withDefaultNamespace("textures/entity/slime/magmacube.png");
 
 	public PetMagmaRenderer(EntityRendererProvider.Context context) {
@@ -26,17 +25,23 @@ public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, SlimeRen
 	}
 
 	@Override
-	protected void scale(SlimeRenderState state, PoseStack pose) {
+	protected void scale(PetRenderState state, PoseStack pose) {
 		this.applySizeAndSquish(state, pose);
 	}
 
 	@Override
-	public Identifier getTextureLocation(SlimeRenderState state) {
+	public Identifier getTextureLocation(PetRenderState state) {
 		return TEXTURE;
 	}
 
 	@Override
-	public SlimeRenderState createRenderState() {
-		return new SlimeRenderState();
+	public PetRenderState createRenderState() {
+		return new PetRenderState();
+	}
+
+	@Override
+	public void extractRenderState(PetMagma pet, PetRenderState state, float partialTick) {
+		super.extractRenderState(pet, state, partialTick);
+		state.chest = pet.hasChest();
 	}
 }

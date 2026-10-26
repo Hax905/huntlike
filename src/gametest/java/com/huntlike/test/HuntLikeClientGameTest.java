@@ -1288,8 +1288,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return state.chest && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND) && state.page == 1;
 		});
 		context.setScreen(() -> null);
-		singleplayer.getServer().runOnServer(server -> player(server).stopRiding());
-		context.waitTicks(5);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.stopRiding();
+			var pet = petPieces(server).get(0);
+			pet.setNoAi(true);
+			pet.teleportTo(player.getX() + 4.0, player.getY(), player.getZ());
+		});
+		context.runOnClient(client -> {
+			client.player.setYRot(-90.0F);
+			client.player.setXRot(15.0F);
+		});
+		context.waitTicks(10);
+		context.takeScreenshot("56b-pet-with-chest");
+		assertServer(singleplayer, "The big pet shows its chest", server -> petPieces(server).get(0).hasChest());
+		singleplayer.getServer().runOnServer(server -> petPieces(server).get(0).setNoAi(false));
 
 		// Killed: big -> two mediums (30) -> smalls (15); regrows after 45 quiet seconds.
 		killPet(context, singleplayer);
@@ -1316,6 +1329,16 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					&& state.status == com.huntlike.pet.PetState.WHOLE && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND);
 		});
 
+		singleplayer.getServer().runOnServer(server -> {
+			var pet = petPieces(server).get(0);
+			pet.hurtServer(player(server).level(), player(server).level().damageSources().generic(), 10.0F);
+		});
+		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SLIME_BALL), 1);
+		assertServer(singleplayer, "A slime ball heals the pet by 4", server -> {
+			float health = petPieces(server).get(0).getHealth();
+			HuntLike.LOGGER.info("[test] pet health after 10 damage and a slime ball: {}", health);
+			return Math.abs(health - 54.0F) < 0.01F;
+		});
 		// Corroded Palladium, then heat: a big Magma Cube.
 		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.CORRODED_PALLADIUM), 1);
 		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.MAGMA_CREAM), 2);

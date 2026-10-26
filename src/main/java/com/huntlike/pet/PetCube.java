@@ -56,6 +56,26 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 	/** Magma cube form (fire immune, swims in lava, sets targets on fire). */
 	public abstract boolean isMagma();
 
+	/** A big pet carrying its chest: the chest is drawn inside it. */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> CHEST =
+			net.minecraft.network.syncher.SynchedEntityData.defineId(PetCube.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+
+	@Override
+	protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+		super.defineSynchedData(builder);
+		builder.define(CHEST, false);
+	}
+
+	public boolean hasChest() {
+		return this.entityData.get(CHEST);
+	}
+
+	public void setChest(boolean chest) {
+		if (hasChest() != chest) {
+			this.entityData.set(CHEST, chest);
+		}
+	}
+
 	// ---------------------------------------------------------------- identity
 
 	public UUID ownerId() {

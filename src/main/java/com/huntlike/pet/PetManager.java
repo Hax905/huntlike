@@ -64,6 +64,8 @@ public final class PetManager {
 	public static final double GROW_CHANCE = 0.04;
 	public static final int GROW_GUARANTEED = 25;
 	public static final int HEAT_GOAL = 100;
+	/** Health a slime ball heals (any piece, any form). */
+	public static final float SLIME_BALL_HEAL = 4.0F;
 	/** Quiet time before split pieces grow back: a minute for a medium pet, 45 seconds for a big one. */
 	public static final int REGROW_MEDIUM = 60 * 20;
 	public static final int REGROW_BIG = 45 * 20;
@@ -259,6 +261,7 @@ public final class PetManager {
 			}
 		}
 		pet.setTarget(target);
+		pet.setChest(state.chest && state.status == PetState.WHOLE && pet.getSize() >= 4);
 		if (!pet.isVehicle()) {
 			pet.serverMove(level, owner, state, target);
 			if (state.status == PetState.WHOLE && !state.sitting && owner.level() == level && pet.distanceToSqr(owner) > 24 * 24
@@ -370,6 +373,16 @@ public final class PetManager {
 		ServerLevel level = (ServerLevel) pet.level();
 		ItemStack stack = player.getItemInHand(hand);
 		boolean whole = state.status == PetState.WHOLE;
+		if (stack.is(Items.SLIME_BALL)) {
+			if (pet.getHealth() >= pet.getMaxHealth()) {
+				return InteractionResult.PASS;
+			}
+			stack.consume(1, player);
+			pet.heal(SLIME_BALL_HEAL);
+			particles(level, pet, ParticleTypes.HEART, 3);
+			pet.playSound(SoundEvents.SLIME_SQUISH_SMALL, 1.0F, 1.0F);
+			return InteractionResult.SUCCESS;
+		}
 		if (stack.is(ModItems.THERMAL_SLIMEBALL)) {
 			if (!whole || !state.ionic || state.big || state.magma) {
 				return InteractionResult.PASS;

@@ -21,14 +21,21 @@ import net.minecraft.world.phys.HitResult;
  */
 public class ClusterBall extends ThrowableItemProjectile {
 	private float damage = 8.0F;
+	/** A slime pet's ball: hits mobs, never players or its owner's pets. */
+	private boolean petBall;
 
 	public ClusterBall(EntityType<? extends ClusterBall> type, Level level) {
 		super(type, level);
 	}
 
 	public ClusterBall(Level level, LivingEntity owner, Item item, float damage) {
+		this(level, owner, item, damage, false);
+	}
+
+	public ClusterBall(Level level, LivingEntity owner, Item item, float damage, boolean petBall) {
 		super(ModEntities.CLUSTER_BALL, owner, level, new ItemStack(item));
 		this.damage = damage;
+		this.petBall = petBall;
 	}
 
 	@Override
@@ -38,6 +45,10 @@ public class ClusterBall extends ThrowableItemProjectile {
 
 	@Override
 	protected boolean canHitEntity(Entity entity) {
+		if (petBall) {
+			return entity instanceof LivingEntity && !(entity instanceof Player) && !(entity instanceof com.huntlike.pet.PetCube)
+					&& super.canHitEntity(entity);
+		}
 		return entity instanceof Player && super.canHitEntity(entity);
 	}
 

@@ -67,6 +67,10 @@ public final class ModEntities {
 	public static final EntityType<com.huntlike.entity.cluster.TheVile> THE_VILE = cluster("the_vile",
 			com.huntlike.entity.cluster.TheVile::new, true);
 
+	// The Cluster Hunt's slime pet (slime and Magma Cube forms).
+	public static final EntityType<com.huntlike.pet.PetSlime> PET_SLIME = cluster("slime_pet", com.huntlike.pet.PetSlime::new, false);
+	public static final EntityType<com.huntlike.pet.PetMagma> PET_MAGMA = cluster("magma_pet", com.huntlike.pet.PetMagma::new, true);
+
 	private static <T extends net.minecraft.world.entity.Mob> EntityType<T> cluster(String name, EntityType.EntityFactory<T> factory,
 			boolean fireImmune) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id(name));
@@ -111,5 +115,7 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(VARIANCE_SLIME, slime);
 		FabricDefaultAttributeRegistry.register(VARIANCE_MAGMA, magma);
 		FabricDefaultAttributeRegistry.register(THE_VILE, slime);
+		FabricDefaultAttributeRegistry.register(PET_SLIME, slime);
+		FabricDefaultAttributeRegistry.register(PET_MAGMA, magma);
 	}
 }

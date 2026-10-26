@@ -29,6 +29,8 @@ public class HuntLike implements ModInitializer {
 		ModSounds.initialize();
 		ModGear.initialize();
 		com.huntlike.gear.ModScythes.initialize();
+		com.huntlike.pet.PetManager.initialize();
+		com.huntlike.pet.PetMenu.initialize();
 		com.huntlike.gear.ModKoro.initialize();
 		com.huntlike.gear.HideBoots.initialize();
 		ModBlocks.initialize();

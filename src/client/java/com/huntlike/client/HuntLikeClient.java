@@ -37,6 +37,9 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(ModEntities.CANIS_LUPUS, CanisLupusRenderer::new);
 		EntityRendererRegistry.register(ModEntities.CLUSTER_BALL, ThrownItemRenderer::new);
 		EntityRendererRegistry.register(ModEntities.CUBERT, CubertRenderer::new);
+		EntityRendererRegistry.register(ModEntities.PET_SLIME, com.huntlike.client.pet.PetSlimeRenderer::new);
+		EntityRendererRegistry.register(ModEntities.PET_MAGMA, com.huntlike.client.pet.PetMagmaRenderer::new);
+		net.minecraft.client.gui.screens.MenuScreens.register(com.huntlike.pet.PetMenu.TYPE, com.huntlike.client.pet.PetScreen::new);
 		EntityRendererRegistry.register(ModEntities.BLUCKY, BluckyRenderer::new);
 		EntityRendererRegistry.register(ModEntities.HOT_HEAD, HotHeadRenderer::new);
 		EntityRendererRegistry.register(ModEntities.VARIANCE_SLIME, VarianceSlimeRenderer::new);

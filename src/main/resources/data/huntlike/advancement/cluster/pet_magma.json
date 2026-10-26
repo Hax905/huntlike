@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:cluster/pet_tame",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:magma_cream"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.pet_magma.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.pet_magma.description"
+    },
+    "hidden": true,
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

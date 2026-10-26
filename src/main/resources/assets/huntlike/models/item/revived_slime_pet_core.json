@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "huntlike:item/revived_slime_pet_core"
+  }
+}

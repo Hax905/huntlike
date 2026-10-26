@@ -1,0 +1,26 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:thermal_slimeball"
+    },
+    "title": {
+      "translate": "advancements.huntlike.cluster.pet_tame.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.cluster.pet_tame.description"
+    },
+    "hidden": true,
+    "frame": "task"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

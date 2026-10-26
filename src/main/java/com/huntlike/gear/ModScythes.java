@@ -191,6 +191,7 @@ public final class ModScythes {
 		List<LivingEntity> hit = level.getEntitiesOfClass(LivingEntity.class, box, entity -> entity != target && entity != player
 				&& entity.isAlive() && !(entity instanceof Player) && !(entity instanceof ArmorStand) && !entity.isSpectator()
 				&& !(entity instanceof TamableAnimal pet && pet.isOwnedBy(player))
+				&& !(entity instanceof com.huntlike.pet.PetCube slimePet && slimePet.isOwnedBy(player))
 				&& player.distanceToSqr(entity) < (3.0 + range) * (3.0 + range));
 		SWEEPING.add(player.getUUID());
 		try {

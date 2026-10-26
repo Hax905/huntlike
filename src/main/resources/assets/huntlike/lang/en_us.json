@@ -160,5 +160,13 @@
   "advancements.huntlike.cluster.jerky.title": "The texture was nice at least",
   "advancements.huntlike.cluster.jerky.description": "Swallow the gummy-like beef jerky... Yuck...",
   "advancements.huntlike.animal.not_self_defense.title": "Ok ok, it might not be just self-defense",
-  "advancements.huntlike.animal.not_self_defense.description": "Kill 10,000 lured mobs."
+  "advancements.huntlike.animal.not_self_defense.description": "Kill 10,000 lured mobs.",
+  "entity.huntlike.slime_pet": "Slime",
+  "entity.huntlike.magma_pet": "Magma Cube",
+  "item.huntlike.slime_pet_core": "Slimy Core",
+  "item.huntlike.revived_slime_pet_core": "Revived Slimy Core",
+  "advancements.huntlike.cluster.pet_tame.title": "They actually do grow very fast!",
+  "advancements.huntlike.cluster.pet_tame.description": "Befriend a slime and make it grow at the same time!",
+  "advancements.huntlike.cluster.pet_magma.title": "Slimes take the heat!",
+  "advancements.huntlike.cluster.pet_magma.description": "Scorch your slime into a Magma Cube! (He didn't feel pain.)"
 }

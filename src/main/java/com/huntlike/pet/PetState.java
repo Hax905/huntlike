@@ -2,6 +2,7 @@ package com.huntlike.pet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.mojang.serialization.Codec;
@@ -27,6 +28,8 @@ public class PetState {
 	public static final int STORAGE = 54;
 	public static final int PAGE = 27;
 
+	/** Which pet this is (the entities and its Slimy Core carry it). */
+	public UUID id = UUID.randomUUID();
 	public String name = "";
 	public int status = NONE;
 	/** Grown into a big slime (a magma pet is always big). */
@@ -49,6 +52,7 @@ public class PetState {
 	public int generation;
 
 	public static final Codec<PetState> CODEC = RecordCodecBuilder.create(i -> i.group(
+			UUIDUtil.CODEC.optionalFieldOf("id").forGetter(s -> Optional.of(s.id)),
 			Codec.STRING.optionalFieldOf("name", "").forGetter(s -> s.name),
 			Codec.INT.optionalFieldOf("status", NONE).forGetter(s -> s.status),
 			Codec.BOOL.optionalFieldOf("big", false).forGetter(s -> s.big),
@@ -66,9 +70,10 @@ public class PetState {
 			Codec.INT.optionalFieldOf("generation", 0).forGetter(s -> s.generation))
 			.apply(i, PetState::of));
 
-	private static PetState of(String name, int status, boolean big, boolean ionic, boolean palladium, boolean magma, int heat,
+	private static PetState of(Optional<UUID> id, String name, int status, boolean big, boolean ionic, boolean palladium, boolean magma, int heat,
 			int growFeeds, boolean sitting, boolean chest, int page, List<ItemStack> storage, List<UUID> pieces, long lastDamage, int generation) {
 		PetState s = new PetState();
+		s.id = id.orElseGet(UUID::randomUUID);
 		s.name = name;
 		s.status = status;
 		s.big = big;

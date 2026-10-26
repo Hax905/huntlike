@@ -52,8 +52,12 @@ public final class PetManager {
 	private PetManager() {
 	}
 
-	public static final AttachmentType<PetState> STATE = AttachmentRegistry.create(HuntLike.id("slime_pet"),
-			builder -> builder.initializer(PetState::new).persistent(PetState.CODEC).copyOnDeath());
+	/** Every pet the player has tamed. */
+	public static final AttachmentType<PetRoster> ROSTER = AttachmentRegistry.create(HuntLike.id("slime_pets"),
+			builder -> builder.initializer(PetRoster::new).persistent(PetRoster.CODEC).copyOnDeath());
+	/** v0.11.0 kept a single pet here; it moves into the roster the first time it's read. */
+	private static final AttachmentType<PetState> LEGACY = AttachmentRegistry.create(HuntLike.id("slime_pet"),
+			builder -> builder.persistent(PetState.CODEC).copyOnDeath());
 
 	public static final double TAME_CHANCE = 0.05;
 	public static final int TAME_GUARANTEED = 20;
@@ -74,12 +78,56 @@ public final class PetManager {
 		UseEntityCallback.EVENT.register(PetManager::onUseEntity);
 	}
 
-	public static PetState state(ServerPlayer player) {
-		return player.getAttachedOrCreate(STATE);
+	public static PetRoster roster(ServerPlayer player) {
+		PetRoster roster = player.getAttachedOrCreate(ROSTER);
+		PetState legacy = player.getAttached(LEGACY);
+		if (legacy != null) {
+			if (legacy.status != PetState.NONE) {
+				legacy.id = LEGACY_ID;
+				roster.pets.add(legacy);
+			}
+			player.removeAttached(LEGACY);
+		}
+		return roster;
 	}
 
-	public static void save(ServerPlayer player, PetState state) {
-		player.setAttached(STATE, state);
+	/** Entities of a pet from v0.11.0 have no pet id tag: they belong to the migrated pet. */
+	private static final java.util.UUID LEGACY_ID = new java.util.UUID(0x48756e744c696b65L, 0x50657431L);
+
+	public static PetState pet(ServerPlayer player, java.util.UUID id) {
+		return roster(player).get(id);
+	}
+
+	/** The pet tamed most recently (for tests and commands). */
+	public static PetState latest(ServerPlayer player) {
+		return roster(player).latest();
+	}
+
+	/** The state of the pet an entity belongs to, or null if that pet no longer exists. */
+	public static PetState stateOf(ServerPlayer owner, PetCube cube) {
+		java.util.UUID id = cube.petId();
+		if (id == null) {
+			id = LEGACY_ID;
+			cube.addTag(PetCube.ID_PREFIX + id);
+		}
+		PetState state = pet(owner, id);
+		return state == null || !state.alive() || cube.generation() != state.generation ? null : state;
+	}
+
+	/** This pet follows; every other pet of the owner that was following sits down (only one follows at a time). */
+	public static void follow(ServerPlayer owner, PetState state) {
+		state.sitting = false;
+		int sat = 0;
+		for (PetState other : roster(owner).pets) {
+			if (other != state && other.alive() && !other.sitting) {
+				other.sitting = true;
+				sat++;
+			}
+		}
+		if (sat > 0) {
+			owner.sendSystemMessage(Messages.c(sat == 1 ? "Your other slime sits down to wait." : "Your other slimes sit down to wait.",
+					GRAY));
+		}
 	}
 
 	// ---------------------------------------------------------------- taming
@@ -101,11 +149,6 @@ public final class PetManager {
 			player.sendSystemMessage(Messages.c("This slime doesn't seem friendly. Find a wild one!", GRAY));
 			return false;
 		}
-		PetState state = state(player);
-		if (state.alive()) {
-			player.sendSystemMessage(Messages.c("You already have a slime companion!", GRAY));
-			return false;
-		}
 		stack.consume(1, player);
 		ServerLevel level = (ServerLevel) slime.level();
 		int feeds = feeds(slime) + 1;
@@ -119,10 +162,10 @@ public final class PetManager {
 		float yaw = slime.getYRot();
 		slime.discard();
 		PetState pet = new PetState();
-		pet.generation = state.generation + 1;
 		pet.name = randomName(player.getRandom());
 		pet.status = PetState.WHOLE;
-		save(player, pet);
+		roster(player).pets.add(pet);
+		follow(player, pet);
 		PetCube cube = spawnPiece(level, player, pet, 2, pos, yaw);
 		particles(level, cube, ParticleTypes.HEART, 7);
 		level.playSound(null, cube.blockPosition(), SoundEvents.SLIME_JUMP, SoundSource.NEUTRAL, 1.0F, 1.4F);
@@ -164,6 +207,7 @@ public final class PetManager {
 		PetCube pet = type.create(level, EntitySpawnReason.MOB_SUMMONED);
 		pet.addTag(PetCube.OWNER_PREFIX + owner.getUUID());
 		pet.addTag(PetCube.GEN_PREFIX + state.generation);
+		pet.addTag(PetCube.ID_PREFIX + state.id);
 		pet.setSize(size, false);
 		setHealth(pet, state.health(size));
 		pet.setCustomName(Component.literal(state.name));
@@ -181,7 +225,7 @@ public final class PetManager {
 	public static List<PetCube> pieces(ServerLevel level, ServerPlayer owner, PetState state, Entity near) {
 		AABB box = near.getBoundingBox().inflate(96.0);
 		return level.getEntitiesOfClass(PetCube.class, box, p -> !p.isRemoved() && p.isOwnedBy(owner)
-				&& p.generation() == state.generation);
+				&& state.id.equals(p.petId()) && p.generation() == state.generation);
 	}
 
 	public static void tickPiece(PetCube pet, ServerLevel level) {
@@ -190,8 +234,8 @@ public final class PetManager {
 			pet.setTarget(null);
 			return;
 		}
-		PetState state = state(owner);
-		if (!state.alive() || pet.generation() != state.generation) {
+		PetState state = stateOf(owner, pet);
+		if (state == null) {
 			pet.discard();
 			return;
 		}
@@ -202,10 +246,10 @@ public final class PetManager {
 			pet.setCustomName(Component.literal(state.name));
 		}
 		LivingEntity target = pet.getTarget();
-		if (!PetCube.validTarget(target, pet)) {
+		if (!PetCube.validTarget(target, pet) || state.sitting) {
 			target = null;
 		}
-		if (pet.tickCount % 10 == 0) {
+		if (pet.tickCount % 10 == 0 && !state.sitting) {
 			LivingEntity hurtBy = owner.getLastHurtByMob();
 			LivingEntity hurt = owner.getLastHurtMob();
 			if (hurtBy != null && owner.tickCount - owner.getLastHurtByMobTimestamp() < 100 && PetCube.validTarget(hurtBy, pet)) {
@@ -227,7 +271,7 @@ public final class PetManager {
 		}
 	}
 
-	/** Split pieces grow back after enough quiet: any medium piece -> the big pet; only small pieces -> a medium (or two). */
+	/** Split pieces grow back into the whole pet after enough quiet (a minute for a medium pet, 45 seconds for a big one). */
 	static void regrow(PetCube pet, ServerLevel level, ServerPlayer owner, PetState state) {
 		List<PetCube> pieces = pieces(level, owner, state, pet).stream().filter(LivingEntity::isAlive).toList();
 		PetCube leader = pieces.stream().min(Comparator.comparing(Entity::getUUID)).orElse(null);
@@ -239,20 +283,13 @@ public final class PetManager {
 		if (now - state.lastDamage < wait) {
 			return;
 		}
-		boolean anyMedium = pieces.stream().anyMatch(p -> p.getSize() >= 2);
 		Vec3 pos = pieces.stream().filter(p -> p.getSize() >= 2).findFirst().orElse(pet).position();
 		for (PetCube piece : pieces) {
 			particles(level, piece, pieceParticle(state), 10);
 			piece.discard();
 		}
-		if (state.fullSize() < 4 || anyMedium) {
-			spawnPiece(level, owner, state, state.fullSize(), pos, pet.getYRot());
-			state.status = PetState.WHOLE;
-		} else {
-			spawnPiece(level, owner, state, 2, pos.add(0.4, 0.0, 0.0), pet.getYRot());
-			spawnPiece(level, owner, state, 2, pos.add(-0.4, 0.0, 0.0), pet.getYRot());
-			state.lastDamage = now;
-		}
+		spawnPiece(level, owner, state, state.fullSize(), pos, pet.getYRot());
+		state.status = PetState.WHOLE;
 		level.playSound(null, pet.blockPosition(), SoundEvents.SLIME_SQUISH, SoundSource.NEUTRAL, 1.2F, 0.7F);
 	}
 
@@ -274,8 +311,9 @@ public final class PetManager {
 
 	public static void onPieceDamaged(PetCube pet, ServerLevel level) {
 		ServerPlayer owner = pet.owner();
-		if (owner != null) {
-			state(owner).lastDamage = level.getGameTime();
+		PetState state = owner == null ? null : stateOf(owner, pet);
+		if (state != null) {
+			state.lastDamage = level.getGameTime();
 		}
 	}
 
@@ -285,8 +323,8 @@ public final class PetManager {
 		if (owner == null) {
 			return;
 		}
-		PetState state = state(owner);
-		if (pet.generation() != state.generation || !state.alive()) {
+		PetState state = stateOf(owner, pet);
+		if (state == null) {
 			return;
 		}
 		if (owner.containerMenu instanceof PetMenu) {
@@ -312,6 +350,7 @@ public final class PetManager {
 		core.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
 				Component.literal(owner.getName().getString() + "'s " + state.name + " Slimy Core")
 						.withStyle(style -> style.withItalic(false)));
+		writeCore(core, owner, state);
 		ItemEntity item = new ItemEntity(level, pet.getX(), pet.getY() + 0.3, pet.getZ(), core);
 		item.setUnlimitedLifetime();
 		level.addFreshEntity(item);
@@ -324,8 +363,8 @@ public final class PetManager {
 		if (!pet.isOwnedBy(player) || hand != InteractionHand.MAIN_HAND) {
 			return InteractionResult.PASS;
 		}
-		PetState state = state(player);
-		if (pet.generation() != state.generation || !state.alive()) {
+		PetState state = stateOf(player, pet);
+		if (state == null) {
 			return InteractionResult.PASS;
 		}
 		ServerLevel level = (ServerLevel) pet.level();
@@ -396,10 +435,11 @@ public final class PetManager {
 			return InteractionResult.PASS;
 		}
 		if (player.isShiftKeyDown()) {
-			if (!whole) {
-				return InteractionResult.PASS;
+			if (state.sitting) {
+				follow(player, state);
+			} else {
+				state.sitting = true;
 			}
-			state.sitting = !state.sitting;
 			player.sendSystemMessage(Component.literal(state.name + (state.sitting ? " is sitting." : " is following you.")), true);
 			return InteractionResult.SUCCESS;
 		}
@@ -425,8 +465,8 @@ public final class PetManager {
 	}
 
 	public static void openMenu(PetCube pet, ServerPlayer player) {
-		PetState state = state(player);
-		if (!pet.isOwnedBy(player) || state.status != PetState.WHOLE || pet.getSize() < 4) {
+		PetState state = pet.isOwnedBy(player) ? stateOf(player, pet) : null;
+		if (state == null || state.status != PetState.WHOLE || pet.getSize() < 4) {
 			return;
 		}
 		player.openMenu(new SimpleMenuProvider((id, inventory, p) -> new PetMenu(id, inventory, state, pet),
@@ -436,21 +476,50 @@ public final class PetManager {
 	// ---------------------------------------------------------------- revive
 
 	/** A revived core used on the ground: the pet comes back as it was (medium, big or a big Magma Cube). */
-	public static boolean revive(ServerPlayer player, Vec3 pos) {
-		PetState state = state(player);
+	public static boolean revive(ServerPlayer player, Vec3 pos, java.util.UUID petId) {
+		PetState state = pet(player, petId);
+		if (state == null) {
+			player.sendSystemMessage(Messages.c("This core belongs to someone else's slime.", GRAY));
+			return false;
+		}
 		if (state.status != PetState.CORE) {
-			player.sendSystemMessage(Messages.c("You have no slime waiting to come back.", GRAY));
+			player.sendSystemMessage(Messages.c(state.name + " is already alive.", GRAY));
 			return false;
 		}
 		state.generation++;
 		state.status = PetState.WHOLE;
-		state.sitting = false;
+		follow(player, state);
 		ServerLevel level = player.level();
 		PetCube pet = spawnPiece(level, player, state, state.fullSize(), pos, player.getYRot() + 180.0F);
 		particles(level, pet, ParticleTypes.HEART, 10);
 		particles(level, pet, pieceParticle(state), 20);
 		level.playSound(null, pet.blockPosition(), SoundEvents.SLIME_SQUISH, SoundSource.NEUTRAL, 1.5F, 1.0F);
 		return true;
+	}
+
+	// ---------------------------------------------------------------- the core's data
+
+	private static final String CORE_PET = "huntlike_pet";
+	private static final String CORE_OWNER = "huntlike_owner";
+
+	/** The core (and the revived core) remember which pet they are. */
+	public static void writeCore(ItemStack core, ServerPlayer owner, PetState state) {
+		net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+		tag.putString(CORE_PET, state.id.toString());
+		tag.putString(CORE_OWNER, owner.getUUID().toString());
+		core.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+	}
+
+	public static java.util.UUID corePet(ItemStack core) {
+		var data = core.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+		if (data == null) {
+			return null;
+		}
+		try {
+			return java.util.UUID.fromString(data.copyTag().getStringOr(CORE_PET, ""));
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
 	}
 
 	private static void particles(ServerLevel level, Entity entity, ParticleOptions particle, int count) {

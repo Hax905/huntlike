@@ -80,11 +80,11 @@ public final class ModItems {
 
 	/** What's left of a slime pet whose every piece died. Can't burn in fire or lava. */
 	public static final Item SLIME_PET_CORE = register("slime_pet_core", Item::new, new Item.Properties().rarity(Rarity.RARE)
-			.stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.LORE,
+			.stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(Lore.wrapGray("Surround it with slime balls in a crafting table to bring your slime back."))));
 	/** The core after the revive recipe: used on the ground, the pet comes back. */
 	public static final Item REVIVED_SLIME_PET_CORE = register("revived_slime_pet_core", com.huntlike.pet.RevivedCoreItem::new,
-			new Item.Properties().rarity(Rarity.RARE).stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.LORE,
+			new Item.Properties().rarity(Rarity.RARE).stacksTo(1).fireResistant().component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(Lore.wrapGray("Use it on the ground to bring your slime back!"))));
 
 	/** The Hunting Trophy block item of a Hunt. */

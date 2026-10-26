@@ -1144,7 +1144,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	private static List<com.huntlike.pet.PetCube> petPieces(MinecraftServer server) {
 		ServerPlayer player = player(server);
-		return com.huntlike.pet.PetManager.pieces(player.level(), player, com.huntlike.pet.PetManager.state(player), player).stream()
+		return com.huntlike.pet.PetManager.pieces(player.level(), player, com.huntlike.pet.PetManager.latest(player), player).stream()
 				.filter(net.minecraft.world.entity.LivingEntity::isAlive).toList();
 	}
 
@@ -1172,7 +1172,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	}
 
 	private static String petInfo(MinecraftServer server) {
-		var state = com.huntlike.pet.PetManager.state(player(server));
+		var state = com.huntlike.pet.PetManager.latest(player(server));
 		StringBuilder pieces = new StringBuilder();
 		for (var piece : petPieces(server)) {
 			pieces.append(piece.isMagma() ? "magma" : "slime").append(piece.getSize()).append('/').append(piece.getMaxHealth()).append(' ');
@@ -1201,7 +1201,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var lured = (net.minecraft.world.entity.monster.cubemob.Slime) player.level().getEntity(wild[1]);
 			return !com.huntlike.pet.PetManager.feedWild(player, lured,
 					new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.THERMAL_SLIMEBALL, 64))
-					&& !com.huntlike.pet.PetManager.state(player).alive();
+					&& com.huntlike.pet.PetManager.latest(player) == null;
 		});
 		int feeds = singleplayer.getServer().computeOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -1218,10 +1218,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		assertServer(singleplayer, "Slime pet: tamed with Thermal Slimeballs (at most 20) into a 20-health medium slime named \"... Cluster\"",
 				server -> {
 					HuntLike.LOGGER.info("[test] pet tamed after {} slimeballs: {} name {}", feeds, petInfo(server),
-							com.huntlike.pet.PetManager.state(player(server)).name);
+							com.huntlike.pet.PetManager.latest(player(server)).name);
 					var pieces = petPieces(server);
 					return feeds > 0 && pieces.size() == 1 && pieces.get(0).getSize() == 2 && pieces.get(0).getMaxHealth() == 20.0F
-							&& com.huntlike.pet.PetManager.state(player(server)).name.endsWith(" Cluster")
+							&& com.huntlike.pet.PetManager.latest(player(server)).name.endsWith(" Cluster")
 							&& done(player(server), "cluster/pet_tame");
 				});
 		context.runOnClient(client -> {
@@ -1233,12 +1233,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.IONIC_LIQUID), 1);
 		assertServer(singleplayer, "Ionic Liquid: 40 health", server -> {
 			var pieces = petPieces(server);
-			return pieces.size() == 1 && pieces.get(0).getMaxHealth() == 40.0F && com.huntlike.pet.PetManager.state(player(server)).ionic;
+			return pieces.size() == 1 && pieces.get(0).getMaxHealth() == 40.0F && com.huntlike.pet.PetManager.latest(player(server)).ionic;
 		});
 		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.THERMAL_SLIMEBALL), 25);
 		context.waitTicks(5);
 		assertServer(singleplayer, "Thermal Slimeballs after the Ionic Liquid grow it big (at most 25): 60 health", server -> {
-			HuntLike.LOGGER.info("[test] grown: {} after {} feeds", petInfo(server), com.huntlike.pet.PetManager.state(player(server)).growFeeds);
+			HuntLike.LOGGER.info("[test] grown: {} after {} feeds", petInfo(server), com.huntlike.pet.PetManager.latest(player(server)).growFeeds);
 			var pieces = petPieces(server);
 			return pieces.size() == 1 && pieces.get(0).getSize() == 4 && pieces.get(0).getMaxHealth() == 60.0F;
 		});
@@ -1268,7 +1268,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		context.takeScreenshot("56-pet-menu-page-2");
 		assertServer(singleplayer, "Pet menu: chest slot, storage and the page button", server -> {
-			var state = com.huntlike.pet.PetManager.state(player(server));
+			var state = com.huntlike.pet.PetManager.latest(player(server));
 			return state.chest && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND) && state.page == 1;
 		});
 		context.setScreen(() -> null);
@@ -1282,24 +1282,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var pieces = petPieces(server);
 			return pieces.size() == 2 && pieces.stream().allMatch(p -> p.getSize() == 2 && p.getMaxHealth() == 30.0F);
 		});
-		singleplayer.getServer().runOnServer(server -> {
-			var piece = petPieces(server).get(0);
-			piece.hurtServer(player(server).level(), player(server).level().damageSources().genericKill(), Float.MAX_VALUE);
-		});
-		context.waitTicks(30);
-		assertServer(singleplayer, "A killed medium splits into two 15-health smalls", server -> {
+		killPet(context, singleplayer);
+		assertServer(singleplayer, "Killed mediums split into 15-health smalls", server -> {
 			HuntLike.LOGGER.info("[test] after the second kill: {}", petInfo(server));
 			var pieces = petPieces(server);
-			return pieces.size() == 3 && pieces.stream().filter(p -> p.getSize() == 1).allMatch(p -> p.getMaxHealth() == 15.0F)
-					&& com.huntlike.pet.PetManager.state(player(server)).status == com.huntlike.pet.PetState.SPLIT;
+			return pieces.size() == 4 && pieces.stream().allMatch(p -> p.getSize() == 1 && p.getMaxHealth() == 15.0F)
+					&& com.huntlike.pet.PetManager.latest(player(server)).status == com.huntlike.pet.PetState.SPLIT;
 		});
-		singleplayer.getServer().runOnServer(server -> com.huntlike.pet.PetManager.state(player(server)).lastDamage =
+		singleplayer.getServer().runOnServer(server -> com.huntlike.pet.PetManager.latest(player(server)).lastDamage =
 				player(server).level().getGameTime() - com.huntlike.pet.PetManager.REGROW_BIG - 1);
 		context.waitTicks(30);
-		assertServer(singleplayer, "45 quiet seconds: a medium is alive, so it all grows back into the big pet (chest kept)", server -> {
+		assertServer(singleplayer, "45 quiet seconds: even with only small pieces left, it grows back into the big pet (chest kept)", server -> {
 			HuntLike.LOGGER.info("[test] after regrowing: {}", petInfo(server));
 			var pieces = petPieces(server);
-			var state = com.huntlike.pet.PetManager.state(player(server));
+			var state = com.huntlike.pet.PetManager.latest(player(server));
 			return pieces.size() == 1 && pieces.get(0).getSize() == 4 && pieces.get(0).getHealth() == 60.0F
 					&& state.status == com.huntlike.pet.PetState.WHOLE && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND);
 		});
@@ -1327,18 +1323,63 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var cores = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
 					player.getBoundingBox().inflate(40), e -> e.getItem().is(com.huntlike.registry.ModItems.SLIME_PET_CORE));
 			HuntLike.LOGGER.info("[test] core: {} {}", petInfo(server), cores.isEmpty() ? "none" : cores.get(0).getItem().getHoverName().getString());
-			return com.huntlike.pet.PetManager.state(player).status == com.huntlike.pet.PetState.CORE && cores.size() == 1
+			return com.huntlike.pet.PetManager.latest(player).status == com.huntlike.pet.PetState.CORE && cores.size() == 1
 					&& cores.get(0).getItem().getHoverName().getString().endsWith(" Slimy Core") && cores.get(0).fireImmune();
 		});
+		assertServer(singleplayer, "Crafting the revive recipe carries the core's pet over", server -> {
+			ServerPlayer player = player(server);
+			var core = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					player.getBoundingBox().inflate(40), e -> e.getItem().is(com.huntlike.registry.ModItems.SLIME_PET_CORE)).get(0).getItem();
+			player.inventoryMenu.getSlot(1).set(core.copy());
+			var revived = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.REVIVED_SLIME_PET_CORE);
+			revived.getItem().onCraftedBy(revived, player);
+			player.inventoryMenu.getSlot(1).set(net.minecraft.world.item.ItemStack.EMPTY);
+			HuntLike.LOGGER.info("[test] revived core: {} for pet {}", revived.getHoverName().getString(),
+					com.huntlike.pet.PetManager.corePet(revived));
+			return com.huntlike.pet.PetManager.latest(player).id.equals(com.huntlike.pet.PetManager.corePet(revived))
+					&& revived.getHoverName().getString().startsWith("Revived ");
+		});
 		singleplayer.getServer().runOnServer(server -> com.huntlike.pet.PetManager.revive(player(server),
-				player(server).position().add(3, 0, 0)));
+				player(server).position().add(3, 0, 0), com.huntlike.pet.PetManager.latest(player(server)).id));
 		context.waitTicks(5);
 		assertServer(singleplayer, "Revived: the big Magma Cube comes back with its upgrades and chest", server -> {
 			HuntLike.LOGGER.info("[test] revived: {}", petInfo(server));
 			var pieces = petPieces(server);
-			var state = com.huntlike.pet.PetManager.state(player(server));
+			var state = com.huntlike.pet.PetManager.latest(player(server));
 			return pieces.size() == 1 && pieces.get(0) instanceof com.huntlike.pet.PetMagma && pieces.get(0).getMaxHealth() == 80.0F
 					&& state.ionic && state.chest && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND);
+		});
+
+		// Several pets: only one follows at a time; the others sit.
+		boolean tamedSecond = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			var slime = (net.minecraft.world.entity.monster.cubemob.Slime) spawnTest(player, EntityTypes.SLIME, 0.0, 3.0, 1.0F);
+			var stack = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.THERMAL_SLIMEBALL, 64);
+			for (int i = 0; i < 20; i++) {
+				if (com.huntlike.pet.PetManager.feedWild(player, slime, stack)) {
+					return true;
+				}
+			}
+			return false;
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "A second pet can be tamed; it follows and the first one sits", server -> {
+			var pets = com.huntlike.pet.PetManager.roster(player(server)).pets;
+			HuntLike.LOGGER.info("[test] pets: {}", pets.stream().map(p -> p.name + (p.sitting ? " (sitting)" : " (following)")).toList());
+			return tamedSecond && pets.size() == 2 && pets.get(0).sitting && !pets.get(1).sitting;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var first = com.huntlike.pet.PetManager.roster(player).pets.get(0);
+			var cube = com.huntlike.pet.PetManager.pieces(player.level(), player, first, player).get(0);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+			player.setShiftKeyDown(true);
+			com.huntlike.pet.PetManager.interact(cube, player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			player.setShiftKeyDown(false);
+		});
+		assertServer(singleplayer, "Telling the first pet to follow makes the second one sit", server -> {
+			var pets = com.huntlike.pet.PetManager.roster(player(server)).pets;
+			return !pets.get(0).sitting && pets.get(1).sitting;
 		});
 	}
 

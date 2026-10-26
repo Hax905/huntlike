@@ -32,6 +32,7 @@ import com.huntlike.entity.ClusterBall;
 public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJumping, HasCustomInventoryScreen {
 	public static final String OWNER_PREFIX = "huntlike_pet:";
 	public static final String GEN_PREFIX = "huntlike_petgen:";
+	public static final String ID_PREFIX = "huntlike_petid:";
 
 	/** Ridden: 90% of the player's sprinting speed (5.6 blocks/s), in blocks per tick. */
 	public static final double RIDE_SPEED = 5.612 * 0.9 / 20.0;
@@ -62,6 +63,20 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 			if (tag.startsWith(OWNER_PREFIX)) {
 				try {
 					return UUID.fromString(tag.substring(OWNER_PREFIX.length()));
+				} catch (IllegalArgumentException e) {
+					return null;
+				}
+			}
+		}
+		return null;
+	}
+
+	/** Which of the owner's pets this entity belongs to (null on pets from before several pets were allowed). */
+	public UUID petId() {
+		for (String tag : this.entityTags()) {
+			if (tag.startsWith(ID_PREFIX)) {
+				try {
+					return UUID.fromString(tag.substring(ID_PREFIX.length()));
 				} catch (IllegalArgumentException e) {
 					return null;
 				}
@@ -218,8 +233,8 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 		wasOnGround = onGround;
 
 		Vec3 destination = null;
-		boolean sitting = state.sitting && state.status == PetState.WHOLE;
-		if (target != null) {
+		boolean sitting = state.sitting;
+		if (target != null && !sitting) {
 			destination = target.position();
 		} else if (!sitting && owner != null && owner.level() == level && this.distanceToSqr(owner) > 3.5 * 3.5) {
 			destination = owner.position();

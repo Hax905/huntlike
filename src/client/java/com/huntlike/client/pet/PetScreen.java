@@ -85,7 +85,6 @@ public class PetScreen extends AbstractContainerScreen<PetMenu> {
 		if (this.menu.hasChest()) {
 			g.text(this.font, Component.literal("Page " + (this.menu.page() + 1) + " / 2"), 90, 24, TEXT, false);
 		}
-		g.text(this.font, Component.literal("Chest"), 90, PetMenu.CHEST_Y + 26 + (this.menu.hasChest() ? 10 : -10), TEXT, false);
 	}
 
 	private static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h) {

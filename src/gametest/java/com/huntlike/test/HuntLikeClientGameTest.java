@@ -1125,10 +1125,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var jerky = new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY, 2);
 			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, jerky);
 			jerky.finishUsingItem(player.level(), player);
-			var left = jerky.finishUsingItem(player.level(), player);
-			HuntLike.LOGGER.info("[test] Beef Jerky: jerky {} left {} cluster odds 1/{}", QuestManager.data(player).jerky, left.getCount(),
+			var again = jerky.use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			HuntLike.LOGGER.info("[test] Beef Jerky: jerky {} second bite {} cluster odds 1/{}", QuestManager.data(player).jerky, again,
 					com.huntlike.hunt.HuntDefs.odds("cluster", 1, 25, com.huntlike.hunt.HuntDefs.luck(QuestManager.data(player), "cluster")));
-			if (!QuestManager.data(player).jerky || left.getCount() != 1
+			if (!QuestManager.data(player).jerky || again != net.minecraft.world.InteractionResult.FAIL
 					|| com.huntlike.hunt.HuntDefs.odds("cluster", 1, 25, com.huntlike.hunt.HuntDefs.luck(QuestManager.data(player), "cluster")) != 24) {
 				throw new AssertionError("Beef Jerky: once, Cluster odds 1/25 -> 1/24");
 			}

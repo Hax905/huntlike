@@ -61,7 +61,6 @@ public final class ModCreativeTab {
 			output.accept(ModItems.SUBLIMATING_MAGMA);
 			output.accept(ModItems.CORRODED_PALLADIUM);
 			output.accept(ModItems.DIGESTED_PLATINUM_ISOTOPE);
-			output.accept(ModItems.WARM_AND_SLIMY_BEEF_JERKY);
 		});
 		register(GEAR, ModGear.SKIN_KNIFE, output -> {
 			ModGear.WEAPONS.forEach(output::accept);
@@ -74,6 +73,7 @@ public final class ModCreativeTab {
 			HideBoots.BOOTS.forEach(output::accept);
 			output.accept(HideBoots.FEATHER_CHUTE);
 			output.accept(ModItems.MYSTERY_CONCOCTION);
+			output.accept(ModItems.WARM_AND_SLIMY_BEEF_JERKY);
 			output.accept(ModItems.GOLDEN_MEAT);
 			output.accept(ModItems.SPIRITUAL_COMPASS);
 		});

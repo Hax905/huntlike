@@ -1220,6 +1220,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		singleplayer.getServer().runOnServer(server -> player(server).level().setBlockAndUpdate(
 				player(server).blockPosition().offset(9, 0, 0), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState()));
 		boolean inTab = context.computeOnClient(client -> {
+			net.minecraft.world.item.CreativeModeTabs.tryRebuildTabContents(client.player.connection.enabledFeatures(), true,
+					client.level.registryAccess());
 			var tabs = net.minecraft.core.registries.BuiltInRegistries.CREATIVE_MODE_TAB;
 			for (var tab : tabs) {
 				if (tab.getDisplayItems().stream().anyMatch(stack -> stack.is(com.huntlike.registry.ModItems.WARM_AND_SLIMY_BEEF_JERKY))) {
@@ -1229,6 +1231,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return false;
 		});
 		HuntLike.LOGGER.info("[test] Warm and Slimy Beef Jerky in a creative tab: {}", inTab ? "OK" : "FAILED");
+		if (!inTab) {
+			throw new AssertionError("Beef Jerky missing from the creative tabs");
+		}
 	}
 
 	/** The Cluster Hunt's slime pet: taming, upgrades, riding, the menu, splitting, regrowing, Magma Cube, the core and reviving. */

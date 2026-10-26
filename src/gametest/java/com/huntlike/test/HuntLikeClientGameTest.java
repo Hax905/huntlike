@@ -1288,18 +1288,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return state.chest && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND) && state.page == 1;
 		});
 		context.setScreen(() -> null);
+		singleplayer.getServer().runOnServer(server -> player(server).stopRiding());
+		context.waitTicks(10);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
-			player.stopRiding();
 			var pet = petPieces(server).get(0);
 			pet.setNoAi(true);
-			pet.teleportTo(player.getX() + 4.0, player.getY(), player.getZ());
+			pet.teleportTo(player.getX() + 5.0, player.getY(), player.getZ());
+			pet.setYRot(90.0F);
+			pet.yBodyRot = 90.0F;
 		});
 		context.runOnClient(client -> {
 			client.player.setYRot(-90.0F);
-			client.player.setXRot(15.0F);
+			client.player.setXRot(12.0F);
 		});
-		context.waitTicks(10);
+		context.waitTicks(15);
 		context.takeScreenshot("56b-pet-with-chest");
 		assertServer(singleplayer, "The big pet shows its chest", server -> petPieces(server).get(0).hasChest());
 		singleplayer.getServer().runOnServer(server -> petPieces(server).get(0).setNoAi(false));

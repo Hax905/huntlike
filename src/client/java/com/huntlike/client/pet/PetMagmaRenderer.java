@@ -15,8 +15,11 @@ import com.huntlike.pet.PetMagma;
 public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, PetRenderState, MagmaCubeModel> {
 	private static final Identifier TEXTURE = Identifier.withDefaultNamespace("textures/entity/slime/magmacube.png");
 
+	private final net.minecraft.client.renderer.item.ItemModelResolver resolver;
+
 	public PetMagmaRenderer(EntityRendererProvider.Context context) {
 		super(context, new MagmaCubeModel(context.bakeLayer(ModelLayers.MAGMA_CUBE)));
+		this.resolver = context.getItemModelResolver();
 	}
 
 	@Override
@@ -42,6 +45,6 @@ public class PetMagmaRenderer extends AbstractCubeMobRenderer<PetMagma, PetRende
 	@Override
 	public void extractRenderState(PetMagma pet, PetRenderState state, float partialTick) {
 		super.extractRenderState(pet, state, partialTick);
-		state.chest = pet.hasChest();
+		PetChestLayer.extract(this.resolver, pet, state);
 	}
 }

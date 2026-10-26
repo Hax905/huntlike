@@ -13,8 +13,11 @@ import com.huntlike.pet.PetSlime;
 
 /** The slime pet: the vanilla slime look (the pet is its own entity so it isn't a hostile mob). */
 public class PetSlimeRenderer extends AbstractCubeMobRenderer<PetSlime, PetRenderState, SlimeModel> {
+	private final net.minecraft.client.renderer.item.ItemModelResolver resolver;
+
 	public PetSlimeRenderer(EntityRendererProvider.Context context) {
 		super(context, new SlimeModel(context.bakeLayer(ModelLayers.SLIME)));
+		this.resolver = context.getItemModelResolver();
 		this.addLayer(new PetChestLayer<>(this, context.getModelSet()));
 		this.addLayer(new OuterLayer(this, context.getModelSet()));
 	}
@@ -61,6 +64,6 @@ public class PetSlimeRenderer extends AbstractCubeMobRenderer<PetSlime, PetRende
 	@Override
 	public void extractRenderState(PetSlime pet, PetRenderState state, float partialTick) {
 		super.extractRenderState(pet, state, partialTick);
-		state.chest = pet.hasChest();
+		PetChestLayer.extract(this.resolver, pet, state);
 	}
 }

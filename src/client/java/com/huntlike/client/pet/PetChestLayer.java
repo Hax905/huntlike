@@ -17,7 +17,8 @@ import com.huntlike.pet.PetCube;
 
 /** The chest a big pet carries, drawn in the middle of its body and seen through the translucent shell. */
 public class PetChestLayer<M extends EntityModel<? super PetRenderState>> extends RenderLayer<PetRenderState, M> {
-	private static final ItemStack CHEST = new ItemStack(Items.CHEST);
+	/** Built on first use: items can't be made while the game is still loading. */
+	private static ItemStack chest;
 	/** Chest size inside the slime, in model pixels (the inner core is 6, the shell 8). */
 	private static final float CHEST_PIXELS = 7.0F;
 
@@ -30,7 +31,10 @@ public class PetChestLayer<M extends EntityModel<? super PetRenderState>> extend
 		state.chest = pet.hasChest();
 		state.chestItem.clear();
 		if (state.chest) {
-			resolver.updateForLiving(state.chestItem, CHEST, ItemDisplayContext.NONE, pet);
+			if (chest == null) {
+				chest = new ItemStack(Items.CHEST);
+			}
+			resolver.updateForLiving(state.chestItem, chest, ItemDisplayContext.NONE, pet);
 		}
 	}
 

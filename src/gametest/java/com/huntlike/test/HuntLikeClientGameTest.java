@@ -967,6 +967,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(30);
 		assertServer(singleplayer, "Watch out! started (below 75%)", server -> com.huntlike.hunt.ClusterFight.isWatching(player(server)));
 		context.takeScreenshot("47-watch-out");
+		// Watch out! now deals double damage: keep the test player alive through all three rounds, even when the server lags.
+		singleplayer.getServer().runOnServer(server -> player(server).addEffect(new net.minecraft.world.effect.MobEffectInstance(
+				net.minecraft.world.effect.MobEffects.RESISTANCE, 300, 4, false, false)));
 		context.waitTicks(250);
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
 		context.waitTicks(2);

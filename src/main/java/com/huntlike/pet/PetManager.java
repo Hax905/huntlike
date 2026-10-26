@@ -64,6 +64,8 @@ public final class PetManager {
 	public static final double GROW_CHANCE = 0.04;
 	public static final int GROW_GUARANTEED = 25;
 	public static final int HEAT_GOAL = 100;
+	/** A following pet that hasn't got closer to its owner for this long (while more than 6 blocks away) teleports. */
+	public static final int STUCK_TICKS = 5 * 20;
 	/** Health a slime ball heals (any piece, any form). */
 	public static final float SLIME_BALL_HEAL = 4.0F;
 	/** Quiet time before split pieces grow back: a minute for a medium pet, 45 seconds for a big one. */
@@ -264,9 +266,14 @@ public final class PetManager {
 		pet.setChest(state.chest && state.status == PetState.WHOLE && pet.getSize() >= 4);
 		if (!pet.isVehicle()) {
 			pet.serverMove(level, owner, state, target);
-			if (state.status == PetState.WHOLE && !state.sitting && owner.level() == level && pet.distanceToSqr(owner) > 24 * 24
-					&& owner.onGround()) {
-				pet.teleportTo(owner.getX(), owner.getY(), owner.getZ());
+			// Following pets (and their pieces) come to the owner when far away, or when stuck for 5 seconds.
+			if (!state.sitting && owner.level() == level) {
+				double distance = pet.distanceTo(owner);
+				int stuck = pet.stuckTicks(distance);
+				if ((distance > 24.0 || stuck >= STUCK_TICKS) && (owner.onGround() || owner.isInWater())) {
+					pet.teleportTo(owner.getX(), owner.getY(), owner.getZ());
+					pet.resetStuck();
+				}
 			}
 		}
 		if (state.status == PetState.SPLIT && pet.tickCount % 20 == 0) {

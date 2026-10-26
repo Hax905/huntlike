@@ -46,6 +46,8 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 	private boolean hitThisJump;
 	private boolean wasOnGround = true;
 	private float jumpPending;
+	private double closestToOwner = Double.MAX_VALUE;
+	private int stuckTicks;
 
 	protected PetCube(EntityType<? extends PetCube> type, Level level) {
 		super(type, level);
@@ -308,6 +310,30 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 	}
 
 	protected abstract SoundEvent getAttackSound();
+
+	/**
+	 * Ticks spent more than 6 blocks from the owner without getting at least half a block closer (a stuck pet).
+	 * Called once per tick with the current distance.
+	 */
+	public int stuckTicks(double distance) {
+		if (distance <= 6.0) {
+			resetStuck();
+			closestToOwner = distance;
+			return 0;
+		}
+		if (distance < closestToOwner - 0.5) {
+			closestToOwner = distance;
+			stuckTicks = 0;
+		} else {
+			stuckTicks++;
+		}
+		return stuckTicks;
+	}
+
+	public void resetStuck() {
+		closestToOwner = Double.MAX_VALUE;
+		stuckTicks = 0;
+	}
 
 	/** Never attacks players, armor stands or its owner's pets. */
 	public static boolean validTarget(LivingEntity entity, PetCube pet) {

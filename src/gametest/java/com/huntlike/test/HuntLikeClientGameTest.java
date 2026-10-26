@@ -1436,6 +1436,34 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var pets = com.huntlike.pet.PetManager.roster(player(server)).pets;
 			return !pets.get(0).sitting && pets.get(1).sitting;
 		});
+
+		// A following pet boxed in 12 blocks away teleports to its owner after 5 seconds.
+		BlockPos boxed = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			var first = com.huntlike.pet.PetManager.roster(player).pets.get(0);
+			var cube = com.huntlike.pet.PetManager.pieces(player.level(), player, first, player).get(0);
+			BlockPos center = player.blockPosition().offset(0, 0, 12);
+			for (int x = -2; x <= 2; x++) {
+				for (int z = -2; z <= 2; z++) {
+					for (int y = -1; y <= 4; y++) {
+						boolean wall = Math.abs(x) == 2 || Math.abs(z) == 2 || y == -1 || y == 4;
+						player.level().setBlockAndUpdate(center.offset(x, y, z), wall
+								? net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState()
+								: net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+					}
+				}
+			}
+			cube.teleportTo(center.getX() + 0.5, center.getY(), center.getZ() + 0.5);
+			return center;
+		});
+		context.waitTicks(140);
+		assertServer(singleplayer, "A stuck pet (boxed in, 12 blocks away) teleports to its owner", server -> {
+			ServerPlayer player = player(server);
+			var first = com.huntlike.pet.PetManager.roster(player).pets.get(0);
+			var cube = com.huntlike.pet.PetManager.pieces(player.level(), player, first, player).get(0);
+			HuntLike.LOGGER.info("[test] stuck pet distance after 7 s: {}", cube.distanceTo(player));
+			return cube.distanceTo(player) < 6.0;
+		});
 	}
 
 	private static void wearNothing(ServerPlayer player) {

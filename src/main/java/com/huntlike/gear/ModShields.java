@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -71,19 +70,17 @@ public final class ModShields {
 	public static final List<Item> SHIELDS = List.of(OBSIDIAN_SHIELD, UNBREAKABLE_SHIELD, UNBREAKABLE_SHIELD_STAR);
 
 	private static Item shield(String name, Item.Properties properties, String description, String... extra) {
-		// Blocking, its sounds and the offhand slot come from the vanilla shield.
-		copy(properties, DataComponents.BLOCKS_ATTACKS);
-		copy(properties, DataComponents.BREAK_SOUND);
-		copy(properties, DataComponents.EQUIPPABLE);
+		// Blocking like the vanilla shield (its values: 90° arc, 0.25 s delay, 3+ durability per block, its sounds).
+		properties.delayedComponent(DataComponents.BLOCKS_ATTACKS, registries -> new net.minecraft.world.item.component.BlocksAttacks(0.25F,
+				1.0F, List.of(new net.minecraft.world.item.component.BlocksAttacks.DamageReduction(90.0F, java.util.Optional.empty(), 0.0F, 1.0F)),
+				new net.minecraft.world.item.component.BlocksAttacks.ItemDamageFunction(3.0F, 1.0F, 1.0F),
+				java.util.Optional.of(registries.lookupOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE)
+						.getOrThrow(net.minecraft.tags.DamageTypeTags.BYPASSES_SHIELD)),
+				java.util.Optional.of(SoundEvents.SHIELD_BLOCK), java.util.Optional.of(SoundEvents.SHIELD_BREAK)));
+		properties.component(DataComponents.BREAK_SOUND, SoundEvents.SHIELD_BREAK);
+		properties.equippableUnswappable(EquipmentSlot.OFFHAND);
 		properties.component(DataComponents.LORE, new ItemLore(lore(description, extra)));
 		return ModItems.register(name, Item::new, properties);
-	}
-
-	private static <T> void copy(Item.Properties properties, DataComponentType<T> type) {
-		T value = Items.SHIELD.components().get(type);
-		if (value != null) {
-			properties.component(type, value);
-		}
 	}
 
 	private static List<Component> lore(String description, String... extra) {

@@ -1209,7 +1209,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var effects = star.get(net.minecraft.core.component.DataComponents.USE_EFFECTS);
 			HuntLike.LOGGER.info("[test] Obsidian Shield durability {} Unbreaking III every time {}; ★ speed {}", obsidian.getMaxDamage(),
 					unbreaking3, effects == null ? -1 : effects.speedMultiplier());
-			return obsidian.getMaxDamage() == 2500 && unbreaking3 && effects != null && effects.speedMultiplier() == 1.0F
+			var blocks = obsidian.get(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS);
+			boolean sameAsVanilla = blocks != null && blocks.equals(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHIELD)
+					.get(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS));
+			HuntLike.LOGGER.info("[test] Obsidian Shield blocks like the vanilla shield: {}", sameAsVanilla);
+			return sameAsVanilla && obsidian.getMaxDamage() == 2500 && unbreaking3 && effects != null && effects.speedMultiplier() == 1.0F
 					&& new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD)
 							.has(net.minecraft.core.component.DataComponents.UNBREAKABLE);
 		});

@@ -48,7 +48,9 @@ public final class ModShields {
 	public static final int SIGIL_KILLS = 10;
 	private static final String SIGIL_KEY = "huntlike_sigil";
 
-	public static final Item OBSIDIAN_SHIELD = shield("obsidian_shield", new Item.Properties().durability(2500).enchantable(100)
+	// Enchantability 60: a level-30 table always rolls a cost between 26 and 70, the range where Unbreaking III is
+	// the only Unbreaking level (any higher and Unbreaking would drop out completely).
+	public static final Item OBSIDIAN_SHIELD = shield("obsidian_shield", new Item.Properties().durability(2500).enchantable(60)
 			.repairable(Items.OBSIDIAN).rarity(Rarity.RARE), "An exaggeratedly resistant shield.");
 	public static final Item UNBREAKABLE_SHIELD = shield("unbreakable_shield", new Item.Properties().stacksTo(1)
 			.component(DataComponents.UNBREAKABLE, Unit.INSTANCE).rarity(Rarity.EPIC),

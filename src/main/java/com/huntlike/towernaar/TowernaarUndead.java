@@ -136,7 +136,7 @@ public class TowernaarUndead extends Monster {
 		double flat = Math.sqrt(dx * dx + dz * dz);
 		stone.shoot(dx, dy + flat * 0.15, dz, 1.2F, 1.0F);
 		level.addFreshEntity(stone);
-		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+		this.swingForAttack(net.minecraft.world.InteractionHand.MAIN_HAND);
 		level.playSound(null, this.blockPosition(), SoundEvents.ENDERMAN_SCREAM, SoundSource.HOSTILE, 0.8F, 0.7F);
 	}
 

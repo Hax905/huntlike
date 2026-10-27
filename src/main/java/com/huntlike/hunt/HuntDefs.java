@@ -263,7 +263,7 @@ public final class HuntDefs {
 
 	/** One cost line: an item and how many. */
 	public record Cost(Item item, int count) {
-		static Cost of(Item item, int count) {
+		public static Cost of(Item item, int count) {
 			return new Cost(item, count);
 		}
 	}

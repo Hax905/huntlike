@@ -77,7 +77,7 @@ public final class TowernaarFight {
 			return;
 		}
 		WAITING.add(player.getUUID());
-		player.sendSystemMessage(Messages.c("[Quest Started]", HuntDefs.YELLOW)
+		player.sendSystemMessage(Messages.c("[Quest Started]", 0xFFFF55)
 				.append(Messages.c(" - " + TowernaarScript.CHAPTERS.get(TowernaarScript.FINAL).title(), 0xFFFFFF)));
 		player.sendSystemMessage(Messages.c("Slay an enderman to call Towernaar the Undead...", PURPLE));
 		QuestManager.playSound(player, SoundEvents.ENDERMAN_STARE, 0.8F);

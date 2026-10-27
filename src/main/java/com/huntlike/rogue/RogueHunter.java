@@ -30,6 +30,8 @@ public class RogueHunter extends Monster {
 
 	private static final EntityDataAccessor<String> TARGET = SynchedEntityData.defineId(RogueHunter.class, EntityDataSerializers.STRING);
 	private static final EntityDataAccessor<Boolean> SPECIAL = SynchedEntityData.defineId(RogueHunter.class, EntityDataSerializers.BOOLEAN);
+	/** Seen: hit at least once (until then it's invisible; vanilla resets the invisible flag from effects, so it's our own). */
+	private static final EntityDataAccessor<Boolean> REVEALED = SynchedEntityData.defineId(RogueHunter.class, EntityDataSerializers.BOOLEAN);
 
 	public RogueHunter(EntityType<? extends RogueHunter> type, Level level) {
 		super(type, level);
@@ -52,6 +54,7 @@ public class RogueHunter extends Monster {
 		super.defineSynchedData(builder);
 		builder.define(TARGET, "");
 		builder.define(SPECIAL, false);
+		builder.define(REVEALED, false);
 	}
 
 	@Override
@@ -99,10 +102,15 @@ public class RogueHunter extends Monster {
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		boolean hurt = super.hurtServer(level, source, amount);
-		if (hurt && this.isInvisible()) {
-			this.setInvisible(false);
+		if (hurt && !this.entityData.get(REVEALED)) {
+			this.entityData.set(REVEALED, true);
 		}
 		return hurt;
+	}
+
+	@Override
+	public boolean isInvisible() {
+		return !this.entityData.get(REVEALED) || super.isInvisible();
 	}
 
 	@Override

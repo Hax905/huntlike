@@ -209,7 +209,6 @@ public final class RogueHunters {
 		RogueHunter hunter = ModEntities.ROGUE_HUNTER.create(level, EntitySpawnReason.MOB_SUMMONED);
 		hunter.setHunted(player.getUUID());
 		hunter.setSpecial(special);
-		hunter.setInvisible(true);
 		hunter.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360.0F, 0.0F);
 		hunter.setTarget(player);
 		level.addFreshEntity(hunter);

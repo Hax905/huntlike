@@ -1328,31 +1328,36 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(3);
 
 		// The Magnetic Wand pulls mobs to where you look, but not your pets.
-		int cowId = singleplayer.getServer().computeOnServer(server -> {
+		assertServer(singleplayer, "Magnetic Wand bought; it pulls a cow but not a tamed wolf", server -> {
 			ServerPlayer player = player(server);
 			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
 				e.discard();
 			}
-			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
-			var cow = spawnTest(player, EntityTypes.COW, 4.0, 16.0, 10.0F);
-			((net.minecraft.world.entity.Mob) cow).setNoAi(false);
-			return cow.getId();
-		});
-		context.waitTicks(5);
-		assertServer(singleplayer, "Magnetic Wand bought; it pulls the cow", server -> {
-			ServerPlayer player = player(server);
-			var wand = player.getInventory().getItem(0);
 			boolean bought = false;
 			for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
 				bought |= player.getInventory().getItem(i).is(com.huntlike.gear.ModShields.MAGNETIC_WAND);
 			}
-			var cow = player.level().getEntity(cowId);
-			double before = cow.getX();
-			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
+			player.setYRot(0.0F);
+			player.setXRot(10.0F);
+			var eye = player.getEyePosition();
+			var end = eye.add(player.getLookAngle().scale(com.huntlike.gear.ModShields.WAND_REACH));
+			var hit = player.level().clip(new net.minecraft.world.level.ClipContext(eye, end, net.minecraft.world.level.ClipContext.Block.COLLIDER,
+					net.minecraft.world.level.ClipContext.Fluid.NONE, player));
+			var point = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? end : hit.getLocation();
+			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
+			cow.snapTo(point.x + 4.0, point.y, point.z, 0.0F, 0.0F);
+			player.level().addFreshEntity(cow);
+			var wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.COMMAND);
+			wolf.snapTo(point.x - 4.0, point.y, point.z, 0.0F, 0.0F);
+			wolf.tame(player);
+			player.level().addFreshEntity(wolf);
 			int pulled = com.huntlike.gear.ModShields.pull(player);
 			var motion = cow.getDeltaMovement();
-			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} pulled {} cow motion {}", bought, pulled, motion);
-			return bought && pulled >= 1 && motion.x < 0;
+			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} aim {} pulled {} cow motion {} wolf motion {}", bought, point, pulled, motion,
+					wolf.getDeltaMovement());
+			cow.discard();
+			wolf.discard();
+			return bought && pulled == 1 && motion.x < 0 && wolf.getDeltaMovement().x <= 0.0;
 		});
 	}
 

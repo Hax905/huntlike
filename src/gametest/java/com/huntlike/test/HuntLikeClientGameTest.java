@@ -1046,6 +1046,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		boolean outlined = context.computeOnClient(client -> {
 			var entity = client.level.getEntity(rogueId);
+			HuntLike.LOGGER.info("[test] client rogue: {} invisible {} glowing {} hunted {} me {}", entity,
+					entity == null ? null : entity.isInvisible(), entity == null ? null : client.shouldEntityAppearGlowing(entity),
+					entity instanceof com.huntlike.rogue.RogueHunter r ? r.hunted() : null, client.player.getUUID());
 			return entity != null && entity.isInvisible() && client.shouldEntityAppearGlowing(entity);
 		});
 		HuntLike.LOGGER.info("[test] Rogue Hunter invisible with outline for its player: {}", outlined);

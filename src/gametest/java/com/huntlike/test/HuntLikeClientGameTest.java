@@ -177,7 +177,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			upgradedMonolith(context, singleplayer);
 			rogueHunters(context, singleplayer);
 			towernaar(context, singleplayer);
-			bossSkins(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -1360,27 +1359,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			wolf.discard();
 			return bought && pulled == 1 && motion.x < 0 && wolf.getDeltaMovement().x <= 0.0;
 		});
-	}
-
-	/** The Animal bosses with their own skins, side by side in front of the player. */
-	private static void bossSkins(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
-		singleplayer.getServer().runOnServer(server -> {
-			ServerPlayer player = player(server);
-			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
-				e.discard();
-			}
-			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 15.0F);
-			var syl = spawnTest(player, com.huntlike.entity.ModEntities.SYLVIORNIS, 1.6, 4.5, 10.0F);
-			var hylo = spawnTest(player, com.huntlike.entity.ModEntities.HYLOCHOERUS, -1.6, 4.5, 10.0F);
-			syl.setYRot(150.0F);
-			syl.setYHeadRot(150.0F);
-			syl.setYBodyRot(150.0F);
-			hylo.setYRot(210.0F);
-			hylo.setYHeadRot(210.0F);
-			hylo.setYBodyRot(210.0F);
-		});
-		context.waitTicks(10);
-		context.takeScreenshot("92-animal-boss-skins");
 	}
 
 	private static boolean done(ServerPlayer player, String path) {

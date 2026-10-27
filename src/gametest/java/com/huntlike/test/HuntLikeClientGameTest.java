@@ -1332,7 +1332,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			}
 			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
 			var cow = spawnTest(player, EntityTypes.COW, 4.0, 16.0, 10.0F);
-			cow.setNoAi(false);
+			((net.minecraft.world.entity.Mob) cow).setNoAi(false);
 			return cow.getId();
 		});
 		context.waitTicks(5);

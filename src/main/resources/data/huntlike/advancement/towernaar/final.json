@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:magnetic_wand_prd"
+    },
+    "title": {
+      "translate": "advancements.huntlike.towernaar.final.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.towernaar.final.description"
+    },
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

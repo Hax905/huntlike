@@ -33,6 +33,22 @@ public final class HuntData {
 	/** Spirit Lure mobs this player has slain, all time. */
 	public int luredKills;
 	public int koroStep;
+	/** Rogue Hunters this player has slain, all time. */
+	public int rogueKills;
+	/** Special Rogue Hunters slain, all time. */
+	public int specialRogueKills;
+	/** Spirit Lure kills since the last Rogue Hunter (the 30th always brings one). */
+	public int rogueLures;
+	/** Rogue Hunters since the last special one (the 10th is always special). */
+	public int rogueSinceSpecial;
+	/** Towernaar: chapters finished (0-4). */
+	public int towernaarDone;
+	/** Towernaar: steps shown of the chapter in progress (0 = not started). */
+	public int towernaarStep;
+	/** Rogue Hunter kills when the current kill quest started (only later kills count). */
+	public int towernaarKillBase;
+	/** Used the Magnetic Wand PRD: the Magnetic Wand trade is open. */
+	public boolean wandUnlocked;
 	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
 	public int dailyCharges = DAILY_CHARGES;
 	public long dailyDay = -1;
@@ -85,6 +101,14 @@ public final class HuntData {
 		tag.putInt("koroDone", koroDone);
 		tag.putInt("luredKills", luredKills);
 		tag.putInt("koroStep", koroStep);
+		tag.putInt("rogueKills", rogueKills);
+		tag.putInt("specialRogueKills", specialRogueKills);
+		tag.putInt("rogueLures", rogueLures);
+		tag.putInt("rogueSinceSpecial", rogueSinceSpecial);
+		tag.putInt("towernaarDone", towernaarDone);
+		tag.putInt("towernaarStep", towernaarStep);
+		tag.putInt("towernaarKillBase", towernaarKillBase);
+		tag.putBoolean("wandUnlocked", wandUnlocked);
 		tag.putInt("dailyCharges", dailyCharges);
 		tag.putLong("dailyDay", dailyDay);
 		CompoundTag hunts = new CompoundTag();
@@ -131,6 +155,14 @@ public final class HuntData {
 		data.koroDone = tag.getIntOr("koroDone", 0);
 		data.luredKills = tag.getIntOr("luredKills", 0);
 		data.koroStep = tag.getIntOr("koroStep", 0);
+		data.rogueKills = tag.getIntOr("rogueKills", 0);
+		data.specialRogueKills = tag.getIntOr("specialRogueKills", 0);
+		data.rogueLures = tag.getIntOr("rogueLures", 0);
+		data.rogueSinceSpecial = tag.getIntOr("rogueSinceSpecial", 0);
+		data.towernaarDone = tag.getIntOr("towernaarDone", 0);
+		data.towernaarStep = tag.getIntOr("towernaarStep", 0);
+		data.towernaarKillBase = tag.getIntOr("towernaarKillBase", 0);
+		data.wandUnlocked = tag.getBooleanOr("wandUnlocked", false);
 		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
 		data.dailyDay = tag.getLongOr("dailyDay", -1L);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");

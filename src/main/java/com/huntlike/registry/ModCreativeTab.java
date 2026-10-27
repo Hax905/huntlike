@@ -65,6 +65,9 @@ public final class ModCreativeTab {
 		register(GEAR, ModGear.SKIN_KNIFE, output -> {
 			ModGear.WEAPONS.forEach(output::accept);
 			com.huntlike.gear.ModScythes.SCYTHES.forEach(output::accept);
+			com.huntlike.gear.ModShields.SHIELDS.forEach(output::accept);
+			output.accept(com.huntlike.gear.ModShields.MAGNETIC_WAND);
+			output.accept(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD);
 			ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
 			output.accept(ModKoro.WOODEN_BELL);
 			output.accept(ModKoro.GOLDEN_BELL);

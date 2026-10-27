@@ -165,6 +165,8 @@ public final class QuestManager {
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
 			case "buy_gear" -> buyGear(player, data, hunt, action.value());
 			case "koro_click" -> KoroManager.click(player, data);
+			case "towernaar_click" -> com.huntlike.towernaar.TowernaarManager.click(player, data);
+			case "towernaar_start" -> com.huntlike.towernaar.TowernaarFight.start(player, data);
 			case "yummy_key" -> {
 				ClusterFight.onYummyKey(player, action.value());
 				return;
@@ -233,8 +235,8 @@ public final class QuestManager {
 			return;
 		}
 		HuntDefs.GearTrade trade = trades.get(index);
-		if (trade.chapter() >= 0 && data.koroDone <= trade.chapter()) {
-			player.sendSystemMessage(Messages.error("Finish Koro's chapter first."));
+		if (!HuntDefs.tradeOpen(data, hunt, trade)) {
+			player.sendSystemMessage(Messages.error(HuntDefs.isCluster(hunt) ? "Not unlocked yet." : "Finish Koro's chapter first."));
 			return;
 		}
 		if (data.progress(hunt.id()).rank() < trade.rank()) {
@@ -531,7 +533,8 @@ public final class QuestManager {
 			}
 			switch (quest.phase) {
 				case HuntData.PHASE_KILLING -> {
-					if (!isPeaceful(player)) {
+					// A Rogue Hunter pauses the Spirit Lure until it's dealt with.
+					if (!isPeaceful(player) && !com.huntlike.rogue.RogueHunters.active(player)) {
 						SpiritLure.tick(player, data, quest);
 					}
 				}
@@ -584,7 +587,8 @@ public final class QuestManager {
 			giveStack(killer, new ItemStack(ModItems.SOUL_STONE));
 		}
 		Quest quest = data.quest;
-		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !quest.hunt.equals("animal") || isPeaceful(killer)) {
+		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !quest.hunt.equals("animal") || isPeaceful(killer)
+				|| com.huntlike.rogue.RogueHunters.active(killer)) {
 			return;
 		}
 		quest.kills = Math.min(quest.quota, quest.kills + com.huntlike.gear.GearEffects.quotaKills(killer));
@@ -610,6 +614,7 @@ public final class QuestManager {
 			award(killer, "animal/not_self_defense");
 		}
 		save(killer, data);
+		com.huntlike.rogue.RogueHunters.onLuredKill(killer, data);
 	}
 
 	/** Adds quota points (one kill, or a whole cluster) and summons the boss once the quota is full. */
@@ -732,6 +737,7 @@ public final class QuestManager {
 		HuntData data = data(player);
 		CompoundTag tag = data.toTag();
 		tag.putBoolean("peaceful", isPeaceful(player));
+		tag.putInt("towernaarPhase", com.huntlike.towernaar.TowernaarFight.phase(player));
 		Quest quest = data.quest;
 		if (quest != null && quest.phase == HuntData.PHASE_BOSS) {
 			long elapsed = player.level().getGameTime() - quest.bossSpawnTime;

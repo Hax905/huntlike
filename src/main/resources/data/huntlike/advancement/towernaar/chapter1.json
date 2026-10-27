@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:obsidian_shield"
+    },
+    "title": {
+      "translate": "advancements.huntlike.towernaar.chapter1.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.towernaar.chapter1.description"
+    },
+    "frame": "task"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

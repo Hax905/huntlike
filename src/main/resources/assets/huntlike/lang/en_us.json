@@ -179,5 +179,21 @@
   "item.huntlike.slimy_core.desc": "As humans have DNA, slimes have cores that can practically reconstruct them.",
   "item.huntlike.sublimating_magma.desc": "The huge source of heat!",
   "item.huntlike.corroded_palladium.desc": "A great catalyst for chemical reactions. If it just was in a better state...",
-  "item.huntlike.slime_washed_holmium.desc": "It felt more magnetic when it came out of the cold slime. Now it feels normal."
+  "item.huntlike.slime_washed_holmium.desc": "It felt more magnetic when it came out of the cold slime. Now it feels normal.",
+  "advancements.huntlike.towernaar.chapter1.title": "A Shield Made by Hand",
+  "advancements.huntlike.towernaar.chapter1.description": "Receive the Obsidian Shield from the Enderian.",
+  "advancements.huntlike.towernaar.chapter2.title": "The Real Deal",
+  "advancements.huntlike.towernaar.chapter2.description": "Earn the Enderian's trust and his family's Unbreakable Shield.",
+  "advancements.huntlike.towernaar.chapter3.title": "A Lighter Shield!",
+  "advancements.huntlike.towernaar.chapter3.description": "Carry the sigil of Towernaar's family.",
+  "advancements.huntlike.towernaar.final.title": "The Undead Wizard",
+  "advancements.huntlike.towernaar.final.description": "Put Towernaar the Undead to rest.",
+  "item.huntlike.obsidian_shield": "Obsidian Shield",
+  "item.huntlike.unbreakable_shield": "Unbreakable Shield",
+  "item.huntlike.unbreakable_shield_star": "Unbreakable Shield ★",
+  "item.huntlike.magnetic_wand": "Magnetic Wand",
+  "item.huntlike.magnetic_wand_prd": "Magnetic Wand PRD",
+  "entity.huntlike.rogue_hunter": "Rogue Hunter",
+  "entity.huntlike.towernaar_undead": "Towernaar the Undead",
+  "entity.huntlike.thrown_end_stone": "End Stone"
 }

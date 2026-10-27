@@ -25,6 +25,14 @@ public abstract class MinecraftMixin {
 				return;
 			}
 		}
+		// Rogue Hunters and Towernaar the Undead: only the player they hunt sees their outline.
+		java.util.UUID hunted = entity instanceof com.huntlike.rogue.RogueHunter hunter ? hunter.hunted()
+				: entity instanceof com.huntlike.towernaar.TowernaarUndead boss ? boss.hunted() : null;
+		if (hunted != null) {
+			Minecraft client = (Minecraft) (Object) this;
+			cir.setReturnValue(client.player != null && hunted.equals(client.player.getUUID()));
+			return;
+		}
 		Long until = ClientHuntState.highlights.get(entity.getId());
 		if (until != null) {
 			if (entity.level().getGameTime() < until) {

@@ -165,6 +165,9 @@ public final class HuntCommand {
 		source.sendSuccess(() -> line("Mystery Concoction", data.concoction ? "eaten" : "not eaten", 0xAAAAAA), false);
 		source.sendSuccess(() -> line("Warm and Slimy Beef Jerky", data.jerky ? "eaten" : "not eaten", 0xAAAAAA), false);
 		source.sendSuccess(() -> line("Koro chapters", data.koroDone + " / 4", 0xAAAAAA), false);
+		source.sendSuccess(() -> line("Towernaar chapters", data.towernaarDone + " / 4", 0xAAAAAA), false);
+		source.sendSuccess(() -> line("Rogue Hunters slain", data.rogueKills + " (special: " + data.specialRogueKills + ")", 0xAAAAAA),
+				false);
 		HuntData.Quest quest = data.quest;
 		String questText = quest == null ? "none"
 				: HuntDefs.hunt(quest.hunt).name() + " [Tier " + HuntDefs.ROMAN[quest.tier] + "] - "

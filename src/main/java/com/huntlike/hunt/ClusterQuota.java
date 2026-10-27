@@ -84,7 +84,7 @@ public final class ClusterQuota {
 		}
 		HuntData.Quest quest = data.quest;
 		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))
-				|| QuestManager.isPeaceful(killer) || !clusterFinished(entity)) {
+				|| QuestManager.isPeaceful(killer) || !clusterFinished(entity) || com.huntlike.rogue.RogueHunters.active(killer)) {
 			return;
 		}
 		QuestManager.addQuotaPoints(killer, data, quest, points(entity) * com.huntlike.gear.ModScythes.quotaMultiplier(killer),

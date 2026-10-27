@@ -1,0 +1,25 @@
+{
+  "parent": "huntlike:animal/root",
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "huntlike:unbreakable_shield"
+    },
+    "title": {
+      "translate": "advancements.huntlike.towernaar.chapter2.title"
+    },
+    "description": {
+      "translate": "advancements.huntlike.towernaar.chapter2.description"
+    },
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

@@ -99,7 +99,29 @@ public final class ModEntities {
 				EntityType.Builder.of(factory, MobCategory.CREATURE).sized(width, height).clientTrackingRange(10).build(key));
 	}
 
+	// Rogue Hunters and Towernaar the Undead.
+	private static final ResourceKey<EntityType<?>> ROGUE_HUNTER_KEY = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id("rogue_hunter"));
+	public static final EntityType<com.huntlike.rogue.RogueHunter> ROGUE_HUNTER = Registry.register(BuiltInRegistries.ENTITY_TYPE,
+			ROGUE_HUNTER_KEY, EntityType.Builder.<com.huntlike.rogue.RogueHunter>of(com.huntlike.rogue.RogueHunter::new, MobCategory.MONSTER)
+					.sized(0.6F, 1.8F).eyeHeight(1.62F).clientTrackingRange(10).build(ROGUE_HUNTER_KEY));
+
+	private static final ResourceKey<EntityType<?>> TOWERNAAR_UNDEAD_KEY = ResourceKey.create(Registries.ENTITY_TYPE,
+			HuntLike.id("towernaar_undead"));
+	public static final EntityType<com.huntlike.towernaar.TowernaarUndead> TOWERNAAR_UNDEAD = Registry.register(
+			BuiltInRegistries.ENTITY_TYPE, TOWERNAAR_UNDEAD_KEY,
+			EntityType.Builder.<com.huntlike.towernaar.TowernaarUndead>of(com.huntlike.towernaar.TowernaarUndead::new, MobCategory.MONSTER)
+					.sized(0.6F, 2.9F).eyeHeight(2.55F).clientTrackingRange(10).build(TOWERNAAR_UNDEAD_KEY));
+
+	private static final ResourceKey<EntityType<?>> THROWN_END_STONE_KEY = ResourceKey.create(Registries.ENTITY_TYPE,
+			HuntLike.id("thrown_end_stone"));
+	public static final EntityType<com.huntlike.towernaar.ThrownEndStone> THROWN_END_STONE = Registry.register(
+			BuiltInRegistries.ENTITY_TYPE, THROWN_END_STONE_KEY,
+			EntityType.Builder.<com.huntlike.towernaar.ThrownEndStone>of(com.huntlike.towernaar.ThrownEndStone::new, MobCategory.MISC)
+					.sized(0.25F, 0.25F).clientTrackingRange(6).updateInterval(10).noSave().build(THROWN_END_STONE_KEY));
+
 	public static void initialize() {
+		FabricDefaultAttributeRegistry.register(ROGUE_HUNTER, com.huntlike.rogue.RogueHunter.createAttributes());
+		FabricDefaultAttributeRegistry.register(TOWERNAAR_UNDEAD, com.huntlike.towernaar.TowernaarUndead.createAttributes());
 		FabricDefaultAttributeRegistry.register(SYLVIORNIS, Chicken.createAttributes());
 		FabricDefaultAttributeRegistry.register(HYLOCHOERUS, Pig.createAttributes());
 		FabricDefaultAttributeRegistry.register(OVIS_AMMON, Sheep.createAttributes());

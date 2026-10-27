@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "huntlike:feather_chute"
+    "huntlike:feather_chute",
+    "huntlike:obsidian_shield"
   ]
 }

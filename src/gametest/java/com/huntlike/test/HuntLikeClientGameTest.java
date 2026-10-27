@@ -175,6 +175,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			scythes(context, singleplayer);
 			slimePet(context, singleplayer);
 			upgradedMonolith(context, singleplayer);
+			rogueHunters(context, singleplayer);
+			towernaar(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}
@@ -989,6 +991,362 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		check(singleplayer, "cluster tier V complete", data -> data.quest == null && data.progress("cluster").bossKills[4] == 1);
 		assertServer(singleplayer, "Better Than Ever! ends when the boss perishes", server ->
 				!com.huntlike.hunt.ClusterFight.betterThanEver(player(server)));
+	}
+
+	private static com.huntlike.rogue.RogueHunter rogue(MinecraftServer server) {
+		ServerPlayer player = player(server);
+		var list = player.level().getEntitiesOfClass(com.huntlike.rogue.RogueHunter.class, player.getBoundingBox().inflate(40));
+		return list.isEmpty() ? null : list.get(0);
+	}
+
+	private static void waitForRogue(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		for (int i = 0; i < 60; i++) {
+			if (singleplayer.getServer().computeOnServer(server -> rogue(server) != null)) {
+				return;
+			}
+			context.waitTicks(1);
+		}
+		throw new AssertionError("No Rogue Hunter spawned");
+	}
+
+	private static void killRogue(TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var hunter = rogue(server);
+			hunter.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+		});
+	}
+
+	/** Rogue Hunters: the 30th lure kill calls one, it's invisible with an outline only its player sees, kills are counted. */
+	private static void rogueHunters(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.progress("cluster").xp = com.huntlike.hunt.HuntDefs.RANK_XP[10];
+			player.setAttached(QuestManager.DATA, data);
+			player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.RESISTANCE, 20 * 600, 4));
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
+				e.discard();
+			}
+		});
+		singleplayer.getServer().runCommand("huntlike quest start @a cluster 1");
+		context.waitTicks(3);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.rogueLures = com.huntlike.rogue.RogueHunters.LURE_ODDS - 1;
+			data.rogueSinceSpecial = 0;
+			QuestManager.countLuredKill(player, data);
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "the 30th lure kill calls a Rogue Hunter and pauses the quest",
+				server -> com.huntlike.rogue.RogueHunters.active(player(server)) && QuestManager.data(player(server)).rogueLures == 0);
+		waitForRogue(context, singleplayer);
+		int rogueId = singleplayer.getServer().computeOnServer(server -> rogue(server).getId());
+		context.waitTicks(10);
+		boolean outlined = context.computeOnClient(client -> {
+			var entity = client.level.getEntity(rogueId);
+			return entity != null && entity.isInvisible() && client.shouldEntityAppearGlowing(entity);
+		});
+		HuntLike.LOGGER.info("[test] Rogue Hunter invisible with outline for its player: {}", outlined);
+		if (!outlined) {
+			throw new AssertionError("Rogue Hunter outline");
+		}
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var hunter = rogue(server);
+			hunter.setNoAi(true);
+			hunter.snapTo(player.getX() + 3, player.getY(), player.getZ() + 3, 225.0F, 0.0F);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("80-rogue-hunter-outline");
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			rogue(server).hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1.0F);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("81-rogue-hunter-revealed");
+		assertServer(singleplayer, "a hit reveals the Rogue Hunter (40 health, 8 damage)", server -> {
+			var hunter = rogue(server);
+			// One in ten is special (80 health, 12 damage) even before the 10th.
+			float health = hunter.isSpecial() ? 80.0F : 40.0F;
+			double damage = hunter.isSpecial() ? 12.0 : 8.0;
+			return !hunter.isInvisible() && hunter.getMaxHealth() == health
+					&& hunter.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage;
+		});
+		killRogue(singleplayer);
+		context.waitTicks(3);
+		check(singleplayer, "a Rogue Hunter kill is counted and the quest goes on", data -> data.rogueKills == 1 && data.quest != null);
+		assertServer(singleplayer, "encounter over", server -> !com.huntlike.rogue.RogueHunters.active(player(server)));
+
+		// The 10th hunter is a special one.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.rogueSinceSpecial = com.huntlike.rogue.RogueHunters.SPECIAL_ODDS - 1;
+			com.huntlike.rogue.RogueHunters.trigger(player, data);
+		});
+		waitForRogue(context, singleplayer);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var hunter = rogue(server);
+			hunter.setNoAi(true);
+			hunter.snapTo(player.getX() + 3, player.getY(), player.getZ() + 3, 225.0F, 0.0F);
+			hunter.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1.0F);
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("82-special-rogue-hunter");
+		assertServer(singleplayer, "a special Rogue Hunter (80 health, 12 damage)", server -> {
+			var hunter = rogue(server);
+			return hunter.isSpecial() && hunter.getMaxHealth() == 80.0F;
+		});
+		killRogue(singleplayer);
+		context.waitTicks(3);
+		check(singleplayer, "special kills counted too", data -> data.rogueKills == 2 && data.specialRogueKills >= 1);
+
+		// A player's death ends the encounter, not the quest.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			com.huntlike.rogue.RogueHunters.trigger(player, QuestManager.data(player));
+		});
+		waitForRogue(context, singleplayer);
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		singleplayer.getServer().runOnServer(server -> {
+			var hunter = rogue(server);
+			hunter.discard();
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "a vanished hunter ends the encounter", server -> !com.huntlike.rogue.RogueHunters.active(player(server)));
+	}
+
+	/** Towernaar's questline: three chapters, the shields, the sigil, the Magnetic Wand and the Final Chapter's boss. */
+	private static void towernaar(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			give(player, net.minecraft.world.item.Items.SHIELD, 1);
+			give(player, net.minecraft.world.item.Items.IRON_INGOT, 16);
+			give(player, net.minecraft.world.item.Items.OBSIDIAN, 8);
+			give(player, net.minecraft.world.item.Items.NETHERITE_SCRAP, 2);
+			give(player, net.minecraft.world.item.Items.ENDER_PEARL, 16);
+		});
+		context.waitTicks(5);
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(3);
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("select", "cluster", 0)));
+		context.waitTicks(5);
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(5);
+		context.takeScreenshot("83-cluster-misc-towernaar");
+		context.setScreen(() -> new com.huntlike.client.screen.TowernaarScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("84-towernaar-first-visit");
+		boolean shotKills = false;
+		for (int i = 0; i < 400; i++) {
+			int[] state = singleplayer.getServer().computeOnServer(server -> {
+				HuntData data = QuestManager.data(player(server));
+				return new int[] {data.towernaarDone, data.towernaarStep};
+			});
+			if (state[0] >= 3) {
+				break;
+			}
+			if (state[1] > 0) {
+				var step = com.huntlike.towernaar.TowernaarScript.CHAPTERS.get(state[0]).steps().get(state[1] - 1);
+				if (step.kind() == com.huntlike.towernaar.TowernaarScript.Kind.KILLS) {
+					if (!shotKills) {
+						context.waitTicks(3);
+						context.takeScreenshot("85-towernaar-kill-quest");
+						shotKills = true;
+					}
+					// Rogue Hunters slain since the quest started.
+					singleplayer.getServer().runOnServer(server -> {
+						HuntData data = QuestManager.data(player(server));
+						data.rogueKills = data.towernaarKillBase + step.kills();
+					});
+				}
+			}
+			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+					new com.huntlike.network.HuntPayloads.Action("towernaar_click", "cluster", 0)));
+			context.waitTicks(1);
+			if (state[0] == 1 && state[1] == 67) {
+				context.waitTicks(3);
+				context.takeScreenshot("86-towernaar-name");
+			}
+		}
+		context.waitTicks(5);
+		context.takeScreenshot("87-towernaar-chapter3-done");
+		assertServer(singleplayer, "Towernaar's chapters I-III: shields given and taken, advancements", server -> {
+			ServerPlayer player = player(server);
+			boolean star = false;
+			boolean other = false;
+			var inventory = player.getInventory();
+			for (int i = 0; i < inventory.getContainerSize(); i++) {
+				star |= inventory.getItem(i).is(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD_STAR);
+				other |= inventory.getItem(i).is(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD)
+						|| inventory.getItem(i).is(com.huntlike.gear.ModShields.OBSIDIAN_SHIELD);
+			}
+			HuntLike.LOGGER.info("[test] Towernaar: star {} leftover shields {} advancements {} {} {}", star, other,
+					done(player, "towernaar/chapter1"), done(player, "towernaar/chapter2"), done(player, "towernaar/chapter3"));
+			return star && !other && done(player, "towernaar/chapter1") && done(player, "towernaar/chapter2")
+					&& done(player, "towernaar/chapter3") && QuestManager.data(player).towernaarDone == 3;
+		});
+
+		// Shields: Obsidian (2500 durability, Unbreaking III from the table), Unbreakable, ★ without slowdown.
+		assertServer(singleplayer, "shield stats", server -> {
+			ServerPlayer player = player(server);
+			var obsidian = new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.OBSIDIAN_SHIELD);
+			var table = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+					.getOrThrow(net.minecraft.tags.EnchantmentTags.IN_ENCHANTING_TABLE);
+			boolean unbreaking3 = true;
+			for (int i = 0; i < 20; i++) {
+				var picks = net.minecraft.world.item.enchantment.EnchantmentHelper.selectEnchantment(player.getRandom(), obsidian, 30,
+						table.stream());
+				unbreaking3 &= picks.stream().anyMatch(e -> e.enchantment().is(net.minecraft.world.item.enchantment.Enchantments.UNBREAKING)
+						&& e.level() == 3);
+			}
+			var star = new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD_STAR);
+			var effects = star.get(net.minecraft.core.component.DataComponents.USE_EFFECTS);
+			HuntLike.LOGGER.info("[test] Obsidian Shield durability {} Unbreaking III every time {}; ★ speed {}", obsidian.getMaxDamage(),
+					unbreaking3, effects == null ? -1 : effects.speedMultiplier());
+			return obsidian.getMaxDamage() == 2500 && unbreaking3 && effects != null && effects.speedMultiplier() == 1.0F
+					&& new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD)
+							.has(net.minecraft.core.component.DataComponents.UNBREAKABLE);
+		});
+
+		// The sigil: any other Unbreakable Shield counts Rogue Hunter kills in the offhand.
+		singleplayer.getServer().runOnServer(server -> player(server).setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
+				new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD)));
+		context.waitTicks(45);
+		assertServer(singleplayer, "a new Unbreakable Shield gets the 0/10 counter",
+				server -> com.huntlike.gear.ModShields.sigilKills(player(server).getOffhandItem()) == 0);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			com.huntlike.gear.ModShields.setSigilKills(player.getOffhandItem(), 9);
+			com.huntlike.rogue.RogueHunters.trigger(player, QuestManager.data(player));
+		});
+		waitForRogue(context, singleplayer);
+		killRogue(singleplayer);
+		context.waitTicks(3);
+		assertServer(singleplayer, "the 10th kill turns it into the Unbreakable Shield ★",
+				server -> player(server).getOffhandItem().is(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD_STAR));
+
+		// The Final Chapter.
+		context.setScreen(() -> new com.huntlike.client.screen.TowernaarScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("88-towernaar-final-chapter");
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("towernaar_start", "cluster", 0)));
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+		assertServer(singleplayer, "Final Chapter waits for an enderman kill",
+				server -> com.huntlike.towernaar.TowernaarFight.phase(player(server)) == 1);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var enderman = spawnTest(player, EntityTypes.ENDERMAN, 3.0, 0.0, 1.0F);
+			enderman.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
+		});
+		context.waitTicks(5);
+		assertServer(singleplayer, "Towernaar the Undead appears (300 health)", server -> {
+			ServerPlayer player = player(server);
+			var bosses = player.level().getEntitiesOfClass(com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(20));
+			return com.huntlike.towernaar.TowernaarFight.phase(player) == 2 && bosses.size() == 1 && bosses.get(0).getMaxHealth() == 300.0F;
+		});
+		context.waitTicks(100);
+		context.takeScreenshot("89-towernaar-undead");
+		assertServer(singleplayer, "he throws end stone without placing blocks", server -> {
+			ServerPlayer player = player(server);
+			int endStone = 0;
+			BlockPos at = player.blockPosition();
+			for (BlockPos pos : BlockPos.betweenClosed(at.offset(-12, -3, -12), at.offset(12, 6, 12))) {
+				if (player.level().getBlockState(pos).is(net.minecraft.world.level.block.Blocks.END_STONE)) {
+					endStone++;
+				}
+			}
+			HuntLike.LOGGER.info("[test] Towernaar boss: player health {} end stone blocks {}", player.getHealth(), endStone);
+			return endStone == 0;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var boss = player.level().getEntitiesOfClass(com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(30)).get(0);
+			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "beaten, he stays at 1 health and can't be hurt", server -> {
+			ServerPlayer player = player(server);
+			var boss = player.level().getEntitiesOfClass(com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(30)).get(0);
+			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+			return boss.isAlive() && boss.isEnding() && boss.getHealth() == 1.0F;
+		});
+		context.waitTicks(70);
+		context.takeScreenshot("90-towernaar-thank-you");
+		context.waitTicks(60);
+		assertServer(singleplayer, "he dies and drops the Magnetic Wand PRD; the questline is complete", server -> {
+			ServerPlayer player = player(server);
+			var bosses = player.level().getEntitiesOfClass(com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(30));
+			var prd = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(30),
+					e -> e.getItem().is(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD));
+			HuntData data = QuestManager.data(player);
+			HuntLike.LOGGER.info("[test] Final Chapter: bosses {} PRD drops {} done {} advancement {}", bosses.size(), prd.size(),
+					data.towernaarDone, done(player, "towernaar/final"));
+			prd.forEach(net.minecraft.world.entity.Entity::discard);
+			return bosses.isEmpty() && prd.size() == 1 && data.towernaarDone == 4 && done(player, "towernaar/final");
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			com.huntlike.towernaar.TowernaarFight.start(player, QuestManager.data(player));
+		});
+		assertServer(singleplayer, "a won Final Chapter can't be repeated",
+				server -> com.huntlike.towernaar.TowernaarFight.phase(player(server)) == 0);
+
+		// The PRD unlocks the Magnetic Wand trade.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD));
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			give(player, com.huntlike.registry.ModItems.SLIME_WASHED_HOLMIUM, 1);
+			give(player, com.huntlike.registry.ModItems.SUBLIMATING_MAGMA, 1);
+			give(player, com.huntlike.registry.ModItems.GELID_SLIME_BALL, 5);
+		});
+		context.waitTicks(3);
+		check(singleplayer, "the PRD is used up and the trade unlocked", data -> data.wandUnlocked);
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(5);
+		context.takeScreenshot("91-cluster-misc-trades");
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("buy_gear", "cluster", 102)));
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+
+		// The Magnetic Wand pulls mobs to where you look, but not your pets.
+		int cowId = singleplayer.getServer().computeOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
+				e.discard();
+			}
+			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
+			var cow = spawnTest(player, EntityTypes.COW, 4.0, 16.0, 10.0F);
+			cow.setNoAi(false);
+			return cow.getId();
+		});
+		context.waitTicks(5);
+		assertServer(singleplayer, "Magnetic Wand bought; it pulls the cow", server -> {
+			ServerPlayer player = player(server);
+			var wand = player.getInventory().getItem(0);
+			boolean bought = false;
+			for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+				bought |= player.getInventory().getItem(i).is(com.huntlike.gear.ModShields.MAGNETIC_WAND);
+			}
+			var cow = player.level().getEntity(cowId);
+			double before = cow.getX();
+			player.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
+			int pulled = com.huntlike.gear.ModShields.pull(player);
+			var motion = cow.getDeltaMovement();
+			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} pulled {} cow motion {}", bought, pulled, motion);
+			return bought && pulled >= 1 && motion.x < 0;
+		});
 	}
 
 	private static boolean done(ServerPlayer player, String path) {

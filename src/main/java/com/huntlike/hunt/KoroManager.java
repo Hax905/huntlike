@@ -79,7 +79,7 @@ public final class KoroManager {
 		return have;
 	}
 
-	private static void take(ServerPlayer player, List<Cost> items) {
+	public static void take(ServerPlayer player, List<Cost> items) {
 		Inventory inventory = player.getInventory();
 		for (Cost cost : items) {
 			int left = cost.count();

@@ -15,6 +15,8 @@ public final class ClientHuntState {
 
 	public static HuntData data = new HuntData();
 	public static boolean peaceful;
+	/** Towernaar's Final Chapter: 0 none, 1 waiting for an enderman kill, 2 fighting. */
+	public static int towernaarPhase;
 	public static int bossTicksLeft;
 	public static int bossEntityId = -1;
 	/** Every living body of a Cluster boss (empty for Animal bosses). */
@@ -27,6 +29,7 @@ public final class ClientHuntState {
 	public static void update(CompoundTag tag) {
 		data = HuntData.fromTag(tag);
 		peaceful = tag.getBooleanOr("peaceful", false);
+		towernaarPhase = tag.getIntOr("towernaarPhase", 0);
 		bossTicksLeft = tag.getIntOr("bossTicksLeft", 0);
 		bossEntityId = tag.getIntOr("bossEntity", -1);
 		bossEntityIds = tag.getIntArray("bossEntities").orElse(new int[0]);

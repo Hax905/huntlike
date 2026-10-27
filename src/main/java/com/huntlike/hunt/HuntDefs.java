@@ -101,6 +101,10 @@ public final class HuntDefs {
 			"After being wounded many times, survival instincts consume the canine body, increasing speed and damage.");
 
 	private static final String KORO_FIRST = "A soul from the unknown territories is here to talk! [Gear]";
+	private static final String ROGUE_HUNTERS = "Rogue Hunters may now stalk you during quests...";
+	private static final String TOWERNAAR_FIRST = "A mysterious Enderian wants to talk! [Gear]";
+	private static final String TOWERNAAR_NEXT = "The Enderian has a new request for you!";
+	private static final String TOWERNAAR_FINAL = "The Enderian's Final Chapter is ready...";
 	private static final String KORO_NEXT = "The soul of Koro thinks you are ready for his next quest!";
 
 	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME, net.minecraft.world.BossEvent.BossBarColor.GREEN,
@@ -123,7 +127,7 @@ public final class HuntDefs {
 					List.of(Unlock.plain("Hunt Weapon upgrade: Meat Cutter [Act I]"), new Unlock("Next Hunt type: Cluster", BROWN),
 							new Unlock(KORO_FIRST, DARK_PURPLE)),
 					List.of(Unlock.plain("Tier III Animal Quests"), Unlock.plain("Hunt Armor upgrade: Carrion Armor")),
-					List.of(Unlock.plain("Hunt Weapon upgrade: Limb Severer [Act II]")),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Limb Severer [Act II]"), new Unlock(ROGUE_HUNTERS, 0xAA0000)),
 					List.of(Unlock.plain("Tier IV Animal Quests"), Unlock.plain("Hunt Armor upgrade: Ecocide Armor"),
 							new Unlock(KORO_NEXT, DARK_PURPLE)),
 					List.of(Unlock.plain("Hunt Weapon upgrade: Bone Breaker [Act III]")),
@@ -215,14 +219,15 @@ public final class HuntDefs {
 					List.of(Unlock.plain("Tier I Cluster Quests")),
 					List.of(Unlock.plain("Hunt Weapon: Slick Kama [Genesis]")),
 					List.of(Unlock.plain("Tier II Cluster Quests"), Unlock.plain("Hunt Armor: Icy Armor")),
-					List.of(Unlock.plain("Hunt Weapon upgrade: Polished Khopesh [Act I]")),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Polished Khopesh [Act I]"), new Unlock(TOWERNAAR_FIRST, DARK_PURPLE)),
 					List.of(Unlock.plain("Tier III Cluster Quests"), Unlock.plain("Hunt Armor upgrade: Gel Armor")),
-					List.of(Unlock.plain("Hunt Weapon upgrade: Slimy Falx [Act II]")),
-					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor upgrade: Thermodynamic Armor")),
+					List.of(Unlock.plain("Hunt Weapon upgrade: Slimy Falx [Act II]"), new Unlock(ROGUE_HUNTERS, 0xAA0000)),
+					List.of(Unlock.plain("Tier IV Cluster Quests"), Unlock.plain("Hunt Armor upgrade: Thermodynamic Armor"),
+							new Unlock(TOWERNAAR_NEXT, DARK_PURPLE)),
 					List.of(Unlock.plain("Hunt Weapon upgrade: Slimysteel Glaive [Act III]")),
 					List.of(Unlock.plain("Tier V Cluster Quests")),
-					List.of(Unlock.plain("Hunt Weapon upgrade: Scythe of Sublimation [Apotheosis]")),
-					List.of()));
+					List.of(Unlock.plain("Hunt Weapon upgrade: Scythe of Sublimation [Apotheosis]"), new Unlock(TOWERNAAR_NEXT, DARK_PURPLE)),
+					List.of(new Unlock(TOWERNAAR_FINAL, DARK_PURPLE))));
 
 	public static final List<Hunt> HUNTS = List.of(ANIMAL, CLUSTER);
 
@@ -284,6 +289,29 @@ public final class HuntDefs {
 					List.of(com.huntlike.gear.ModKoro.MOSSY_BELL), 2),
 			new GearTrade("Koro Whakamate", 0, List.of(Cost.of(Items.OBSIDIAN, 10), Cost.of(Items.NETHER_STAR, 1),
 					Cost.of(ModItems.SPIRITUAL_CATALYST, 1)), List.of(com.huntlike.gear.ModKoro.KORO_WHAKAMATE), 3));
+
+	/** chapter value for a trade unlocked by the Magnetic Wand PRD. */
+	public static final int WAND_CHAPTER = 99;
+
+	/** Towernaar's restocks (Cluster Misc page): the shields after their chapters, the wand once its PRD is used. */
+	public static final List<GearTrade> CLUSTER_SPECIAL = List.of(
+			new GearTrade("Obsidian Shield", 0, List.of(Cost.of(Items.SHIELD, 1), Cost.of(Items.IRON_INGOT, 16), Cost.of(Items.OBSIDIAN, 8)),
+					List.of(com.huntlike.gear.ModShields.OBSIDIAN_SHIELD), 0),
+			new GearTrade("Unbreakable Shield", 0, List.of(Cost.of(com.huntlike.gear.ModShields.OBSIDIAN_SHIELD, 1),
+					Cost.of(Items.NETHERITE_SCRAP, 2), Cost.of(Items.ENDER_PEARL, 16)), List.of(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD), 1),
+			new GearTrade("Magnetic Wand", 0, List.of(Cost.of(ModItems.SLIME_WASHED_HOLMIUM, 1), Cost.of(ModItems.SUBLIMATING_MAGMA, 1),
+					Cost.of(ModItems.GELID_SLIME_BALL, 5)), List.of(com.huntlike.gear.ModShields.MAGNETIC_WAND), WAND_CHAPTER));
+
+	/** Whether a chapter-gated trade is open: Koro's chapters for Animal, Towernaar's (or the wand's PRD) for Cluster. */
+	public static boolean tradeOpen(HuntData data, Hunt hunt, GearTrade trade) {
+		if (trade.chapter() < 0) {
+			return true;
+		}
+		if (hunt == CLUSTER) {
+			return trade.chapter() == WAND_CHAPTER ? data.wandUnlocked : data.towernaarDone > trade.chapter();
+		}
+		return data.koroDone > trade.chapter();
+	}
 
 	private static List<Cost> set(ModGear.ArmorSet set) {
 		return List.of(Cost.of(set.helmet(), 1), Cost.of(set.chestplate(), 1), Cost.of(set.leggings(), 1), Cost.of(set.boots(), 1));
@@ -362,10 +390,10 @@ public final class HuntDefs {
 		return -1;
 	}
 
-	/** Trades by page: 0 armor, 1 Misc (Koro's restocks), 2 weapons. The Cluster Hunt has none yet. */
+	/** Trades by page: 0 armor, 1 Misc (Koro's or Towernaar's restocks), 2 weapons. */
 	public static List<GearTrade> trades(Hunt hunt, int page) {
 		if (hunt == CLUSTER) {
-			return page == 0 ? CLUSTER_ARMOR : page == 2 ? CLUSTER_WEAPONS : List.of();
+			return page == 0 ? CLUSTER_ARMOR : page == 1 ? CLUSTER_SPECIAL : CLUSTER_WEAPONS;
 		}
 		return page == 0 ? ANIMAL_ARMOR : page == 1 ? ANIMAL_SPECIAL : ANIMAL_WEAPONS;
 	}

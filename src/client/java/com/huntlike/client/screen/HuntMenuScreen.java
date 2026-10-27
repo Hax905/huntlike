@@ -800,6 +800,19 @@ public class HuntMenuScreen extends Screen {
 			g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
 		}
 		if (HuntDefs.isCluster(hunt)) {
+			y += 58;
+			sprite(g, "panel_dark", px + 4, y, pw - 8, 44);
+			HuntData cdata = ClientHuntState.data;
+			g.centeredText(this.font, colored("Questline - " + com.huntlike.towernaar.TowernaarScript.name(cdata), WHITE), cx, y + 6, WHITE);
+			int firstCluster = com.huntlike.towernaar.TowernaarScript.CHAPTERS.get(0).rank();
+			boolean clusterMet = progress().rank() >= firstCluster;
+			Component clusterLabel = !clusterMet ? Component.literal("[Click] - Rank " + HuntDefs.ROMAN[firstCluster] + " Required")
+					: cdata.towernaarDone > com.huntlike.towernaar.TowernaarScript.FINAL ? Component.literal("[Click] - Visit Towernaar")
+					: Component.literal("[Click] - Talk");
+			button(g, px + 8, y + 20, pw - 16, 16, clusterLabel, clusterMet, mouseX, mouseY,
+					() -> this.minecraft.gui.setScreen(new TowernaarScreen(this)));
+			y += 50;
+			drawGearTrades(g, HuntDefs.CLUSTER_SPECIAL, y, mouseX, mouseY);
 			return;
 		}
 		y += 58;
@@ -923,9 +936,9 @@ public class HuntMenuScreen extends Screen {
 		return count;
 	}
 
-	/** Koro's restocks only appear once their chapter is finished. */
-	private static boolean shown(HuntDefs.GearTrade trade) {
-		return trade.chapter() < 0 || ClientHuntState.data.koroDone > trade.chapter();
+	/** Koro's and Towernaar's restocks only appear once their chapter is finished (the wand once its PRD is used). */
+	private boolean shown(HuntDefs.GearTrade trade) {
+		return HuntDefs.tradeOpen(ClientHuntState.data, hunt(), trade);
 	}
 
 	private static int entryHeight(int costLines) {

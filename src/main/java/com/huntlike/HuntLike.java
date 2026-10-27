@@ -29,6 +29,7 @@ public class HuntLike implements ModInitializer {
 		ModSounds.initialize();
 		ModGear.initialize();
 		com.huntlike.gear.ModScythes.initialize();
+		com.huntlike.gear.ModShields.initialize();
 		com.huntlike.pet.PetManager.initialize();
 		com.huntlike.pet.PetMenu.initialize();
 		com.huntlike.gear.ModKoro.initialize();
@@ -39,6 +40,8 @@ public class HuntLike implements ModInitializer {
 		ModEntities.initialize();
 		HuntPayloads.initialize();
 		QuestManager.initialize();
+		com.huntlike.rogue.RogueHunters.initialize();
+		com.huntlike.towernaar.TowernaarFight.initialize();
 		com.huntlike.hunt.WolfTreats.initialize();
 		HuntCommand.initialize();
 		LOGGER.info("HuntLike loaded. The Alpha Altar is listening...");

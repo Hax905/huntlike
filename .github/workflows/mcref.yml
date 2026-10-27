@@ -49,7 +49,14 @@ jobs:
           find /tmp/out -name "*.txt" | wc -l
           mkdir -p /tmp/out/vanilla-data
           for jar in $(grep -E "minecraft-(common|clientOnly)" /tmp/jars.txt); do
-            (cd /tmp/out/vanilla-data && unzip -q -o "$jar" 'data/minecraft/advancement/story/*' 'data/minecraft/advancement/husbandry/root.json' 'data/minecraft/tags/entity_type/*' 'data/minecraft/recipe/bread.json' 'assets/minecraft/lang/en_us.json' 'assets/minecraft/items/egg.json' || true)
+            (cd /tmp/out/vanilla-data && unzip -q -o "$jar" 'data/minecraft/advancement/story/*' 'data/minecraft/advancement/husbandry/root.json' 'data/minecraft/tags/entity_type/*' 'data/minecraft/recipe/bread.json' 'assets/minecraft/lang/en_us.json' 'assets/minecraft/items/egg.json' 'assets/minecraft/items/shield.json' 'assets/minecraft/items/trident.json' 'assets/minecraft/models/item/shield*' 'assets/minecraft/models/item/trident*' 'data/minecraft/tags/item/enchantable/*' 'data/minecraft/enchantment/mending.json' 'data/minecraft/enchantment/unbreaking.json' || true)
+          done
+          # Bytecode of a few classes worth copying from.
+          mkdir -p /tmp/out/code
+          for c in net.minecraft.client.renderer.special.ShieldSpecialRenderer net.minecraft.client.renderer.special.TridentSpecialRenderer net.minecraft.client.renderer.entity.EndermanRenderer net.minecraft.client.renderer.entity.layers.EnderEyesLayer net.minecraft.client.renderer.entity.ZombieRenderer net.minecraft.client.renderer.entity.HumanoidMobRenderer; do
+            for jar in $(grep -E "minecraft-(common|clientOnly)" /tmp/jars.txt); do
+              javap -c -p -cp "$jar" "$c" > "/tmp/out/code/$c.txt" 2>/dev/null && break
+            done
           done
       - name: push
         run: |

@@ -36,8 +36,8 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 
 	/** Ridden: 90% of the player's sprinting speed (5.6 blocks/s), in blocks per tick. */
 	public static final double RIDE_SPEED = 5.612 * 0.9 / 20.0;
-	/** Ridden on water (or lava for a magma pet): half the player's walking speed. */
-	public static final double SWIM_SPEED = 4.317 * 0.5 / 20.0;
+	/** On water (or lava for a magma pet): 75% of the player's walking speed (50% faster than before). */
+	public static final double SWIM_SPEED = 4.317 * 0.75 / 20.0;
 
 	private int hopTimer;
 	private int attackCooldown;

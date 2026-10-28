@@ -82,7 +82,9 @@ public final class ModShields {
 		properties.component(DataComponents.BREAK_SOUND, SoundEvents.SHIELD_BREAK);
 		properties.equippableUnswappable(EquipmentSlot.OFFHAND);
 		properties.component(DataComponents.LORE, new ItemLore(lore(description, extra)));
-		return ModItems.register(name, Item::new, properties);
+		// A ShieldItem, not a plain Item: in first person the game only holds the shield up straight while blocking for a
+		// ShieldItem; anything else gets the old sword-blocking twist and swings out of view.
+		return ModItems.register(name, net.minecraft.world.item.ShieldItem::new, properties);
 	}
 
 	private static List<Component> lore(String description, String... extra) {

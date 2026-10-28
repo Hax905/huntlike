@@ -1878,6 +1878,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		singleplayer.getServer().runOnServer(server -> player(server).setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
 				net.minecraft.world.item.ItemStack.EMPTY));
+		check(singleplayer, "every HuntLike shield is a ShieldItem (held up straight in first person when blocking)", data -> java.util.Arrays
+				.stream(shields).allMatch(item -> item instanceof net.minecraft.world.item.ShieldItem));
 		check(singleplayer, "every HuntLike shield blocks like the vanilla one", data -> shieldStates.stream()
 				.allMatch(st -> st.contains("blocking true") && st.contains("anim BLOCK") && st.endsWith("server true")));
 

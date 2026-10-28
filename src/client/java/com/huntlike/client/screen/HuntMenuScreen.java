@@ -132,6 +132,10 @@ public class HuntMenuScreen extends Screen {
 		if (com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.selectedHunt)) {
 			this.railPos = com.huntlike.interlude.InterludeDefs.open(data) ? 1 : 0;
 			this.huntIndex = 0;
+			if (this.railPos == 0) {
+				// A locked Interlude never stays selected either.
+				ClientPlayNetworking.send(new HuntPayloads.Action("select", "animal", 0));
+			}
 		}
 		this.interludeStage = highestOpenStage();
 		this.rankView = progress().rank();

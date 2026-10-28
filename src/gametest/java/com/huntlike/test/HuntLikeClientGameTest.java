@@ -761,6 +761,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		context.getInput().pressKey(InputConstants.KEY_S);
 		context.waitTicks(5);
+		context.takeScreenshot("39a-interlude-locked");
+		context.getInput().pressKey(InputConstants.KEY_S);
+		context.waitTicks(5);
 		context.takeScreenshot("39-cluster-locked");
 		context.setScreen(() -> null);
 		context.waitTicks(3);

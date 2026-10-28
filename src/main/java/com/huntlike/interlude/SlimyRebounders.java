@@ -53,9 +53,6 @@ public final class SlimyRebounders {
 				.build();
 		List<Component> lore = new ArrayList<>();
 		Lore.gray(lore, "Between bounce and bounce they will make your adventures a blast!");
-		lore.add(Component.empty());
-		Lore.gray(lore, "The boots will grant near to no resistance but will provide the ability to bounce without fall damage like "
-				+ "if every block was a slime block.");
 		return ModItems.register("slimy_rebounders", Item::new, new Item.Properties()
 				.humanoidArmor(material, ArmorType.BOOTS)
 				.attributes(attributes)

@@ -1763,6 +1763,96 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return riding && gone;
 		});
 
+		// The real thing, from the client: right-click with the Remains, ride forward, get off, get back on with an empty hand.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.POMS_SKELETAL_REMAINS));
+			player.getInventory().setItem(1, net.minecraft.world.item.ItemStack.EMPTY);
+		});
+		context.getInput().pressKey(InputConstants.KEY_1);
+		context.waitTicks(3);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(10);
+		String mounted = context.computeOnClient(client -> {
+			var vehicle = client.player.getVehicle();
+			return vehicle == null ? "no vehicle" : vehicle.getType() + " controlled by me "
+					+ (vehicle instanceof net.minecraft.world.entity.LivingEntity living && living.getControllingPassenger() == client.player)
+					+ " saddled " + (vehicle instanceof net.minecraft.world.entity.animal.equine.AbstractHorse h && h.isSaddled())
+					+ " tamed " + (vehicle instanceof net.minecraft.world.entity.animal.equine.AbstractHorse h2 && h2.isTamed());
+		});
+		HuntLike.LOGGER.info("[test] Remains (client): after right-click: {}", mounted);
+		context.takeScreenshot("99a-remains-mounted");
+		double[] start = singleplayer.getServer().computeOnServer(server -> {
+			var v = player(server).getVehicle();
+			return v == null ? new double[] {0, 0} : new double[] {v.getX(), v.getZ()};
+		});
+		context.getInput().holdKeyFor(options -> options.keyUp, 40);
+		double ridden = singleplayer.getServer().computeOnServer(server -> {
+			var v = player(server).getVehicle();
+			return v == null ? -1.0 : Math.hypot(v.getX() - start[0], v.getZ() - start[1]);
+		});
+		HuntLike.LOGGER.info("[test] Remains (client): rode {} blocks in 2 s", ridden);
+		context.getInput().pressKey(options -> options.keyShift);
+		context.waitTicks(10);
+		context.getInput().pressKey(InputConstants.KEY_2);
+		net.minecraft.core.BlockPos horseAt = singleplayer.getServer().computeOnServer(server -> {
+			var horses = player(server).level().getEntitiesOfClass(com.huntlike.interlude.RemainsHorse.class,
+					player(server).getBoundingBox().inflate(8));
+			return horses.isEmpty() ? null : horses.get(0).blockPosition().above();
+		});
+		if (horseAt != null) {
+			context.getInput().lookAt(horseAt);
+		}
+		context.waitTicks(3);
+		context.getInput().pressKey(options -> options.keyUse);
+		context.waitTicks(10);
+		boolean remounted = context.computeOnClient(client -> client.player.getVehicle() instanceof com.huntlike.interlude.RemainsHorse);
+		HuntLike.LOGGER.info("[test] Remains (client): horse at {} remounted with an empty hand {}", horseAt, remounted);
+		check(singleplayer, "Pom's Skeletal Remains: summoned, ridden forward from the client, and remounted",
+				data -> mounted.contains("controlled by me true") && ridden > 4.0 && remounted);
+		context.getInput().pressKey(options -> options.keyShift);
+		context.waitTicks(5);
+		singleplayer.getServer().runOnServer(server -> {
+			for (var horse : player(server).level().getEntitiesOfClass(com.huntlike.interlude.RemainsHorse.class,
+					player(server).getBoundingBox().inflate(16))) {
+				horse.discard();
+			}
+		});
+
+		// Shields: block with the vanilla shield and each HuntLike shield in the offhand; compare how they block and look.
+		net.minecraft.world.item.Item[] shields = {net.minecraft.world.item.Items.SHIELD, com.huntlike.gear.ModShields.OBSIDIAN_SHIELD,
+				com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD, com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD_STAR};
+		java.util.List<String> shieldStates = new java.util.ArrayList<>();
+		for (int i = 0; i < shields.length; i++) {
+			net.minecraft.world.item.Item shield = shields[i];
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = player(server);
+				player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new net.minecraft.world.item.ItemStack(shield));
+				player.getInventory().setItem(1, net.minecraft.world.item.ItemStack.EMPTY);
+			});
+			context.getInput().pressKey(InputConstants.KEY_2);
+			context.waitTicks(3);
+			context.getInput().holdKey(options -> options.keyUse);
+			context.waitTicks(15);
+			String state = context.computeOnClient(client -> {
+				var player = client.player;
+				var stack = player.getOffhandItem();
+				return stack.getItem() + ": using " + player.isUsingItem() + " hand " + player.getUsedItemHand() + " blocking "
+						+ player.isBlocking() + " anim " + stack.getUseAnimation() + " duration " + stack.getUseDuration(player)
+						+ " blocks " + stack.get(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS);
+			});
+			boolean serverBlocking = singleplayer.getServer().computeOnServer(server -> player(server).isBlocking());
+			HuntLike.LOGGER.info("[test] shield {} | server blocking {}", state, serverBlocking);
+			shieldStates.add(state + " server " + serverBlocking);
+			context.takeScreenshot("99s-shield-" + i);
+			context.getInput().releaseKey(options -> options.keyUse);
+			context.waitTicks(5);
+		}
+		singleplayer.getServer().runOnServer(server -> player(server).setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
+				net.minecraft.world.item.ItemStack.EMPTY));
+		check(singleplayer, "every HuntLike shield blocks like the vanilla one", data -> shieldStates.stream()
+				.allMatch(st -> st.contains("blocking true") && st.contains("anim BLOCK") && st.endsWith("server true")));
+
 		// Horseshoes at an anvil: one star each (5 levels), up to 5; the horse gets faster per star (0.24 -> 0.36).
 		assertServer(singleplayer, "a Horseshoe adds a star to Pom's Skeletal Remains; 5 stars is the most; stars set the speed", server -> {
 			ServerPlayer player = player(server);

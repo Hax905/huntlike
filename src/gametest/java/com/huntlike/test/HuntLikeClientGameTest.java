@@ -1419,7 +1419,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	}
 
 	private static void hurt(ServerPlayer player, LivingEntity entity, float amount) {
-		entity.invulnerableTime = 0;
 		entity.hurtServer(player.level(), player.level().damageSources().playerAttack(player), amount);
 	}
 

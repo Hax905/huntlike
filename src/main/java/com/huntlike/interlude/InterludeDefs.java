@@ -49,6 +49,35 @@ public final class InterludeDefs {
 					+ "always carry resources, as Bartholomew is a slime prince and Pom is a horse with undead magic capacities, "
 					+ "so they won't think twice on giving you great items to escape and have another attempt at adventuring!"));
 
+	/** Kill quota per stage: lured animals count 1, slime clusters 1, magma cube clusters 2. */
+	public static final int[] QUOTAS = {0, 6, 8, 10};
+
+	/**
+	 * The Interlude as the Hunt its quests run under (quest.hunt = "slime_rider"), so the quest flow (Spirit Lure, quota,
+	 * summoning, failing) is the same as a Hunt's. Never listed among the Hunts.
+	 */
+	private static HuntDefs.Hunt hunt;
+
+	public static HuntDefs.Hunt hunt() {
+		if (hunt == null) {
+			List<HuntDefs.Tier> tiers = new ArrayList<>();
+			for (Stage stage : STAGES) {
+				tiers.add(new HuntDefs.Tier(stage.number(), NAME, TITLE, ModInterlude.POM, 1.0F, stage.health(), stage.melee(), 0, 0.0F,
+						QUOTAS[stage.number()], stage.tokenCost(), 0, stage.animalRank(), abilities(stage.number()), ""));
+			}
+			hunt = new HuntDefs.Hunt(SLIME_RIDER, "Interlude", COLOR, net.minecraft.world.BossEvent.BossBarColor.GREEN, tiers, List.of());
+		}
+		return hunt;
+	}
+
+	public static boolean isInterlude(HuntDefs.Hunt h) {
+		return h != null && SLIME_RIDER.equals(h.id());
+	}
+
+	public static boolean isInterlude(String id) {
+		return SLIME_RIDER.equals(id);
+	}
+
 	public static Stage stage(int number) {
 		return STAGES.get(Math.max(1, Math.min(STAGES.size(), number)) - 1);
 	}

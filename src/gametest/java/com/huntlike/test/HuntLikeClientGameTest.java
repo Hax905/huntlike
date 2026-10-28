@@ -1408,9 +1408,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				new com.huntlike.network.HuntPayloads.Action(action, com.huntlike.interlude.InterludeDefs.SLIME_RIDER, value)));
 	}
 
-	/** Starts a stage and waits for Pom and Bartholomew to arrive. */
+	/** Starts a stage with its quota already full (like /huntlike boss) and waits for Pom and Bartholomew to arrive. */
 	private static void startInterlude(ClientGameTestContext context, TestSingleplayerContext singleplayer, int stage) {
-		interludeAction(context, "interlude_start", stage);
+		singleplayer.getServer().runOnServer(server -> QuestManager.forceBoss(player(server), com.huntlike.interlude.InterludeDefs.hunt(), stage));
 		for (int i = 0; i < 80; i++) {
 			context.waitTicks(1);
 			if (singleplayer.getServer().computeOnServer(server -> interludePom(server) != null)) {
@@ -1449,7 +1449,39 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new HuntMenuScreen(0));
 		context.waitTicks(10);
 		context.takeScreenshot("95-interlude-card");
+		context.waitTicks(110);
+		context.takeScreenshot("95b-interlude-card-bartholomew");
+		context.waitTicks(40);
+		context.takeScreenshot("95c-interlude-card-pom");
 		context.setScreen(() -> null);
+
+		// Starting: 2 tokens, then a kill quota like a Hunt Quest; animals and slime clusters both count.
+		interludeAction(context, "interlude_start", 1);
+		context.waitTicks(3);
+		check(singleplayer, "an Interlude quest starts with a quota of 6", data -> data.quest != null
+				&& com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.quest.hunt) && data.quest.quota == 6
+				&& data.interludeTokens == 174);
+		assertServer(singleplayer, "the Spirit Lure brings both animals and slimes for an Interlude", server -> {
+			var types = com.huntlike.hunt.SpiritLure.huntableHere(player(server), com.huntlike.interlude.InterludeDefs.hunt());
+			HuntLike.LOGGER.info("[test] Interlude huntable: {}", types);
+			return types.contains(EntityTypes.SLIME) && types.size() >= 2;
+		});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var cow = spawnTest(player, EntityTypes.COW, 2.0, 0.0, 1.0F);
+			cow.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
+			var slime = spawnTest(player, EntityTypes.SLIME, -2.0, 0.0, 1.0F);
+			slime.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
+		});
+		context.waitTicks(3);
+		check(singleplayer, "an animal and a slime cluster both count toward the Interlude quota",
+				data -> data.quest != null && data.quest.kills == 2);
+		context.setScreen(() -> new HuntMenuScreen(0));
+		context.waitTicks(5);
+		context.takeScreenshot("95d-interlude-active-quest");
+		context.setScreen(() -> null);
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		context.waitTicks(3);
 
 		// Stage I: Phase 1 shares Pom's health; hits on Bartholomew go there.
 		startInterlude(context, singleplayer, 1);
@@ -1494,8 +1526,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			}
 		});
 		context.waitTicks(3);
-		check(singleplayer, "Stage I won: counted, no Hunt XP, tokens spent", data -> data.progress("slime_rider").bossKills[0] == 1
-				&& data.interludeTokens == 174);
+		check(singleplayer, "Stage I won: counted, the quest is over", data -> data.progress("slime_rider").bossKills[0] == 1
+				&& data.interludeTokens == 174 && data.quest == null);
 		assertServer(singleplayer, "the fight is over", server -> !com.huntlike.interlude.SlimeRiderFight.active(player(server))
 				&& interludePom(server) == null && interludeSlimes(server).isEmpty());
 

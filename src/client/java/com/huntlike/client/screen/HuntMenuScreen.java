@@ -42,6 +42,8 @@ public class HuntMenuScreen extends Screen {
 	private static final Identifier MERCURY = HuntLike.id("textures/gui/mercury.png");
 	private static final Identifier INTERLUDE = HuntLike.id("textures/gui/interlude.png");
 	private static final int RAIL_SIZE = 3;
+	/** Rail positions in pixels: Animal, the Interlude orb halfway, Cluster. */
+	private static final int[] RAIL_COORDS = {0, 28, 56};
 	/** Vanilla's padlock (the cartography table's "locked" icon) and iron chain. */
 	private static final Identifier LOCK = Identifier.withDefaultNamespace("container/cartography_table/locked");
 	private static final Identifier CHAIN = Identifier.withDefaultNamespace("textures/block/iron_chain.png");
@@ -354,15 +356,14 @@ public class HuntMenuScreen extends Screen {
 		// Slanted rail: leans right toward the selected symbol, then back. Two straight, smooth segments.
 		line(g, railX(iy, cx, cy), iy, cx, cy, RAIL);
 		line(g, cx, cy, railX(iy + ih, cx, cy), iy + ih, RAIL);
-		for (int offset = -1; offset <= 1; offset++) {
-			int pos = railPos + offset;
-			if (pos < 0 || pos >= RAIL_SIZE) {
-				continue;
-			}
-			int sy = cy + offset * 56;
+		// The Hunts keep their 56-pixel spacing; the Interlude is a small orb halfway between them.
+		int interludeY = 0;
+		for (int pos = 0; pos < RAIL_SIZE; pos++) {
+			int sy = cy + RAIL_COORDS[pos] - RAIL_COORDS[railPos];
+			int offset = pos == railPos ? 0 : 1;
 			int size = offset == 0 ? 32 : 22;
 			if (pos == 1) {
-				drawInterludeSymbol(g, Math.round(railX(sy, cx, cy)), sy, offset == 0 ? 28 : 18, offset == 0, mouseX, mouseY);
+				interludeY = sy;
 				continue;
 			}
 			int index = pos == 0 ? 0 : 1;
@@ -398,33 +399,35 @@ public class HuntMenuScreen extends Screen {
 				}
 			}
 		}
+		drawInterludeSymbol(g, Math.round(railX(interludeY, cx, cy)), interludeY, railPos == 1 ? 16 : 10, railPos == 1, mouseX, mouseY);
 	}
 
-	/** The Interlude's node on the rail, between the Animal and Cluster symbols. */
+	/** The Interlude's orb on the rail, between the Animal and Cluster symbols. */
 	private void drawInterludeSymbol(GuiGraphicsExtractor g, int x, int y, int size, boolean selected, int mouseX, int mouseY) {
 		int x0 = x - size / 2;
 		int y0 = y - size / 2;
-		boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
+		boolean hover = mouseX >= x0 - 2 && mouseX < x0 + size + 2 && mouseY >= y0 - 2 && mouseY < y0 + size + 2;
 		boolean locked = !com.huntlike.interlude.InterludeDefs.open(ClientHuntState.data);
-		sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
-		g.blit(RenderPipelines.GUI_TEXTURED, INTERLUDE, x0 + 2, y0 + 2, 0.0F, 0.0F, size - 4, size - 4, 26, 26, 26, 26);
+		if (selected || hover) {
+			// A soft halo around the selected or hovered orb.
+			g.fill(x0 - 2, y0, x0 + size + 2, y0 + size, 0x3055AAFF);
+			g.fill(x0, y0 - 2, x0 + size, y0 + size + 2, 0x3055AAFF);
+		}
+		g.blit(RenderPipelines.GUI_TEXTURED, INTERLUDE, x0, y0, 0.0F, 0.0F, size, size, 16, 16, 16, 16);
 		if (locked) {
-			g.fill(x0, y0, x0 + size, y0 + size, 0x90101010);
-			int lw = selected ? 13 : 9;
-			int lh = selected ? 18 : 12;
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, lw, lh);
+			g.fill(x0 + 1, y0 + 1, x0 + size - 1, y0 + size - 1, 0x90101010);
 		}
 		if (selected) {
-			hits.add(new Hit(x0, y0, size, size, this::openPanel));
-			if (hover) {
-				List<Component> tip = new ArrayList<>();
-				tip.add(colored("Interlude: " + com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR));
-				if (locked) {
-					tip.add(colored("Locked: unlocks at Animal Rank " + HuntDefs.ROMAN[com.huntlike.interlude.InterludeDefs.STAGES.get(0)
-							.animalRank()], HuntDefs.RED));
-				}
-				g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
+			hits.add(new Hit(x0 - 2, y0 - 2, size + 4, size + 4, this::openPanel));
+		}
+		if (hover) {
+			List<Component> tip = new ArrayList<>();
+			tip.add(colored("Interlude: " + com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR));
+			if (locked) {
+				tip.add(colored("Locked: unlocks at Animal Rank " + HuntDefs.ROMAN[com.huntlike.interlude.InterludeDefs.STAGES.get(0)
+						.animalRank()], HuntDefs.RED));
 			}
+			g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
 		}
 	}
 
@@ -580,7 +583,7 @@ public class HuntMenuScreen extends Screen {
 		com.huntlike.interlude.InterludeDefs.Stage stage = com.huntlike.interlude.InterludeDefs.stage(interludeStage);
 		HuntData data = ClientHuntState.data;
 		return com.huntlike.interlude.InterludeDefs.stageOpen(data, stage) && data.interludeTokens >= stage.tokenCost()
-				&& !ClientHuntState.peaceful && ClientHuntState.interludeStage == 0 && activeQuest() == null;
+				&& !ClientHuntState.peaceful && activeQuest() == null;
 	}
 
 	/** The Slime Rider Interlude's card: stage, stats, abilities, tokens and Start. */
@@ -590,7 +593,6 @@ public class HuntMenuScreen extends Screen {
 		com.huntlike.interlude.InterludeDefs.Stage stage = com.huntlike.interlude.InterludeDefs.stage(interludeStage);
 		boolean open = com.huntlike.interlude.InterludeDefs.open(data);
 		boolean stageOpen = com.huntlike.interlude.InterludeDefs.stageOpen(data, stage);
-		int running = ClientHuntState.interludeStage;
 		int cx = px + pw / 2;
 		int y = py + 5;
 		g.centeredText(this.font, colored("Interlude", com.huntlike.interlude.InterludeDefs.COLOR), cx, y, WHITE);
@@ -608,8 +610,6 @@ public class HuntMenuScreen extends Screen {
 		boolean affordable = data.interludeTokens >= stage.tokenCost();
 		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
 				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
-		y += 10;
-		g.text(this.font, colored("Experience: ", TEXT_GRAY).append(colored("none", TEXT_DIM)), px + 6, y, WHITE, false);
 		y += 12;
 		int bottom = py + ph - 44;
 		if (!stageOpen) {
@@ -667,24 +667,9 @@ public class HuntMenuScreen extends Screen {
 		}
 		startX += 48;
 		startW -= 48;
-		if (running > 0) {
-			int seconds = ClientHuntState.interludeTicksLeft / 20;
-			g.text(this.font, colored(String.format("Stage %s in progress - %d:%02d left", HuntDefs.ROMAN[running], seconds / 60,
-					seconds % 60), com.huntlike.interlude.InterludeDefs.COLOR), px + 6, tokenY - 11, WHITE, false);
-			Component label = giveUpArmed ? colored("Confirm?", HuntDefs.RED) : Component.literal("Give Up");
-			button(g, startX, by, startW, 16, label, true, mouseX, mouseY, () -> {
-				if (giveUpArmed) {
-					giveUpArmed = false;
-					ClientPlayNetworking.send(new HuntPayloads.Action("interlude_cancel", com.huntlike.interlude.InterludeDefs.SLIME_RIDER, 0));
-				} else {
-					giveUpArmed = true;
-				}
-			});
-		} else {
-			button(g, startX, by, startW, 16, Component.literal("Start [" + stage.tokenCost() + " Tokens]"), interludeCanStart(),
-					mouseX, mouseY, () -> ClientPlayNetworking.send(new HuntPayloads.Action("interlude_start",
-							com.huntlike.interlude.InterludeDefs.SLIME_RIDER, interludeStage)));
-		}
+		button(g, startX, by, startW, 16, Component.literal("Start [" + stage.tokenCost() + " Tokens]"), interludeCanStart(),
+				mouseX, mouseY, () -> ClientPlayNetworking.send(new HuntPayloads.Action("interlude_start",
+						com.huntlike.interlude.InterludeDefs.SLIME_RIDER, interludeStage)));
 	}
 
 	private List<Component> interludeDropLines(int stage) {
@@ -705,7 +690,10 @@ public class HuntMenuScreen extends Screen {
 		return colored(" " + name + " x" + drop.minCount(), WHITE).append(colored("  " + drop.chanceNum() + "/" + drop.chanceDen(), TEXT_GRAY));
 	}
 
-	/** Pom with Bartholomew on its back, from client-only copies. */
+	/**
+	 * The Slime Rider on the card: the pair for 5 seconds (Bartholomew on Pom's back), then Bartholomew alone for 2 and
+	 * Pom alone for 2, and around again. Client-only copies of the mobs.
+	 */
 	private void drawInterludeModel(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2) {
 		if (this.minecraft.level == null) {
 			return;
@@ -714,6 +702,8 @@ public class HuntMenuScreen extends Screen {
 			LivingEntity created = com.huntlike.interlude.ModInterlude.POM.create(this.minecraft.level, EntitySpawnReason.LOAD);
 			if (created != null) {
 				created.setId(-1100);
+				created.setItemSlot(net.minecraft.world.entity.EquipmentSlot.BODY,
+						new ItemStack(net.minecraft.world.item.Items.GOLDEN_HORSE_ARMOR));
 			}
 			return created;
 		});
@@ -726,16 +716,25 @@ public class HuntMenuScreen extends Screen {
 			}
 			return created;
 		});
-		double time = System.currentTimeMillis() / 1000.0;
+		if (pom == null || slime == null) {
+			return;
+		}
+		long millis = System.currentTimeMillis();
+		double time = millis / 1000.0;
 		float lookX = (x1 + x2) / 2.0F + (float) Math.sin(time * 0.7) * 80.0F;
 		float lookY = (y1 + y2) / 2.0F - 10.0F;
-		int scale = 22;
-		if (pom != null) {
-			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 8, x2, y2 + 8, scale, 0.0625F, lookX, lookY, pom);
-		}
-		if (slime != null) {
-			int lift = Math.round(scale * 1.15F);
-			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 8 - lift, x2, y2 + 8 - lift, scale, 0.0625F, lookX, lookY, slime);
+		long cycle = millis % 9000L;
+		if (cycle < 5000L) {
+			// The pair: Bartholomew sits on Pom's back. Drawn first, so Pom's head stays in front of him.
+			int scale = 20;
+			int lift = Math.round(scale * 0.95F);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 10 - lift, x2, y2 + 10 - lift, scale, 0.0625F, lookX, lookY,
+					slime);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 10, x2, y2 + 10, scale, 0.0625F, lookX, lookY, pom);
+		} else if (cycle < 7000L) {
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, 34, 0.0625F, lookX, lookY, slime);
+		} else {
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, 22, 0.0625F, lookX, lookY, pom);
 		}
 	}
 
@@ -747,16 +746,18 @@ public class HuntMenuScreen extends Screen {
 		g.centeredText(this.font, colored("Interlude: " + com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR),
 				cx, y, WHITE);
 		y += 16;
-		String text = tab == 1 ? "Interludes have no Gear. Their tokens are bought on the Quests tab."
-				: "Interludes have no Ranks and give no Hunt XP.";
+		String text = tab == 1 ? "Interludes have no Gear." : "Interludes have no Ranks. Kills:";
 		for (FormattedCharSequence line : this.font.split(colored(text, TEXT_GRAY), pw - 16)) {
 			g.centeredText(this.font, line, cx, y, WHITE);
 			y += 10;
 		}
-		y += 8;
+		if (tab == 1) {
+			return;
+		}
+		y += 4;
 		HuntData.Progress progress = ClientHuntState.data.progress(com.huntlike.interlude.InterludeDefs.SLIME_RIDER);
 		for (com.huntlike.interlude.InterludeDefs.Stage stage : com.huntlike.interlude.InterludeDefs.STAGES) {
-			g.centeredText(this.font, colored("Stage " + stage.roman() + " wins: ", stage.color())
+			g.centeredText(this.font, colored("Stage " + stage.roman() + ": ", stage.color())
 					.append(colored(String.valueOf(progress.bossKills[stage.number() - 1]), WHITE)), cx, y, WHITE);
 			y += 11;
 		}
@@ -816,8 +817,15 @@ public class HuntMenuScreen extends Screen {
 		int y = py + 5;
 		g.centeredText(this.font, colored("Active Quest", WHITE), cx, y, WHITE);
 		y += 13;
-		g.text(this.font, colored(hunt.name() + " ", hunt.color()).append(colored("[Tier " + tier.roman() + "]", tier.color())),
-				px + 6, y, WHITE, false);
+		boolean interludeQuest = com.huntlike.interlude.InterludeDefs.isInterlude(hunt);
+		if (interludeQuest) {
+			var stage = com.huntlike.interlude.InterludeDefs.stage(quest.tier);
+			g.text(this.font, colored("Interlude ", hunt.color()).append(colored("[Stage " + stage.roman() + "]", stage.color())),
+					px + 6, y, WHITE, false);
+		} else {
+			g.text(this.font, colored(hunt.name() + " ", hunt.color()).append(colored("[Tier " + tier.roman() + "]", tier.color())),
+					px + 6, y, WHITE, false);
+		}
 		y += 11;
 		g.text(this.font, colored("Boss: ", TEXT_GRAY).append(colored(tier.bossName(), tier.color())), px + 6, y, WHITE, false);
 		y += 11;
@@ -867,7 +875,9 @@ public class HuntMenuScreen extends Screen {
 
 		int by = py + ph - 20;
 		boolean hoverDrops = button(g, px + 4, by, 50, 16, Component.literal("Drops"), true, mouseX, mouseY, null);
-		if (hoverDrops) {
+		if (hoverDrops && interludeQuest) {
+			g.setComponentTooltipForNextFrame(this.font, interludeDropLines(quest.tier), mouseX, mouseY);
+		} else if (hoverDrops) {
 			dropsHover = tier;
 		}
 		Component cancelLabel = cancelArmed ? colored("Confirm?", HuntDefs.RED) : Component.literal("Cancel");

@@ -72,7 +72,7 @@ public final class TowernaarFight {
 		if (!canStart(data) || phase(player) != 0) {
 			return;
 		}
-		if (data.quest != null || com.huntlike.interlude.SlimeRiderFight.active(player)) {
+		if (data.quest != null) {
 			player.sendSystemMessage(Messages.error("Finish your Hunting Quest first."));
 			return;
 		}

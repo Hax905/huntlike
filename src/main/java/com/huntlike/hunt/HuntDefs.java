@@ -402,6 +402,9 @@ public final class HuntDefs {
 	public static final int[] QUESTLINE_RANKS = {3, 6, 9, 10};
 
 	public static Hunt hunt(String id) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(id)) {
+			return com.huntlike.interlude.InterludeDefs.hunt();
+		}
 		for (Hunt hunt : HUNTS) {
 			if (hunt.id().equals(id)) {
 				return hunt;

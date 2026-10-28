@@ -91,6 +91,12 @@ public final class SpiritLure {
 	 * Overworld, magma cubes in the Nether.
 	 */
 	public static List<EntityType<?>> huntableHere(ServerPlayer player, Hunt hunt) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(hunt)) {
+			// Interludes lure both: the Animal Hunt's animals and the Cluster Hunt's slimes or magma cubes.
+			List<EntityType<?>> both = new ArrayList<>(huntableHere(player, HuntDefs.ANIMAL));
+			both.addAll(huntableHere(player, HuntDefs.CLUSTER));
+			return both;
+		}
 		if (HuntDefs.isCluster(hunt)) {
 			return clusterTypes(player.level());
 		}
@@ -143,12 +149,15 @@ public final class SpiritLure {
 		ServerLevel level = player.level();
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		UUID id = player.getUUID();
-		boolean cluster = HuntDefs.isCluster(hunt);
+		boolean interlude = com.huntlike.interlude.InterludeDefs.isInterlude(hunt);
 		boolean overworld = level.dimension() == Level.OVERWORLD;
-		List<EntityType<?>> clusterHere = cluster ? clusterTypes(level) : List.of();
-		boolean dimensionOk = cluster ? !clusterHere.isEmpty() : overworld;
-		boolean nothingHere = cluster ? clusterHere.isEmpty() || overworld && !solidBiome(level, player.blockPosition())
-				: spawnList(level, player.blockPosition()).isEmpty();
+		List<EntityType<?>> clusterHere = clusterTypes(level);
+		boolean clusterOk = !clusterHere.isEmpty() && !(overworld && !solidBiome(level, player.blockPosition()));
+		boolean animalOk = overworld && !spawnList(level, player.blockPosition()).isEmpty();
+		// Which kind this spawn tries: the Hunt's own, or for an Interlude a random one of the two (the other if it can't).
+		boolean cluster = interlude ? (clusterOk && (!animalOk || player.getRandom().nextBoolean())) : HuntDefs.isCluster(hunt);
+		boolean dimensionOk = interlude ? !clusterHere.isEmpty() || overworld : cluster ? !clusterHere.isEmpty() : overworld;
+		boolean nothingHere = interlude ? !clusterOk && !animalOk : cluster ? !clusterOk : !animalOk;
 
 		// No-spirits hint: once per biome or dimension, after 30 seconds there.
 		if (!dimensionOk || nothingHere) {
@@ -179,7 +188,7 @@ public final class SpiritLure {
 			}
 		}
 
-		int rank = data.progress(quest.hunt).rank();
+		int rank = data.progress(interlude ? "animal" : quest.hunt).rank();
 		// 10 seconds, one second less at Ranks II, IV, VI, VIII and X.
 		int interval = (10 - rank / 2) * 20;
 		int timer = TIMERS.merge(id, 1, Integer::sum);
@@ -187,7 +196,7 @@ public final class SpiritLure {
 			return;
 		}
 		TIMERS.put(id, 0);
-		if (!dimensionOk || SPAWNS_SINCE_KILL.getOrDefault(id, 0) >= SPAWNS_PER_KILL) {
+		if (!dimensionOk || interlude && nothingHere || SPAWNS_SINCE_KILL.getOrDefault(id, 0) >= SPAWNS_PER_KILL) {
 			return;
 		}
 		int nearby = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(CAP_RADIUS), m -> isLuredBy(m, player)).size();
@@ -217,7 +226,7 @@ public final class SpiritLure {
 				if (entity == null) {
 					continue;
 				}
-				lured(player, hunt, entity);
+				lured(player, interlude ? HuntDefs.CLUSTER : hunt, entity);
 				return;
 			}
 			List<Weighted<MobSpawnSettings.SpawnerData>> options = spawnList(level, column);
@@ -238,7 +247,7 @@ public final class SpiritLure {
 			if (entity instanceof Mob mob) {
 				mob.setBaby(false);
 			}
-			lured(player, hunt, entity);
+			lured(player, interlude ? HuntDefs.ANIMAL : hunt, entity);
 			return;
 		}
 	}

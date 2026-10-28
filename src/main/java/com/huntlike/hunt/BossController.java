@@ -162,6 +162,10 @@ public final class BossController {
 	}
 
 	public static void discardBoss(ServerPlayer player, Quest quest) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(quest.hunt)) {
+			com.huntlike.interlude.SlimeRiderFight.discard(player);
+			return;
+		}
 		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
 			ClusterFight.discardAll(player);
 			return;
@@ -209,6 +213,10 @@ public final class BossController {
 	}
 
 	private static void spawnBoss(ServerPlayer player, HuntData data, Quest quest) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(quest.hunt)) {
+			com.huntlike.interlude.SlimeRiderFight.spawn(player, data, quest);
+			return;
+		}
 		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
 			ClusterFight.spawn(player, data, quest);
 			return;
@@ -263,6 +271,10 @@ public final class BossController {
 	// ---------------------------------------------------------------- the fight
 
 	public static void tickBoss(ServerPlayer player, HuntData data, Quest quest) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(quest.hunt)) {
+			com.huntlike.interlude.SlimeRiderFight.tickQuest(player, data, quest);
+			return;
+		}
 		if (HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))) {
 			ClusterFight.tick(player, data, quest);
 			return;

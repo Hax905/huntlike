@@ -83,7 +83,8 @@ public final class ClusterQuota {
 			QuestManager.countLuredKill(killer, data);
 		}
 		HuntData.Quest quest = data.quest;
-		if (quest == null || quest.phase != HuntData.PHASE_KILLING || !HuntDefs.isCluster(HuntDefs.hunt(quest.hunt))
+		if (quest == null || quest.phase != HuntData.PHASE_KILLING
+				|| !(HuntDefs.isCluster(HuntDefs.hunt(quest.hunt)) || com.huntlike.interlude.InterludeDefs.isInterlude(quest.hunt))
 				|| QuestManager.isPeaceful(killer) || !clusterFinished(entity) || com.huntlike.rogue.RogueHunters.active(killer)) {
 			return;
 		}

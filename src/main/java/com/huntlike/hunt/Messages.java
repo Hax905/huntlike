@@ -19,6 +19,12 @@ public final class Messages {
 	}
 
 	private static MutableComponent questLine(String event, int eventColor, Hunt hunt, int tier) {
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(hunt)) {
+			var stage = com.huntlike.interlude.InterludeDefs.stage(tier);
+			return c("Interlude ", HuntDefs.PREFIX).append(c(event, eventColor)).append(c(" - ", HuntDefs.PREFIX))
+					.append(c(com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR))
+					.append(Component.literal(" ")).append(c("[Stage " + stage.roman() + "]", stage.color()));
+		}
 		return c("Hunting Quest ", HuntDefs.PREFIX)
 				.append(c(event, eventColor))
 				.append(c(" - ", HuntDefs.PREFIX))

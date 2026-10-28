@@ -42,7 +42,6 @@ import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.phys.Vec3;
 
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import com.huntlike.entity.BossEgg;
 import com.huntlike.entity.ClusterBall;
@@ -65,17 +64,14 @@ public final class SlimeRiderFight {
 
 	public static final String TAG = "huntlike_interlude";
 	public static final int TIME_LIMIT = 20 * 60 * 5;
-	public static final int SUMMON_TICKS = 40;
 	public static final double FLEE_DISTANCE = 64.0;
 
-	public enum Phase { SUMMON, PAIR, POM, BARTHOLOMEW }
+	public enum Phase { PAIR, POM, BARTHOLOMEW }
 
 	private static final class Fight {
 		final UUID owner;
 		final int stage;
-		Phase phase = Phase.SUMMON;
-		final Vec3 spot;
-		int summonTicks = SUMMON_TICKS;
+		Phase phase = Phase.PAIR;
 		UUID pom;
 		UUID bartholomew;
 		final List<UUID> splits = new ArrayList<>();
@@ -96,10 +92,9 @@ public final class SlimeRiderFight {
 		int ewwWarning;
 		int hopTimer;
 
-		Fight(UUID owner, int stage, Vec3 spot, RandomSource random) {
+		Fight(UUID owner, int stage, RandomSource random) {
 			this.owner = owner;
 			this.stage = stage;
-			this.spot = spot;
 			this.abilityTimer = 100 + random.nextInt(101);
 			this.ewwTimer = 240 + random.nextInt(81);
 		}
@@ -116,20 +111,6 @@ public final class SlimeRiderFight {
 
 	public static boolean active(ServerPlayer player) {
 		return FIGHTS.containsKey(player.getUUID());
-	}
-
-	/** The running stage (0 = none), for the menu. */
-	public static int runningStage(ServerPlayer player) {
-		Fight fight = FIGHTS.get(player.getUUID());
-		return fight == null ? 0 : fight.stage;
-	}
-
-	public static int ticksLeft(ServerPlayer player) {
-		Fight fight = FIGHTS.get(player.getUUID());
-		if (fight == null || fight.phase == Phase.SUMMON) {
-			return TIME_LIMIT;
-		}
-		return (int) Math.max(0, TIME_LIMIT - (player.level().getGameTime() - fight.start));
 	}
 
 	/** Entity ids of the living bodies (the owner sees them glow). */
@@ -193,22 +174,15 @@ public final class SlimeRiderFight {
 		QuestManager.playSound(player, SoundEvents.CHAIN_PLACE, 1.2F);
 	}
 
-	private static Component line(String event, int color, int stage) {
-		Stage s = InterludeDefs.stage(stage);
-		return Messages.c("Interlude ", HuntDefs.PREFIX).append(Messages.c(event, color)).append(Messages.c(" - ", HuntDefs.PREFIX))
-				.append(Messages.c(InterludeDefs.NAME, InterludeDefs.COLOR)).append(Component.literal(" "))
-				.append(Messages.c("[Stage " + s.roman() + "]", s.color()));
-	}
-
+	/**
+	 * Starts an Interlude quest: 2 Interlude Tokens, then a kill quota like a Hunt Quest (the Spirit Lure brings both
+	 * animals and slimes), and the pair is summoned when it's full.
+	 */
 	public static void start(ServerPlayer player, HuntData data, int stageNumber) {
 		if (stageNumber < 1 || stageNumber > InterludeDefs.STAGES.size()) {
 			return;
 		}
 		Stage stage = InterludeDefs.stage(stageNumber);
-		if (active(player)) {
-			player.sendSystemMessage(Messages.error("The Interlude is already running."));
-			return;
-		}
 		if (data.quest != null || com.huntlike.towernaar.TowernaarFight.phase(player) != 0) {
 			player.sendSystemMessage(Messages.error("You already have an active quest."));
 			return;
@@ -229,31 +203,18 @@ public final class SlimeRiderFight {
 			player.sendSystemMessage(Messages.error("Not enough Interlude Tokens."));
 			return;
 		}
-		ServerLevel level = player.level();
-		Vec3 look = player.getLookAngle().multiply(1, 0, 1).normalize();
-		BlockPos ahead = BlockPos.containing(player.getX() + look.x * 4, player.getY(), player.getZ() + look.z * 4);
-		BlockPos spot = QuestManager.findGround(level, ahead);
-		if (spot == null) {
-			spot = QuestManager.findGround(level, player.blockPosition());
-		}
-		if (spot == null) {
-			player.sendSystemMessage(Messages.badTerrain());
-			return;
-		}
 		data.interludeTokens -= stage.tokenCost();
+		HuntData.Quest quest = new HuntData.Quest();
+		quest.hunt = InterludeDefs.SLIME_RIDER;
+		quest.tier = stageNumber;
+		quest.quota = InterludeDefs.QUOTAS[stageNumber];
+		data.quest = quest;
 		player.setAttached(QuestManager.DATA, data);
-		FIGHTS.put(player.getUUID(), new Fight(player.getUUID(), stageNumber, Vec3.atBottomCenterOf(spot), player.getRandom()));
-		player.sendSystemMessage(line("Started", HuntDefs.PREFIX, stageNumber));
+		com.huntlike.hunt.SpiritLure.reset(player);
+		player.sendSystemMessage(Messages.started(InterludeDefs.hunt(), stageNumber));
 		QuestManager.playSound(player, SoundEvents.ENCHANTMENT_TABLE_USE, 1.0F);
-		QuestManager.playSound(player, SoundEvents.RESPAWN_ANCHOR_CHARGE, 1.0F);
+		QuestManager.playSound(player, SoundEvents.BEACON_ACTIVATE, 1.2F);
 		QuestManager.sync(player);
-	}
-
-	public static void cancel(ServerPlayer player) {
-		Fight fight = FIGHTS.get(player.getUUID());
-		if (fight != null) {
-			fail(player, fight);
-		}
 	}
 
 	// ---------------------------------------------------------------- the fight
@@ -304,29 +265,41 @@ public final class SlimeRiderFight {
 		mob.addTag(com.huntlike.hunt.BossController.OWNER_PREFIX + owner.getUUID());
 	}
 
-	private static void spawn(ServerPlayer player, Fight fight) {
+	/** The quota is full and the summoning is done: Pom and Bartholomew arrive at the summoning spot. */
+	public static void spawn(ServerPlayer player, HuntData data, HuntData.Quest quest) {
 		ServerLevel level = player.level();
+		Fight fight = new Fight(player.getUUID(), quest.tier, player.getRandom());
 		Stage stage = InterludeDefs.stage(fight.stage);
+		Vec3 spot = new Vec3(quest.summonX + 0.5, quest.summonY, quest.summonZ + 0.5);
 		Pom pom = ModInterlude.POM.create(level, EntitySpawnReason.MOB_SUMMONED);
 		Bartholomew bartholomew = ModInterlude.BARTHOLOMEW.create(level, EntitySpawnReason.MOB_SUMMONED);
 		if (pom == null || bartholomew == null) {
-			fail(player, fight);
+			QuestManager.resetToQuotaMinusOne(player, data);
 			return;
 		}
-		pom.snapTo(fight.spot.x, fight.spot.y, fight.spot.z, player.getYRot() + 180.0F, 0.0F);
+		pom.snapTo(spot.x, spot.y, spot.z, player.getYRot() + 180.0F, 0.0F);
 		prepare(pom, player, stage.health());
 		pom.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.25);
 		pom.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
 		bartholomew.setSize(2, true);
-		bartholomew.snapTo(fight.spot.x, fight.spot.y + 1.5, fight.spot.z, player.getYRot() + 180.0F, 0.0F);
+		bartholomew.snapTo(spot.x, spot.y + 1.5, spot.z, player.getYRot() + 180.0F, 0.0F);
 		prepare(bartholomew, player, stage.health());
 		level.addFreshEntity(pom);
 		level.addFreshEntity(bartholomew);
 		bartholomew.startRiding(pom, true, true);
 		fight.pom = pom.getUUID();
 		fight.bartholomew = bartholomew.getUUID();
-		fight.phase = Phase.PAIR;
+		// Pom wears gold horse armor, for looks only (no armor points).
+		ItemStack armor = new ItemStack(Items.GOLDEN_HORSE_ARMOR);
+		armor.set(DataComponents.ATTRIBUTE_MODIFIERS, net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
+		pom.setItemSlot(net.minecraft.world.entity.EquipmentSlot.BODY, armor);
+		pom.setDropChance(net.minecraft.world.entity.EquipmentSlot.BODY, 0.0F);
 		fight.start = level.getGameTime();
+		FIGHTS.put(player.getUUID(), fight);
+		quest.bossUuid = pom.getUUID().toString();
+		quest.bossSpawnTime = level.getGameTime();
+		quest.phase = HuntData.PHASE_BOSS;
+		player.setAttached(QuestManager.DATA, data);
 		ANIMAL_BODIES.add(pom.getUUID());
 		CLUSTER_BODIES.add(pom.getUUID());
 		ANIMAL_BODIES.add(bartholomew.getUUID());
@@ -335,65 +308,41 @@ public final class SlimeRiderFight {
 				BossEvent.BossBarOverlay.NOTCHED_10);
 		fight.bar.addPlayer(player);
 		level.sendParticles(ParticleTypes.EXPLOSION, pom.getX(), pom.getY() + 0.5, pom.getZ(), 1, 0, 0, 0, 0);
-		player.sendSystemMessage(line("Boss Spawned", HuntDefs.AQUA, fight.stage));
+		player.sendSystemMessage(Messages.bossSpawned(InterludeDefs.hunt(), fight.stage));
 		QuestManager.playSound(player, SoundEvents.EVOKER_PREPARE_SUMMON, 1.0F);
 		QuestManager.playSound(player, SoundEvents.ZOMBIE_HORSE_AMBIENT, 0.8F);
 		QuestManager.sync(player);
 	}
 
-	public static void tick(MinecraftServer server) {
-		for (Map.Entry<UUID, Fight> entry : new ArrayList<>(FIGHTS.entrySet())) {
-			Fight fight = entry.getValue();
-			ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-			if (player == null) {
-				// Logging out ends the Interlude (no refund).
-				end(server, fight);
-				continue;
-			}
-			ServerLevel level = player.level();
-			if (fight.phase == Phase.SUMMON) {
-				tickSummon(player, fight);
-				continue;
-			}
-			List<LivingEntity> bodies = bodies(level, fight);
-			long elapsed = level.getGameTime() - fight.start;
-			if (!player.isAlive() || bodies.isEmpty() || elapsed > TIME_LIMIT || QuestManager.isPeaceful(player)
-					|| bodies.get(0).level() != level || bodies.get(0).distanceTo(player) > FLEE_DISTANCE) {
-				fail(player, fight);
-				continue;
-			}
-			updateBar(player, fight, bodies, elapsed);
-			if (fight.meleeCooldown > 0) {
-				fight.meleeCooldown--;
-			}
-			switch (fight.phase) {
-				case PAIR -> tickPair(player, fight, (Mob) bodies.get(0));
-				case POM -> tickPom(player, fight, (Mob) bodies.get(0));
-				case BARTHOLOMEW -> tickBartholomew(player, fight, bodies);
-				default -> {
-				}
-			}
-			if (elapsed % 20 == 0) {
-				QuestManager.sync(player);
-			}
-		}
-	}
-
-	private static void tickSummon(ServerPlayer player, Fight fight) {
+	/** Every tick of the boss phase (from the quest): time limit, distance, then the phase's moves and abilities. */
+	public static void tickQuest(ServerPlayer player, HuntData data, HuntData.Quest quest) {
+		Fight fight = FIGHTS.get(player.getUUID());
 		ServerLevel level = player.level();
-		double progress = 1.0 - fight.summonTicks / (double) SUMMON_TICKS;
-		double radius = 1.8 * (1.0 - progress) + 0.2;
-		double angle = fight.summonTicks * 0.45;
-		for (int arm = 0; arm < 4; arm++) {
-			double a = angle + arm * Math.PI / 2.0;
-			double y = fight.spot.y + 0.1 + progress * 1.8 + arm * 0.1;
-			level.sendParticles(new DustParticleOptions(InterludeDefs.COLOR, 1.0F), fight.spot.x + Math.cos(a) * radius, y,
-					fight.spot.z + Math.sin(a) * radius, 1, 0, 0, 0, 0);
-			level.sendParticles(ParticleTypes.ITEM_SLIME, fight.spot.x + Math.cos(a + 0.3) * radius, y,
-					fight.spot.z + Math.sin(a + 0.3) * radius, 1, 0, 0, 0, 0);
+		List<LivingEntity> bodies = fight == null ? List.of() : bodies(level, fight);
+		if (fight == null || bodies.isEmpty()) {
+			// The pair vanished without being beaten: one kill short of calling them again, like a Hunt boss.
+			QuestManager.resetToQuotaMinusOne(player, data);
+			return;
 		}
-		if (--fight.summonTicks <= 0) {
-			spawn(player, fight);
+		if (QuestManager.isPeaceful(player)) {
+			QuestManager.resetToQuotaMinusOne(player, data);
+			return;
+		}
+		long elapsed = level.getGameTime() - fight.start;
+		if (elapsed > TIME_LIMIT || bodies.get(0).level() != level || bodies.get(0).distanceTo(player) > FLEE_DISTANCE) {
+			QuestManager.fail(player, data);
+			return;
+		}
+		updateBar(player, fight, bodies, elapsed);
+		if (fight.meleeCooldown > 0) {
+			fight.meleeCooldown--;
+		}
+		switch (fight.phase) {
+			case PAIR -> tickPair(player, fight, (Mob) bodies.get(0));
+			case POM -> tickPom(player, fight, (Mob) bodies.get(0));
+			case BARTHOLOMEW -> tickBartholomew(player, fight, bodies);
+			default -> {
+			}
 		}
 	}
 
@@ -710,7 +659,7 @@ public final class SlimeRiderFight {
 		pom.allowDeath = true;
 		pom.discard();
 		if (player != null) {
-			player.sendSystemMessage(Messages.c("The Equus got distracted by a butterfly and left without anyone noticing!",
+			player.sendSystemMessage(Messages.c("Pom got distracted by a butterfly and left without anyone noticing!",
 					InterludeDefs.COLOR));
 		}
 		return true;
@@ -792,6 +741,11 @@ public final class SlimeRiderFight {
 			fight.bar.removeAllPlayers();
 		}
 		HuntData data = QuestManager.data(player);
+		if (data.quest == null || !InterludeDefs.isInterlude(data.quest.hunt)) {
+			return;
+		}
+		data.quest = null;
+		com.huntlike.hunt.SpiritLure.cleanup(player);
 		HuntData.Progress progress = data.progress(InterludeDefs.SLIME_RIDER);
 		boolean pomStayed = fight.phase == Phase.POM;
 		List<Drop> drops = pomStayed ? InterludeDefs.pomDrops(fight.stage) : InterludeDefs.bartholomewDrops(fight.stage);
@@ -816,27 +770,31 @@ public final class SlimeRiderFight {
 		}
 		progress.bossKills[fight.stage - 1]++;
 		player.setAttached(QuestManager.DATA, data);
-		player.sendSystemMessage(line("Complete", HuntDefs.DARK_GREEN, fight.stage));
+		player.sendSystemMessage(Messages.complete(InterludeDefs.hunt(), fight.stage));
 		QuestManager.playSound(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F);
 		QuestManager.sync(player);
 	}
 
-	private static void end(MinecraftServer server, Fight fight) {
-		FIGHTS.remove(fight.owner);
+	/** The quest failed, was cancelled, or its owner left: the pair goes away (the quest decides the rest). */
+	public static void discard(ServerPlayer player) {
+		Fight fight = FIGHTS.remove(player.getUUID());
+		if (fight == null) {
+			return;
+		}
 		if (fight.bar != null) {
 			fight.bar.removeAllPlayers();
 		}
-		for (ServerLevel level : server.getAllLevels()) {
+		for (ServerLevel level : player.level().getServer().getAllLevels()) {
 			for (UUID id : allIds(fight)) {
 				Entity entity = level.getEntity(id);
 				if (entity != null) {
 					if (entity instanceof Pom pom) {
 						pom.allowDeath = true;
 					}
-					ANIMAL_BODIES.remove(id);
-					CLUSTER_BODIES.remove(id);
 					entity.discard();
 				}
+				ANIMAL_BODIES.remove(id);
+				CLUSTER_BODIES.remove(id);
 			}
 		}
 	}
@@ -850,13 +808,6 @@ public final class SlimeRiderFight {
 			ids.add(fight.bartholomew);
 		}
 		return ids;
-	}
-
-	private static void fail(ServerPlayer player, Fight fight) {
-		end(player.level().getServer(), fight);
-		player.sendSystemMessage(line("Failed", HuntDefs.DARK_RED, fight.stage));
-		QuestManager.playSound(player, SoundEvents.BEACON_DEACTIVATE, 0.8F);
-		QuestManager.sync(player);
 	}
 
 	/** Interlude bodies with no fight (left over after a restart) go away. */
@@ -874,7 +825,6 @@ public final class SlimeRiderFight {
 	}
 
 	public static void initialize() {
-		ServerTickEvents.END_SERVER_TICK.register(SlimeRiderFight::tick);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register(SlimeRiderFight::allowDamage);
 		ServerLivingEntityEvents.AFTER_DEATH.register(SlimeRiderFight::onDeath);
 	}

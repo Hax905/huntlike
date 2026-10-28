@@ -43,8 +43,8 @@ public class Pom extends ZombieHorse {
 
 	@Override
 	public void die(DamageSource source) {
+		// Phase 1 ending: the fight sets up Phase 2 (Pom keeps half the health, or leaves) instead of a death.
 		if (!allowDeath && this.level() instanceof ServerLevel && SlimeRiderFight.onPomDefeated(this)) {
-			this.setHealth(1.0F);
 			return;
 		}
 		super.die(source);

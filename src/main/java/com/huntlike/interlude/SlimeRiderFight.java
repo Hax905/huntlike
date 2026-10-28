@@ -713,7 +713,7 @@ public final class SlimeRiderFight {
 			player.sendSystemMessage(Messages.c("The Equus got distracted by a butterfly and left without anyone noticing!",
 					InterludeDefs.COLOR));
 		}
-		return false;
+		return true;
 	}
 
 	private static void poof(ServerLevel level, Entity entity) {

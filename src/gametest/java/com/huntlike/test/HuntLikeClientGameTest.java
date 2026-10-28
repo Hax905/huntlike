@@ -191,13 +191,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
 					new com.huntlike.network.HuntPayloads.Action("select", "animal", 0)));
 			context.waitTicks(5);
+			// The panel opens on the highest open tier (V): two steps back is Tier III.
 			context.setScreen(() -> new HuntMenuScreen(0));
 			context.waitTicks(5);
-			context.getInput().pressKey(InputConstants.KEY_RETURN);
+			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(3);
-			context.getInput().pressKey(InputConstants.KEY_D);
-			context.waitTicks(3);
-			context.getInput().pressKey(InputConstants.KEY_D);
+			context.getInput().pressKey(InputConstants.KEY_A);
 			context.waitTicks(10);
 			context.takeScreenshot("93-ovis-ammon-horns");
 			context.getInput().pressKey(InputConstants.KEY_D);

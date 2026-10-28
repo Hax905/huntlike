@@ -89,12 +89,12 @@ public final class Horns {
 
 	static final class HornModel extends Model<Unit> {
 		HornModel(ModelPart root) {
-			super(root, RenderTypes::entityCutoutNoCull);
+			super(root, RenderTypes::entityCutout);
 		}
 	}
 
 	/** Draws the horns on the parent model's head, with the given skin. */
-	public static final class Layer<S extends LivingEntityRenderState, M extends EntityModel<S>> extends RenderLayer<S, M> {
+	public static final class Layer<S extends LivingEntityRenderState, M extends EntityModel<? super S>> extends RenderLayer<S, M> {
 		private final HornModel model;
 		private final Identifier texture;
 

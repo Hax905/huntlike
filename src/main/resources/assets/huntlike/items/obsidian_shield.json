@@ -13,7 +13,8 @@
       "type": "minecraft:special",
       "base": "minecraft:item/shield_blocking",
       "model": {
-        "type": "minecraft:shield"
+        "type": "huntlike:textured_shield",
+        "texture": "huntlike:textures/entity/shield/obsidian_shield.png"
       }
     },
     "property": "minecraft:using_item",

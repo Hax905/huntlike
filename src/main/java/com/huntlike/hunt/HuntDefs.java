@@ -300,7 +300,13 @@ public final class HuntDefs {
 			new GearTrade("Unbreakable Shield", 0, List.of(Cost.of(com.huntlike.gear.ModShields.OBSIDIAN_SHIELD, 1),
 					Cost.of(Items.NETHERITE_SCRAP, 2), Cost.of(Items.ENDER_PEARL, 16)), List.of(com.huntlike.gear.ModShields.UNBREAKABLE_SHIELD), 1),
 			new GearTrade("Magnetic Wand", 0, List.of(Cost.of(ModItems.SLIME_WASHED_HOLMIUM, 1), Cost.of(ModItems.SUBLIMATING_MAGMA, 1),
-					Cost.of(ModItems.GELID_SLIME_BALL, 5)), List.of(com.huntlike.gear.ModShields.MAGNETIC_WAND), WAND_CHAPTER));
+					Cost.of(ModItems.GELID_SLIME_BALL, 5)), List.of(com.huntlike.gear.ModShields.MAGNETIC_WAND), WAND_CHAPTER),
+			// Always on sale. The copper rod is the (unweathered, unwaxed) lightning rod.
+			new GearTrade("A-Phone", 0, List.of(Cost.of(Items.REDSTONE, 8), Cost.of(Items.REDSTONE_TORCH, 2), Cost.of(Items.IRON_INGOT, 10),
+					Cost.of(ModItems.FROZEN_SLIME_BALL, 4), Cost.of(ModItems.DECENT_QUALITY_MYSTERY_MEAT, 4),
+					Cost.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(
+							net.minecraft.resources.Identifier.withDefaultNamespace("lightning_rod")), 1),
+					Cost.of(Items.GLASS, 1), Cost.of(Items.GOLD_INGOT, 5)), List.of(ModItems.A_PHONE)));
 
 	/** Whether a chapter-gated trade is open: Koro's chapters for Animal, Towernaar's (or the wand's PRD) for Cluster. */
 	public static boolean tradeOpen(HuntData data, Hunt hunt, GearTrade trade) {

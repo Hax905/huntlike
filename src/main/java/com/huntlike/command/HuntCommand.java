@@ -28,7 +28,8 @@ import com.huntlike.hunt.QuestManager;
  * Operator commands:
  * /huntlike xp|tokens add &lt;amount&gt; [hunt], /huntlike reset,
  * /huntlike quest start &lt;players&gt; &lt;hunt&gt; &lt;tier&gt;, /huntlike quest cancel &lt;players&gt;,
- * /huntlike stats [player], /huntlike boss &lt;hunt&gt; &lt;tier&gt; [players].
+ * /huntlike stats [player], /huntlike boss &lt;hunt&gt; &lt;tier&gt; [players],
+ * /huntlike questline &lt;hunt&gt; &lt;chapter&gt; [players] (animal = Koro, cluster = Towernaar; one past the last = all done).
  */
 public final class HuntCommand {
 	private HuntCommand() {
@@ -60,6 +61,12 @@ public final class HuntCommand {
 								.executes(ctx -> stats(ctx, ctx.getSource().getPlayerOrException()))
 								.then(Commands.argument("player", EntityArgument.player())
 										.executes(ctx -> stats(ctx, EntityArgument.getPlayer(ctx, "player")))))
+						.then(Commands.literal("questline")
+								.then(huntArgument()
+										.then(Commands.argument("chapter", IntegerArgumentType.integer(1, 9))
+												.executes(ctx -> questline(ctx, java.util.List.of(ctx.getSource().getPlayerOrException())))
+												.then(Commands.argument("players", EntityArgument.players())
+														.executes(ctx -> questline(ctx, EntityArgument.getPlayers(ctx, "players")))))))
 						.then(Commands.literal("boss")
 								.then(huntArgument()
 										.then(Commands.argument("tier", IntegerArgumentType.integer(1, 5))
@@ -111,6 +118,49 @@ public final class HuntCommand {
 		if (count > 0) {
 			ctx.getSource().sendSuccess(() -> Component.literal(what + " for " + count + " player" + (count == 1 ? "." : "s.")), true);
 		}
+		return count;
+	}
+
+	/**
+	 * Jumps a Hunt's questline to the start of a chapter (1 = the first): the chapters before it count as finished (no rewards
+	 * are given), and the chapter itself is waiting for its first click. One past the last chapter = the questline is done.
+	 * The chapter's Rank requirement still applies.
+	 */
+	private static int questline(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> players) throws CommandSyntaxException {
+		Hunt hunt = hunt(ctx);
+		int chapter = IntegerArgumentType.getInteger(ctx, "chapter");
+		boolean cluster = HuntDefs.isCluster(hunt);
+		int chapters = cluster ? com.huntlike.towernaar.TowernaarScript.CHAPTERS.size() : com.huntlike.hunt.KoroScript.CHAPTERS.size();
+		if (chapter > chapters + 1) {
+			ctx.getSource().sendFailure(Component.literal(hunt.name() + " has " + chapters + " chapters (use " + (chapters + 1)
+					+ " to mark them all done)."));
+			return 0;
+		}
+		int done = chapter - 1;
+		for (ServerPlayer player : players) {
+			HuntData data = QuestManager.data(player);
+			if (cluster) {
+				com.huntlike.towernaar.TowernaarFight.forget(player);
+				data.towernaarDone = done;
+				data.towernaarStep = 0;
+				data.towernaarKillBase = data.rogueKills;
+			} else {
+				data.koroDone = done;
+				data.koroStep = 0;
+			}
+			player.setAttached(QuestManager.DATA, data);
+			if (cluster) {
+				com.huntlike.gear.ModShields.stampSigil(player, data);
+			}
+			QuestManager.sync(player);
+		}
+		String who = cluster ? "Towernaar" : "Koro";
+		String what = chapter > chapters ? who + "'s questline set to finished" : who + "'s questline set to Chapter " + chapter;
+		int rank = chapter > chapters ? 0 : cluster ? com.huntlike.towernaar.TowernaarScript.CHAPTERS.get(done).rank()
+				: com.huntlike.hunt.KoroScript.CHAPTERS.get(done).rank();
+		int count = players.size();
+		ctx.getSource().sendSuccess(() -> Component.literal(what + " for " + count + " player" + (count == 1 ? "" : "s")
+				+ (rank > 0 ? " (needs " + hunt.name() + " Rank " + HuntDefs.ROMAN[rank] + ")." : ".")), true);
 		return count;
 	}
 

@@ -1140,9 +1140,33 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return !hunter.isInvisible() && hunter.getMaxHealth() == health
 					&& hunter.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage;
 		});
+		// The lure is stuck at 3 of 3 spawns with a lured cow alive: the hunter's death starts the lure over.
+		final java.util.UUID[] luredCow = new java.util.UUID[1];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			com.huntlike.hunt.SpiritLure.setSpawnsSinceKill(player, com.huntlike.hunt.SpiritLure.SPAWNS_PER_KILL);
+			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
+			cow.snapTo(player.getX() - 5, player.getY(), player.getZ() - 5, 0.0F, 0.0F);
+			cow.addTag(com.huntlike.hunt.SpiritLure.LURED_TAG);
+			cow.addTag(com.huntlike.hunt.BossController.OWNER_PREFIX + player.getUUID());
+			player.level().addFreshEntity(cow);
+			luredCow[0] = cow.getUUID();
+		});
 		killRogue(singleplayer);
 		context.waitTicks(3);
 		check(singleplayer, "a Rogue Hunter kill is counted and the quest goes on", data -> data.rogueKills == 1 && data.quest != null);
+		assertServer(singleplayer, "the Rogue Hunter's death resets the Spirit Lure: 0 of 3 spawns, the old lured cow no longer counts",
+				server -> {
+					ServerPlayer player = player(server);
+					var cow = player.level().getEntity(luredCow[0]);
+					int spawns = com.huntlike.hunt.SpiritLure.spawnsSinceKill(player);
+					boolean lured = cow != null && com.huntlike.hunt.SpiritLure.isLured(cow);
+					HuntLike.LOGGER.info("[test] lure after the hunter died: spawns {} cow still lured {}", spawns, lured);
+					if (cow != null) {
+						cow.discard();
+					}
+					return spawns == 0 && !lured;
+				});
 		assertServer(singleplayer, "encounter over", server -> !com.huntlike.rogue.RogueHunters.active(player(server)));
 
 		// The 10th hunter is a special one.
@@ -1390,8 +1414,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> null);
 		context.waitTicks(3);
 
-		// The Magnetic Wand pulls mobs to where you look, but not your pets.
-		assertServer(singleplayer, "Magnetic Wand bought; it pulls a cow but not a tamed wolf", server -> {
+		// The Magnetic Wand pulls mobs to where you look and holds them there for 1.5 s, but not your pets.
+		final Object[] wand = new Object[4];
+		assertServer(singleplayer, "Magnetic Wand bought; it catches a cow but not a tamed wolf", server -> {
 			ServerPlayer player = player(server);
 			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
 				e.discard();
@@ -1408,19 +1433,108 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					net.minecraft.world.level.ClipContext.Fluid.NONE, player));
 			var point = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? end : hit.getLocation();
 			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
-			cow.snapTo(point.x + 4.0, point.y, point.z, 0.0F, 0.0F);
+			cow.snapTo(point.x + 6.0, point.y, point.z, 0.0F, 0.0F);
 			player.level().addFreshEntity(cow);
 			var wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.COMMAND);
 			wolf.snapTo(point.x - 4.0, point.y, point.z, 0.0F, 0.0F);
 			wolf.tame(player);
 			player.level().addFreshEntity(wolf);
 			int pulled = com.huntlike.gear.ModShields.pull(player);
-			var motion = cow.getDeltaMovement();
-			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} aim {} pulled {} cow motion {} wolf motion {}", bought, point, pulled, motion,
-					wolf.getDeltaMovement());
-			cow.discard();
-			wolf.discard();
-			return bought && pulled == 1 && motion.x < 0 && wolf.getDeltaMovement().x <= 0.0;
+			wand[0] = point;
+			wand[1] = cow.getUUID();
+			wand[2] = wolf.getUUID();
+			wand[3] = wolf.position();
+			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} aim {} caught {}", bought, point, pulled);
+			return bought && pulled == 1;
+		});
+		context.waitTicks(15);
+		assertServer(singleplayer, "after 0.75 s the cow is at the spot, without being launched", server -> {
+			var level = player(server).level();
+			var cow = level.getEntity((java.util.UUID) wand[1]);
+			var point = (net.minecraft.world.phys.Vec3) wand[0];
+			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
+			HuntLike.LOGGER.info("[test] Magnetic Wand at 15 ticks: cow {} blocks from the spot, {} above it", flat,
+					cow == null ? 0 : cow.getY() - point.y);
+			return flat < 1.5 && cow.getY() - point.y < 2.0;
+		});
+		context.waitTicks(12);
+		assertServer(singleplayer, "it is still held there at 1.35 s; the tamed wolf never moved toward it", server -> {
+			var level = player(server).level();
+			var cow = level.getEntity((java.util.UUID) wand[1]);
+			var wolf = level.getEntity((java.util.UUID) wand[2]);
+			var point = (net.minecraft.world.phys.Vec3) wand[0];
+			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
+			double wolfMoved = wolf == null ? 0 : wolf.position().distanceTo((net.minecraft.world.phys.Vec3) wand[3]);
+			HuntLike.LOGGER.info("[test] Magnetic Wand at 27 ticks: cow {} blocks from the spot; wolf moved {}", flat, wolfMoved);
+			if (cow != null) {
+				cow.discard();
+			}
+			if (wolf != null) {
+				wolf.discard();
+			}
+			return flat < 1.0 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
+		});
+
+		// The A-Phone is bought on the Cluster Misc page (4th trade), not crafted.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			var inv = player.getInventory();
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REDSTONE, 8));
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.REDSTONE_TORCH, 2));
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 10));
+			inv.add(new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.FROZEN_SLIME_BALL, 4));
+			inv.add(new net.minecraft.world.item.ItemStack(com.huntlike.registry.ModItems.DECENT_QUALITY_MYSTERY_MEAT, 4));
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(
+					net.minecraft.resources.Identifier.withDefaultNamespace("lightning_rod")), 1));
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GLASS, 1));
+			inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 5));
+		});
+		context.setScreen(() -> new HuntMenuScreen(1));
+		context.waitTicks(5);
+		context.takeScreenshot("91b-cluster-misc-a-phone");
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("buy_gear", "cluster", 103)));
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+		assertServer(singleplayer, "the A-Phone is bought in the Cluster gear shop and every cost is taken", server -> {
+			var inv = player(server).getInventory();
+			int phones = 0;
+			int other = 0;
+			for (int i = 0; i < inv.getContainerSize(); i++) {
+				var stack = inv.getItem(i);
+				if (stack.is(com.huntlike.registry.ModItems.A_PHONE)) {
+					phones += stack.getCount();
+				} else if (!stack.isEmpty()) {
+					other += stack.getCount();
+				}
+			}
+			boolean noRecipe = server.getRecipeManager().byKey(net.minecraft.resources.ResourceKey.create(
+					net.minecraft.core.registries.Registries.RECIPE, HuntLike.id("a_phone"))).isEmpty();
+			HuntLike.LOGGER.info("[test] A-Phone bought: phones {} other items left {} crafting recipe gone {}", phones, other, noRecipe);
+			return phones == 1 && other == 0 && noRecipe;
+		});
+
+		// /huntlike questline jumps Koro's or Towernaar's questline to a chapter; one past the last = all done.
+		int[] saved = singleplayer.getServer().computeOnServer(server -> {
+			HuntData data = QuestManager.data(player(server));
+			return new int[] {data.koroDone, data.koroStep, data.towernaarDone, data.towernaarStep};
+		});
+		singleplayer.getServer().runCommand("huntlike questline cluster 2 @a");
+		context.waitTicks(2);
+		check(singleplayer, "questline cluster 2: Towernaar at the start of Chapter II", data -> data.towernaarDone == 1 && data.towernaarStep == 0);
+		singleplayer.getServer().runCommand("huntlike questline animal 5 @a");
+		context.waitTicks(2);
+		check(singleplayer, "questline animal 5: Koro's questline finished", data -> data.koroDone == 4 && data.koroStep == 0);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			data.koroDone = saved[0];
+			data.koroStep = saved[1];
+			data.towernaarDone = saved[2];
+			data.towernaarStep = saved[3];
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
 		});
 	}
 

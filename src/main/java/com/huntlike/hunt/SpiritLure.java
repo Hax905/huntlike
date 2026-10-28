@@ -66,6 +66,27 @@ public final class SpiritLure {
 		SPAWNS_SINCE_KILL.put(player.getUUID(), 0);
 	}
 
+	/**
+	 * A fresh start for the lure (after a Rogue Hunter dies or leaves): lured mobs still alive stop counting as lured, and
+	 * the lure is back at 0 of its 3 spawns.
+	 */
+	public static void release(ServerPlayer player) {
+		for (Mob mob : player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(256.0), m -> isLuredBy(m, player))) {
+			mob.removeTag(LURED_TAG);
+		}
+		reset(player);
+	}
+
+	/** Lured spawns since the quota last moved (0 to 3). */
+	public static int spawnsSinceKill(ServerPlayer player) {
+		return SPAWNS_SINCE_KILL.getOrDefault(player.getUUID(), 0);
+	}
+
+	/** Sets that count (for the tests). */
+	public static void setSpawnsSinceKill(ServerPlayer player, int spawns) {
+		SPAWNS_SINCE_KILL.put(player.getUUID(), spawns);
+	}
+
 	/** A kill counted toward the quota: the lure may spawn again. */
 	public static void onQuotaKill(ServerPlayer player) {
 		SPAWNS_SINCE_KILL.put(player.getUUID(), 0);

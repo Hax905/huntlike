@@ -161,6 +161,7 @@ public final class RogueHunters {
 					player.sendSystemMessage(Messages.c("The presence fades away...", 0x777777));
 				}
 				end(entry.getKey(), hunter);
+				SpiritLure.release(player);
 				continue;
 			}
 			if (hunter.getTarget() != player) {
@@ -236,6 +237,8 @@ public final class RogueHunters {
 		if (player == null) {
 			return;
 		}
+		// The Spirit Lure starts over for its hunted player: 0 of 3 spawns, nothing left counting as lured.
+		SpiritLure.release(player);
 		HuntData data = QuestManager.data(player);
 		data.rogueKills++;
 		if (hunter.isSpecial()) {

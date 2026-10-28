@@ -176,27 +176,45 @@ public final class ModShields {
 		}
 	}
 
-	/** Pulls every creature within 8 blocks of the spot you look at (up to 20 blocks away) to that spot. */
+	/** How long a cast holds its creatures at the spot: 1.5 seconds. */
+	public static final int WAND_HOLD_TICKS = 30;
+
+	/** A cast's magnetic field: the spot, the creatures it caught, and the ticks it has left. */
+	private static final class Field {
+		final ServerLevel level;
+		final Vec3 point;
+		final List<java.util.UUID> caught;
+		int ticksLeft = WAND_HOLD_TICKS;
+
+		Field(ServerLevel level, Vec3 point, List<java.util.UUID> caught) {
+			this.level = level;
+			this.point = point;
+			this.caught = caught;
+		}
+	}
+
+	private static final List<Field> FIELDS = new ArrayList<>();
+
+	/**
+	 * Catches every creature within 8 blocks of the spot you look at (up to 20 blocks away), then for 1.5 seconds draws them
+	 * to that spot and holds them there. Returns how many it caught.
+	 */
 	public static int pull(ServerPlayer player) {
 		ServerLevel level = player.level();
 		Vec3 eye = player.getEyePosition();
 		Vec3 end = eye.add(player.getLookAngle().scale(WAND_REACH));
 		HitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
 		Vec3 point = hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
-		int pulled = 0;
+		List<java.util.UUID> caught = new ArrayList<>();
 		for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, new AABB(point, point).inflate(WAND_RADIUS),
 				e -> e.isAlive() && !(e instanceof Player) && !(e instanceof ArmorStand)
 						&& !(e instanceof com.huntlike.pet.PetCube pet && pet.isOwnedBy(player))
 						&& !(e instanceof TamableAnimal pet && pet.isOwnedBy(player)) && e.position().distanceTo(point) <= WAND_RADIUS)) {
-			Vec3 to = point.subtract(entity.position());
-			double distance = to.length();
-			if (distance < 0.5) {
-				continue;
-			}
-			Vec3 push = to.normalize().scale(Math.min(1.8, 0.35 + distance * 0.22));
-			entity.setDeltaMovement(Vec3.ZERO);
-			entity.push(push.x, Math.max(0.25, push.y + 0.2), push.z);
-			pulled++;
+			caught.add(entity.getUUID());
+			attract(entity, point);
+		}
+		if (!caught.isEmpty()) {
+			FIELDS.add(new Field(level, point, caught));
 		}
 		Vec3 step = point.subtract(eye).normalize();
 		for (double d = 1.0; d < point.distanceTo(eye); d += 0.6) {
@@ -205,7 +223,46 @@ public final class ModShields {
 		}
 		level.sendParticles(ParticleTypes.REVERSE_PORTAL, point.x, point.y + 0.5, point.z, 40, WAND_RADIUS / 3, 0.6, WAND_RADIUS / 3, 0.05);
 		level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8F, 0.6F);
-		return pulled;
+		return caught.size();
+	}
+
+	/**
+	 * One tick of the field on a creature: a firm pull toward the spot that eases off as it gets close, and once there it
+	 * stays put (no launching, no overshooting). Its pathfinding is stopped so it can't walk away.
+	 */
+	private static void attract(LivingEntity entity, Vec3 point) {
+		Vec3 to = point.subtract(entity.position());
+		double flat = Math.sqrt(to.x * to.x + to.z * to.z);
+		Vec3 motion = entity.getDeltaMovement();
+		double speed = Math.min(0.9, 0.08 + flat * 0.3);
+		double vx = flat > 0.3 ? to.x / flat * speed : 0.0;
+		double vz = flat > 0.3 ? to.z / flat * speed : 0.0;
+		// Climb toward a spot above (a little more than gravity), otherwise let it fall onto the spot.
+		double vy = to.y > 0.5 ? Math.min(0.5, 0.1 + to.y * 0.25) : Math.min(motion.y, 0.0);
+		entity.setDeltaMovement(vx, vy, vz);
+		entity.resetFallDistance();
+		if (entity instanceof net.minecraft.world.entity.Mob mob) {
+			mob.getNavigation().stop();
+		}
+	}
+
+	private static void tickFields() {
+		for (java.util.Iterator<Field> it = FIELDS.iterator(); it.hasNext();) {
+			Field field = it.next();
+			if (--field.ticksLeft < 0) {
+				it.remove();
+				continue;
+			}
+			for (java.util.UUID id : field.caught) {
+				if (field.level.getEntity(id) instanceof LivingEntity entity && entity.isAlive() && entity.level() == field.level) {
+					attract(entity, field.point);
+				}
+			}
+			if (field.ticksLeft % 4 == 0) {
+				field.level.sendParticles(ParticleTypes.REVERSE_PORTAL, field.point.x, field.point.y + 0.4, field.point.z, 8, 0.4, 0.3,
+						0.4, 0.02);
+			}
+		}
 	}
 
 	// ---------------------------------------------------------------- Magnetic Wand PRD
@@ -235,6 +292,7 @@ public final class ModShields {
 	}
 
 	public static void initialize() {
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> tickFields());
 		// Shields picked up or traded after Chapter III get their sigil counter.
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (server.getTickCount() % 40 != 0) {

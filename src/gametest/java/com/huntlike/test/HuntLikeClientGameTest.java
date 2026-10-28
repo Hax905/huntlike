@@ -187,6 +187,23 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				HuntLike.LOGGER.info("[test] Ovis Ammon colors from 20 spawns: {}", colors);
 				return colors.size() >= 4;
 			});
+			// The horned bosses on their boss cards.
+			context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+					new com.huntlike.network.HuntPayloads.Action("select", "animal", 0)));
+			context.waitTicks(5);
+			context.setScreen(() -> new HuntMenuScreen(0));
+			context.waitTicks(5);
+			context.getInput().pressKey(InputConstants.KEY_RETURN);
+			context.waitTicks(3);
+			context.getInput().pressKey(InputConstants.KEY_D);
+			context.waitTicks(3);
+			context.getInput().pressKey(InputConstants.KEY_D);
+			context.waitTicks(10);
+			context.takeScreenshot("93-ovis-ammon-horns");
+			context.getInput().pressKey(InputConstants.KEY_D);
+			context.waitTicks(10);
+			context.takeScreenshot("94-aurochs-horns");
+			context.setScreen(() -> null);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}

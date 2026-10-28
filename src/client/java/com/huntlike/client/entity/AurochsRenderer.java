@@ -16,6 +16,8 @@ public class AurochsRenderer extends CowRenderer {
 
 	public AurochsRenderer(EntityRendererProvider.Context context) {
 		super(context);
+		this.addLayer(new com.huntlike.client.entity.horns.Horns.Layer<>(this,
+				com.huntlike.client.entity.horns.Horns.Layer.bake(context, com.huntlike.client.entity.horns.Horns.AUROCHS), TEXTURE));
 	}
 
 	@Override

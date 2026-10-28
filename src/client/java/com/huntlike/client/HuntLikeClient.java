@@ -49,6 +49,7 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(ModEntities.TOWERNAAR_UNDEAD, TowernaarUndeadRenderer::new);
 		EntityRendererRegistry.register(ModEntities.THROWN_END_STONE, ThrownItemRenderer::new);
 		com.huntlike.client.item.TexturedShieldRenderer.initialize();
+		com.huntlike.client.entity.horns.Horns.registerLayers();
 		YummyClient.initialize();
 	}
 }

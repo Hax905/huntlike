@@ -24,6 +24,8 @@ public class OvisAmmonRenderer extends SheepRenderer {
 
 	public OvisAmmonRenderer(EntityRendererProvider.Context context) {
 		super(context);
+		this.addLayer(new com.huntlike.client.entity.horns.Horns.Layer<>(this,
+				com.huntlike.client.entity.horns.Horns.Layer.bake(context, com.huntlike.client.entity.horns.Horns.OVIS_AMMON), TEXTURE));
 		this.layers.removeIf(layer -> layer instanceof SheepWoolLayer || layer instanceof SheepWoolUndercoatLayer);
 		this.addLayer(new Wool(this, new SheepFurModel(context.bakeLayer(ModelLayers.SHEEP_WOOL))));
 	}

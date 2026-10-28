@@ -1439,6 +1439,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.COMMAND);
 			wolf.snapTo(point.x - 4.0, point.y, point.z, 0.0F, 0.0F);
 			wolf.tame(player);
+			wolf.setOrderedToSit(true);
+			wolf.setInSittingPose(true);
 			player.level().addFreshEntity(wolf);
 			int pulled = com.huntlike.gear.ModShields.pull(player);
 			wand[0] = point;

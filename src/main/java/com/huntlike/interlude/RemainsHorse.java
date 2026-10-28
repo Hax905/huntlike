@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
- * The skeleton horse called by the Slime Rider Remains: 40 health, fast and a high jumper. Its saddle can't be taken
+ * The skeleton horse called by the Pom's Skeletal Remains: 40 health, fast and a high jumper. Its saddle can't be taken
  * off, sheared or dropped. If it dies, the Remains wait 3 minutes before calling it again.
  */
 public class RemainsHorse extends SkeletonHorse {
@@ -45,7 +45,7 @@ public class RemainsHorse extends SkeletonHorse {
 			UUID owner = this.getOwnerReference().getUUID();
 			ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
 			if (player != null) {
-				player.getCooldowns().addCooldown(new ItemStack(ModInterlude.SLIME_RIDER_REMAINS), RemainsItem.DEATH_COOLDOWN);
+				player.getCooldowns().addCooldown(new ItemStack(ModInterlude.POMS_SKELETAL_REMAINS), RemainsItem.DEATH_COOLDOWN);
 				player.sendSystemMessage(com.huntlike.hunt.Messages.c("Your skeleton horse fell. The Remains need 3 minutes to call it again.",
 						0xAAAAAA));
 			}

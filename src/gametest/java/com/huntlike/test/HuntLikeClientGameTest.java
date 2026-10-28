@@ -1426,7 +1426,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		entity.hurtServer(player.level(), player.level().damageSources().playerAttack(player), amount);
 	}
 
-	/** The Slime Rider Interlude: tokens, the menu card, both phases, splitting, drops, the Growing Slimeball and the Remains. */
+	/** The Slime Rider Interlude: tokens, the menu card, both phases, splitting, drops, the Growing Slime Ball and the Remains. */
 	private static void slimeRider(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
 		singleplayer.getServer().runCommand("huntlike quest cancel @a");
 		singleplayer.getServer().runOnServer(server -> {
@@ -1458,27 +1458,37 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		// Starting: 2 tokens, then a kill quota like a Hunt Quest; animals and slime clusters both count.
 		interludeAction(context, "interlude_start", 1);
 		context.waitTicks(3);
-		check(singleplayer, "an Interlude quest starts with a quota of 6", data -> data.quest != null
-				&& com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.quest.hunt) && data.quest.quota == 6
+		check(singleplayer, "an Interlude quest starts with a quota of 2", data -> data.quest != null
+				&& com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.quest.hunt) && data.quest.quota == 2
 				&& data.interludeTokens == 174);
 		assertServer(singleplayer, "the Spirit Lure brings both animals and slimes for an Interlude", server -> {
 			var types = com.huntlike.hunt.SpiritLure.huntableHere(player(server), com.huntlike.interlude.InterludeDefs.hunt());
 			HuntLike.LOGGER.info("[test] Interlude huntable: {}", types);
 			return types.contains(EntityTypes.SLIME) && types.size() >= 2;
 		});
+		assertServer(singleplayer, "Rogue Hunters come 25% more often during an Interlude (1 in 24, not 30)", server -> {
+			var data = QuestManager.data(player(server));
+			return com.huntlike.rogue.RogueHunters.lureOdds(data) == 24;
+		});
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			var cow = spawnTest(player, EntityTypes.COW, 2.0, 0.0, 1.0F);
 			cow.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
+		});
+		context.waitTicks(3);
+		check(singleplayer, "an animal counts toward the Interlude quota", data -> data.quest != null && data.quest.kills == 1);
+		context.setScreen(() -> new HuntMenuScreen(0));
+		context.waitTicks(5);
+		context.takeScreenshot("95d-interlude-active-quest");
+		context.setScreen(() -> null);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
 			var slime = spawnTest(player, EntityTypes.SLIME, -2.0, 0.0, 1.0F);
 			slime.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
 		});
 		context.waitTicks(3);
-		check(singleplayer, "an animal and a slime cluster both count toward the Interlude quota",
-				data -> data.quest != null && data.quest.kills == 2);
-		context.setScreen(() -> new HuntMenuScreen(0));
-		context.waitTicks(5);
-		context.takeScreenshot("95d-interlude-active-quest");
+		check(singleplayer, "a slime cluster counts too, and the quota of 2 is met", data -> data.quest != null && data.quest.kills >= 2
+				&& data.quest.phase != HuntData.PHASE_KILLING);
 		context.setScreen(() -> null);
 		singleplayer.getServer().runCommand("huntlike quest cancel @a");
 		context.waitTicks(3);
@@ -1564,8 +1574,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		check(singleplayer, "Stage III won", data -> data.progress("slime_rider").bossKills[2] >= 1);
 
-		// The Growing Slimeball on an anvil: Sharpness II -> III for 10 levels; refused at the maximum.
-		assertServer(singleplayer, "Growing Slimeball raises a single-enchantment book by one level", server -> {
+		// The Growing Slime Ball on an anvil: Sharpness II -> III for 10 levels; refused at the maximum.
+		assertServer(singleplayer, "Growing Slime Ball raises a single-enchantment book by one level", server -> {
 			ServerPlayer player = player(server);
 			var registry = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
 			var sharpness = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
@@ -1576,7 +1586,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchants.toImmutable());
 			var menu = new net.minecraft.world.inventory.AnvilMenu(0, player.getInventory());
 			menu.getSlot(0).set(book);
-			menu.getSlot(1).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.GROWING_SLIMEBALL));
+			menu.getSlot(1).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.GROWING_SLIME_BALL));
 			menu.createResult();
 			var result = menu.getSlot(2).getItem();
 			var stored = result.get(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS);
@@ -1586,15 +1596,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			menu.getSlot(0).set(book);
 			menu.createResult();
 			boolean refused = menu.getSlot(2).getItem().isEmpty();
-			HuntLike.LOGGER.info("[test] Growing Slimeball: Sharpness II -> {} cost {}; at V refused {}", level, 10, refused);
+			HuntLike.LOGGER.info("[test] Growing Slime Ball: Sharpness II -> {} cost {}; at V refused {}", level, 10, refused);
 			return level == 3 && refused;
 		});
 
-		// Slime Rider Remains: a saddled skeleton horse with the player on it; again, and it's gone.
-		assertServer(singleplayer, "Slime Rider Remains call and dismiss the skeleton horse", server -> {
+		// Pom's Skeletal Remains: a saddled skeleton horse with the player on it; again, and it's gone.
+		assertServer(singleplayer, "Pom's Skeletal Remains call and dismiss the skeleton horse", server -> {
 			ServerPlayer player = player(server);
 			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
-					new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.SLIME_RIDER_REMAINS));
+					new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.POMS_SKELETAL_REMAINS));
 			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
 			var horse = player.getVehicle();
 			boolean riding = horse instanceof com.huntlike.interlude.RemainsHorse remains && remains.getMaxHealth() == 40.0F

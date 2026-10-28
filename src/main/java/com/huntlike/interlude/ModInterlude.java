@@ -56,14 +56,21 @@ public final class ModInterlude {
 		return lore;
 	}
 
-	public static final Item GROWING_SLIMEBALL = ModItems.register("growing_slimeball", Item::new, new Item.Properties()
+	public static final Item GROWING_SLIME_BALL = ModItems.register("growing_slime_ball", Item::new, new Item.Properties()
 			.rarity(Rarity.RARE).component(DataComponents.LORE, new ItemLore(lore(
-					"Put it on an anvil with an enchanted book that holds a single enchantment: the enchantment gains a level, "
-							+ "up to its maximum. Costs 10 levels."))));
-	public static final Item SLIME_RIDER_REMAINS = ModItems.register("slime_rider_remains", RemainsItem::new, new Item.Properties()
-			.stacksTo(1).rarity(Rarity.EPIC).component(DataComponents.LORE, new ItemLore(lore(
-					"A pile of bones from Pom's old mount days.",
-					"Right-click to call a saddled skeleton horse and ride it. Right-click again to send it away."))));
+					"A fragment of Bartholomew. His courage and valor keep him alive, and for some reason it was a weird reaction "
+							+ "with enchanted books. (Use it)"))));
+	public static final Item POMS_SKELETAL_REMAINS = ModItems.register("poms_skeletal_remains", RemainsItem::new, new Item.Properties()
+			.stacksTo(1).rarity(Rarity.EPIC).component(DataComponents.LORE, new ItemLore(lines("The bones are alive!", "(Right-Click)"))));
+
+	/** Lines one under the other, with no blank line between them. */
+	private static List<Component> lines(String... lines) {
+		List<Component> lore = new ArrayList<>();
+		for (String line : lines) {
+			Lore.gray(lore, line);
+		}
+		return lore;
+	}
 
 	public static void initialize() {
 		FabricDefaultAttributeRegistry.register(POM, ZombieHorse.createAttributes());

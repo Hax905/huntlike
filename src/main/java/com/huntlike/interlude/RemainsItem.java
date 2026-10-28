@@ -24,7 +24,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 
 /**
- * Slime Rider Remains: a pile of bones. Right-click: bone particles at the ground for a moment, the skeleton-hurt sound,
+ * Pom's Skeletal Remains: a pile of bones. Right-click: bone particles at the ground for a moment, the skeleton-hurt sound,
  * and a saddled skeleton horse appears with you on it. Right-click while it's out: it vanishes. Never used up.
  */
 public class RemainsItem extends Item {

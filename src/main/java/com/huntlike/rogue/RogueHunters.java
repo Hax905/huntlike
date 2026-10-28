@@ -30,7 +30,7 @@ import com.huntlike.hunt.SpiritLure;
  * Rogue Hunter encounters. Once any Hunt reaches Rank V, each Spirit Lure kill during a quest's killing phase has a 1 in 30
  * chance (the 30th is certain) to call a Rogue Hunter: the lured mobs vanish, the lure and the quota pause, and a second
  * later the hunter appears. One in 10 (the 10th is certain) is a special one. It leaves after 5 minutes, or if the player
- * dies; killing it resumes the quest.
+ * dies; killing it resumes the quest. During an Interlude quest the odds are 1 in 24 (25% more often).
  */
 public final class RogueHunters {
 	private RogueHunters() {
@@ -38,6 +38,8 @@ public final class RogueHunters {
 
 	public static final int RANK = 5;
 	public static final int LURE_ODDS = 30;
+	/** During an Interlude Rogue Hunters come 25% more often: 1 in 24 (30 / 1.25). */
+	public static final int INTERLUDE_LURE_ODDS = 24;
 	public static final int SPECIAL_ODDS = 10;
 	public static final int SPAWN_DELAY = 20;
 	public static final int LIFETIME = 5 * 60 * 20;
@@ -80,10 +82,16 @@ public final class RogueHunters {
 			return;
 		}
 		data.rogueLures++;
-		if (data.rogueLures >= LURE_ODDS || player.getRandom().nextInt(LURE_ODDS) == 0) {
+		int odds = lureOdds(data);
+		if (data.rogueLures >= odds || player.getRandom().nextInt(odds) == 0) {
 			// Next tick, so the kill that called it still counts for the quota.
 			PENDING.add(player.getUUID());
 		}
+	}
+
+	/** 1 in 30 per lured kill, 1 in 24 during an Interlude quest. */
+	public static int lureOdds(HuntData data) {
+		return data.quest != null && com.huntlike.interlude.InterludeDefs.isInterlude(data.quest.hunt) ? INTERLUDE_LURE_ODDS : LURE_ODDS;
 	}
 
 	private static final java.util.Set<UUID> PENDING = new java.util.HashSet<>();

@@ -23,7 +23,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import com.huntlike.interlude.ModInterlude;
 
 /**
- * The Growing Slimeball on an anvil: an enchanted book with exactly one enchantment on the left, the Slimeball on the
+ * The Growing Slime Ball on an anvil: an enchanted book with exactly one enchantment on the left, the Slimeball on the
  * right, and the book comes out one level higher (up to the vanilla maximum) for 10 levels.
  */
 @Mixin(AnvilMenu.class)
@@ -43,7 +43,7 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 	private void huntlike$growingSlimeball(CallbackInfo ci) {
 		ItemStack book = this.inputSlots.getItem(0);
 		ItemStack ball = this.inputSlots.getItem(1);
-		if (!ball.is(ModInterlude.GROWING_SLIMEBALL)) {
+		if (!ball.is(ModInterlude.GROWING_SLIME_BALL)) {
 			return;
 		}
 		ci.cancel();

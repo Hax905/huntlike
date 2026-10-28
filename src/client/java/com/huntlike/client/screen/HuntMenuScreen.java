@@ -687,7 +687,16 @@ public class HuntMenuScreen extends Screen {
 
 	private Component dropLine(Drop drop) {
 		String name = drop.id().equals("leaping_potion") ? "Potion of Leaping (3:00)" : new ItemStack(drop.item()).getHoverName().getString();
-		return colored(" " + name + " x" + drop.minCount(), WHITE).append(colored("  " + drop.chanceNum() + "/" + drop.chanceDen(), TEXT_GRAY));
+		return colored(" " + name + " x" + drop.minCount(), WHITE).append(colored("  " + oneIn(drop), TEXT_GRAY));
+	}
+
+	/** A chance written as "1/X", the way the design writes it: 2/5 shows as 1/2.5. */
+	private static String oneIn(Drop drop) {
+		if (drop.chanceNum() == 1) {
+			return "1/" + drop.chanceDen();
+		}
+		double x = drop.chanceDen() / (double) drop.chanceNum();
+		return "1/" + (x == Math.rint(x) ? String.valueOf((long) x) : String.valueOf(Math.round(x * 100) / 100.0));
 	}
 
 	/**

@@ -50,7 +50,7 @@ public final class InterludeDefs {
 					+ "so they won't think twice on giving you great items to escape and have another attempt at adventuring!"));
 
 	/** Kill quota per stage: lured animals count 1, slime clusters 1, magma cube clusters 2. */
-	public static final int[] QUOTAS = {0, 6, 8, 10};
+	public static final int[] QUOTAS = {0, 2, 4, 6};
 
 	/**
 	 * The Interlude as the Hunt its quests run under (quest.hunt = "slime_rider"), so the quest flow (Spirit Lure, quota,
@@ -152,8 +152,11 @@ public final class InterludeDefs {
 		if (stage >= 2) {
 			drops.add(new Drop("saddle", Items.SADDLE, stage, stage, 1, 5, 1));
 		}
-		if (stage >= 3) {
-			drops.add(new Drop("slime_rider_remains", ModInterlude.SLIME_RIDER_REMAINS, 1, 1, 1, 10, 2));
+		// Pom's Skeletal Remains: 1/35 at Stage II, 1/12.5 at Stage III.
+		if (stage == 2) {
+			drops.add(new Drop("poms_skeletal_remains", ModInterlude.POMS_SKELETAL_REMAINS, 1, 1, 1, 35, 2));
+		} else if (stage >= 3) {
+			drops.add(new Drop("poms_skeletal_remains", ModInterlude.POMS_SKELETAL_REMAINS, 1, 1, 2, 25, 2));
 		}
 		return drops;
 	}
@@ -167,9 +170,12 @@ public final class InterludeDefs {
 		if (stage >= 2) {
 			drops.add(new Drop("leaping_potion", Items.POTION, stage, stage, 1, 5, 1));
 		}
-		if (stage >= 3) {
-			drops.add(new Drop("growing_slimeball", ModInterlude.GROWING_SLIMEBALL, 1, 1, 1, 5, 1));
-		}
+		// Growing Slime Ball: 1/5 at Stage I, 1/4 at Stage II, 1/2.5 at Stage III.
+		drops.add(switch (stage) {
+			case 1 -> new Drop("growing_slime_ball", ModInterlude.GROWING_SLIME_BALL, 1, 1, 1, 5, 1);
+			case 2 -> new Drop("growing_slime_ball", ModInterlude.GROWING_SLIME_BALL, 1, 1, 1, 4, 1);
+			default -> new Drop("growing_slime_ball", ModInterlude.GROWING_SLIME_BALL, 1, 1, 2, 5, 1);
+		});
 		return drops;
 	}
 }

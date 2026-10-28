@@ -30,6 +30,9 @@ public final class ModItems {
 			new Item.Properties().rarity(Rarity.EPIC).component(net.minecraft.core.component.DataComponents.LORE,
 					new net.minecraft.world.item.component.ItemLore(SpiritualCatalystItem.lore())));
 
+	/** The A-Phone: opens the Hunt menu anywhere. Crafted at an Alpha Altar's heart. */
+	public static final Item A_PHONE = register("a_phone", APhoneItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+
 	// Cluster Hunt drops and their crafting chain
 	public static final Item THERMAL_SLIMEBALL = simple("thermal_slimeball", Rarity.COMMON);
 	public static final Item FROZEN_SLIME_BALL = simple("frozen_slime_ball", Rarity.UNCOMMON);

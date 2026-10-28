@@ -334,7 +334,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				epicyon.snapTo(player.getX() - 0.9 + i * 1.8, player.getY(), player.getZ() + 3.0, 180.0F, 0.0F);
 				epicyon.setYHeadRot(180.0F);
 				epicyon.setNoAi(true);
-				epicyon.setInvulnerable(true);
 				epicyon.setEnraged(i == 1);
 				player.level().addFreshEntity(epicyon);
 				skins[i] = epicyon.getUUID();

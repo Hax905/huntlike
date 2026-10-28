@@ -1837,7 +1837,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_2);
 			context.waitTicks(3);
 			context.getInput().holdKey(options -> options.keyUse);
-			context.waitTicks(15);
+			context.waitTicks(5);
+			java.util.Set<Integer> copies = new java.util.HashSet<>();
+			java.util.List<String> diffs = new java.util.ArrayList<>();
+			final net.minecraft.world.item.ItemStack[] last = new net.minecraft.world.item.ItemStack[1];
+			for (int t = 0; t < 10; t++) {
+				context.runOnClient(client -> {
+					var now = client.player.getOffhandItem();
+					copies.add(System.identityHashCode(now));
+					if (last[0] != null && last[0] != now && diffs.size() < 3) {
+						diffs.add(last[0].getComponentsPatch() + " -> " + now.getComponentsPatch());
+					}
+					last[0] = now;
+				});
+				context.waitTick();
+			}
+			HuntLike.LOGGER.info("[test] shield {}: {} different offhand stacks in 10 ticks of blocking; changes {}", i, copies.size(), diffs);
 			String state = context.computeOnClient(client -> {
 				var player = client.player;
 				var stack = player.getOffhandItem();

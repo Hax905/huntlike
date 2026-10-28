@@ -24,7 +24,8 @@ import com.huntlike.interlude.ModInterlude;
 
 /**
  * The Growing Slime Ball on an anvil: an enchanted book with exactly one enchantment on the left, the Slimeball on the
- * right, and the book comes out one level higher (up to the vanilla maximum) for 10 levels.
+ * right, and the book comes out one level higher (up to the vanilla maximum) for 10 levels. A Horseshoe on Pom's
+ * Skeletal Remains adds a star (up to 5) for 5 levels.
  */
 @Mixin(AnvilMenu.class)
 public abstract class AnvilMenuMixin extends ItemCombinerMenu {
@@ -43,6 +44,10 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 	private void huntlike$growingSlimeball(CallbackInfo ci) {
 		ItemStack book = this.inputSlots.getItem(0);
 		ItemStack ball = this.inputSlots.getItem(1);
+		if (ball.is(ModInterlude.HORSESHOE)) {
+			huntlike$horseshoe(book, ci);
+			return;
+		}
 		if (!ball.is(ModInterlude.GROWING_SLIME_BALL)) {
 			return;
 		}
@@ -67,6 +72,23 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 		this.resultSlots.setItem(0, result);
 		this.repairItemCountCost = 1;
 		this.cost.set(10);
+		this.broadcastChanges();
+	}
+
+	/** A Horseshoe on Pom's Skeletal Remains: one more star (up to 5) for 5 levels. */
+	private void huntlike$horseshoe(ItemStack remains, CallbackInfo ci) {
+		ci.cancel();
+		int stars = com.huntlike.interlude.RemainsItem.stars(remains);
+		if (!remains.is(ModInterlude.POMS_SKELETAL_REMAINS) || stars >= com.huntlike.interlude.RemainsItem.MAX_STARS) {
+			this.resultSlots.setItem(0, ItemStack.EMPTY);
+			this.cost.set(0);
+			return;
+		}
+		ItemStack result = remains.copyWithCount(1);
+		result.set(ModInterlude.HORSESHOES, stars + 1);
+		this.resultSlots.setItem(0, result);
+		this.repairItemCountCost = 1;
+		this.cost.set(5);
 		this.broadcastChanges();
 	}
 }

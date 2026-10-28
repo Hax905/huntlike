@@ -1615,6 +1615,97 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] Remains: riding a saddled 40-health horse {}, gone after the second use {}", riding, gone);
 			return riding && gone;
 		});
+
+		// Horseshoes at an anvil: one star each (5 levels), up to 5; the horse gets faster per star (0.24 -> 0.36).
+		assertServer(singleplayer, "a Horseshoe adds a star to Pom's Skeletal Remains; 5 stars is the most; stars set the speed", server -> {
+			ServerPlayer player = player(server);
+			var menu = new net.minecraft.world.inventory.AnvilMenu(0, player.getInventory());
+			menu.getSlot(0).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.POMS_SKELETAL_REMAINS));
+			menu.getSlot(1).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.HORSESHOE));
+			menu.createResult();
+			var one = menu.getSlot(2).getItem();
+			int cost = menu.getCost();
+			var five = new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.POMS_SKELETAL_REMAINS);
+			five.set(com.huntlike.interlude.ModInterlude.HORSESHOES, 5);
+			menu.getSlot(0).set(five);
+			menu.createResult();
+			boolean refused = menu.getSlot(2).getItem().isEmpty();
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, five);
+			five.use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			double fast = player.getVehicle() instanceof com.huntlike.interlude.RemainsHorse h
+					? h.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) : -1;
+			player.stopRiding();
+			five.use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			String name = one.getHoverName().getString();
+			HuntLike.LOGGER.info("[test] Horseshoe: '{}' cost {}; 5 stars refused {}; '{}' speed {}; 0-star speed {}", name, cost, refused,
+					five.getHoverName().getString(), fast, com.huntlike.interlude.RemainsItem.speed(0));
+			return com.huntlike.interlude.RemainsItem.stars(one) == 1 && name.endsWith("\u2605") && cost == 5 && refused
+					&& Math.abs(fast - 0.36) < 1e-6 && Math.abs(com.huntlike.interlude.RemainsItem.speed(0) - 0.24) < 1e-6;
+		});
+
+		// The new drops are Bartholomew's: Horseshoe 1/20 then 1/7, Bouncy Slime Ball 1/20 then 1/8, from Stage II.
+		assertServer(singleplayer, "Horseshoe and Bouncy Slime Ball drop when Bartholomew stays, from Stage II", server -> {
+			var two = com.huntlike.interlude.InterludeDefs.bartholomewDrops(2);
+			var three = com.huntlike.interlude.InterludeDefs.bartholomewDrops(3);
+			java.util.function.BiPredicate<java.util.List<com.huntlike.hunt.HuntDefs.Drop>, String> has = (list, id) -> list.stream()
+					.anyMatch(d -> d.id().equals(id));
+			java.util.function.BiFunction<java.util.List<com.huntlike.hunt.HuntDefs.Drop>, String, Double> odds = (list, id) -> list.stream()
+					.filter(d -> d.id().equals(id)).mapToDouble(d -> d.chanceDen() / (double) d.chanceNum()).findFirst().orElse(-1);
+			return !has.test(com.huntlike.interlude.InterludeDefs.bartholomewDrops(1), "horseshoe")
+					&& odds.apply(two, "horseshoe") == 20 && odds.apply(three, "horseshoe") == 7
+					&& odds.apply(two, "bouncy_slime_ball") == 20 && odds.apply(three, "bouncy_slime_ball") == 8
+					&& !has.test(com.huntlike.interlude.InterludeDefs.pomDrops(3), "horseshoe");
+		});
+
+		// Slimy Rebounders: a pig wearing them falls 12 blocks, bounces back up and takes no damage; a pig without is hurt.
+		final java.util.UUID[] pigs = new java.util.UUID[2];
+		final double[] track = {Double.MAX_VALUE, -Double.MAX_VALUE, 0};
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (int i = 0; i < 2; i++) {
+				var pig = net.minecraft.world.entity.EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+				pig.snapTo(player.getX() + 6 + i * 4, player.getY() + 12, player.getZ() + 6, 0, 0);
+				if (i == 0) {
+					pig.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+							new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.SLIMY_REBOUNDERS));
+				}
+				player.level().addFreshEntity(pig);
+				pigs[i] = pig.getUUID();
+			}
+			track[2] = player.getY();
+		});
+		for (int t = 0; t < 80; t++) {
+			context.waitTick();
+			singleplayer.getServer().runOnServer(server -> {
+				var pig = player(server).level().getEntity(pigs[0]);
+				if (pig == null) {
+					return;
+				}
+				if (pig.getY() < track[0]) {
+					track[0] = pig.getY();
+					track[1] = pig.getY();
+				} else {
+					track[1] = Math.max(track[1], pig.getY());
+				}
+			});
+		}
+		assertServer(singleplayer, "Slimy Rebounders bounce like a slime block and stop fall damage", server -> {
+			var level = player(server).level();
+			var booted = (net.minecraft.world.entity.LivingEntity) level.getEntity(pigs[0]);
+			var bare = (net.minecraft.world.entity.LivingEntity) level.getEntity(pigs[1]);
+			double bounce = track[1] - track[0];
+			HuntLike.LOGGER.info("[test] Rebounders: booted pig health {} bounce {} blocks; bare pig health {}",
+					booted == null ? -1 : booted.getHealth(), bounce, bare == null ? -1 : bare.getHealth());
+			boolean ok = booted != null && booted.getHealth() == booted.getMaxHealth() && bounce > 2.0
+					&& (bare == null || bare.getHealth() < bare.getMaxHealth());
+			if (booted != null) {
+				booted.discard();
+			}
+			if (bare != null) {
+				bare.discard();
+			}
+			return ok;
+		});
 	}
 
 	private static boolean done(ServerPlayer player, String path) {

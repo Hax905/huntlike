@@ -63,8 +63,22 @@ public final class ModInterlude {
 	public static final Item POMS_SKELETAL_REMAINS = ModItems.register("poms_skeletal_remains", RemainsItem::new, new Item.Properties()
 			.stacksTo(1).rarity(Rarity.EPIC).component(DataComponents.LORE, new ItemLore(lines("The bones are alive!", "(Right-Click)"))));
 
+	/** Horseshoes put on Pom's Skeletal Remains (0 to 5), shown as stars after its name. */
+	public static final net.minecraft.core.component.DataComponentType<Integer> HORSESHOES = Registry.register(
+			BuiltInRegistries.DATA_COMPONENT_TYPE, HuntLike.id("horseshoes"),
+			net.minecraft.core.component.DataComponentType.<Integer>builder().persistent(com.mojang.serialization.Codec.INT)
+					.networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
+
+	/** Put on Pom's Skeletal Remains at an anvil, up to 5 times: each one adds a star and speed. */
+	public static final Item HORSESHOE = ModItems.register("horseshoe", Item::new, new Item.Properties()
+			.rarity(Rarity.RARE).component(DataComponents.LORE, new ItemLore(lines("Can be put on a certain horse..."))));
+	public static final Item BOUNCY_SLIME_BALL = ModItems.register("bouncy_slime_ball", Item::new, new Item.Properties()
+			.rarity(Rarity.UNCOMMON).component(DataComponents.LORE, new ItemLore(lines(
+					"A bouncy slime gel of some sorts. It barely has a shape so it isn't a ball!"))));
+	public static final Item SLIMY_REBOUNDERS = SlimyRebounders.create();
+
 	/** Lines one under the other, with no blank line between them. */
-	private static List<Component> lines(String... lines) {
+	static List<Component> lines(String... lines) {
 		List<Component> lore = new ArrayList<>();
 		for (String line : lines) {
 			Lore.gray(lore, line);

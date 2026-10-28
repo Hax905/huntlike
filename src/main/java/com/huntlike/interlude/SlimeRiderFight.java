@@ -751,8 +751,10 @@ public final class SlimeRiderFight {
 		List<Drop> drops = pomStayed ? InterludeDefs.pomDrops(fight.stage) : InterludeDefs.bartholomewDrops(fight.stage);
 		RandomSource random = player.getRandom();
 		for (Drop drop : drops) {
-			// The Mystery Concoction also works on the Slime Rider's drops when Pom (the Equus) stays.
-			double chance = HuntDefs.chance("animal", drop.chanceNum(), drop.chanceDen(), pomStayed && data.concoction, false);
+			// Luck items work on the side that stays: the Mystery Concoction (Animal) when Pom stays, the Warm and Slimy
+			// Beef Jerky (Cluster) when Bartholomew stays.
+			double chance = pomStayed ? HuntDefs.chance("animal", drop.chanceNum(), drop.chanceDen(), data.concoction, false)
+					: HuntDefs.chance("cluster", drop.chanceNum(), drop.chanceDen(), data.jerky, false);
 			if (random.nextDouble() >= chance) {
 				continue;
 			}

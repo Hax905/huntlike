@@ -32,8 +32,32 @@ public class RemainsItem extends Item {
 	/** Each player's current horse (only one at a time). */
 	private static final Map<UUID, UUID> HORSES = new HashMap<>();
 
+	/** Horseshoes it can take; each one is a star. */
+	public static final int MAX_STARS = 5;
+	/** The horse's speed with no horseshoes; each star adds {@link #SPEED_PER_STAR}, up to 0.36 at 5 stars. */
+	public static final double BASE_SPEED = 0.24;
+	public static final double SPEED_PER_STAR = 0.024;
+
 	public RemainsItem(Properties properties) {
 		super(properties);
+	}
+
+	public static int stars(ItemStack stack) {
+		return Math.max(0, Math.min(MAX_STARS, stack.getOrDefault(ModInterlude.HORSESHOES, 0)));
+	}
+
+	public static double speed(int stars) {
+		return BASE_SPEED + SPEED_PER_STAR * stars;
+	}
+
+	@Override
+	public net.minecraft.network.chat.Component getName(ItemStack stack) {
+		int stars = stars(stack);
+		if (stars == 0) {
+			return super.getName(stack);
+		}
+		return net.minecraft.network.chat.Component.empty().append(super.getName(stack))
+				.append(net.minecraft.network.chat.Component.literal(" " + "\u2605".repeat(stars)).withColor(0xFFAA00));
 	}
 
 	static boolean isCurrent(UUID owner, UUID horse) {
@@ -66,7 +90,7 @@ public class RemainsItem extends Item {
 		horse.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0F);
 		horse.getAttribute(Attributes.MAX_HEALTH).setBaseValue(40.0);
 		horse.setHealth(40.0F);
-		horse.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.36);
+		horse.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed(stars(player.getItemInHand(hand))));
 		horse.getAttribute(Attributes.JUMP_STRENGTH).setBaseValue(1.0);
 		horse.setTamed(true);
 		horse.setOwner(player);

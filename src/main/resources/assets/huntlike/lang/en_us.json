@@ -201,5 +201,8 @@
   "entity.huntlike.pom": "Pom",
   "entity.huntlike.bartholomew": "Bartholomew",
   "entity.huntlike.remains_horse": "Skeleton Horse",
-  "item.huntlike.a_phone": "A-Phone"
+  "item.huntlike.a_phone": "A-Phone",
+  "item.huntlike.horseshoe": "Horseshoe",
+  "item.huntlike.bouncy_slime_ball": "Bouncy Slime Ball",
+  "item.huntlike.slimy_rebounders": "Slimy Rebounders"
 }

@@ -170,6 +170,14 @@ public final class InterludeDefs {
 		if (stage >= 2) {
 			drops.add(new Drop("leaping_potion", Items.POTION, stage, stage, 1, 5, 1));
 		}
+		// Horseshoe: 1/20 at Stage II, 1/7 at Stage III. Bouncy Slime Ball: 1/20 at Stage II, 1/8 at Stage III.
+		if (stage == 2) {
+			drops.add(new Drop("horseshoe", ModInterlude.HORSESHOE, 1, 1, 1, 20, 1));
+			drops.add(new Drop("bouncy_slime_ball", ModInterlude.BOUNCY_SLIME_BALL, 1, 1, 1, 20, 1));
+		} else if (stage >= 3) {
+			drops.add(new Drop("horseshoe", ModInterlude.HORSESHOE, 1, 1, 1, 7, 1));
+			drops.add(new Drop("bouncy_slime_ball", ModInterlude.BOUNCY_SLIME_BALL, 1, 1, 1, 8, 1));
+		}
 		// Growing Slime Ball: 1/5 at Stage I, 1/4 at Stage II, 1/2.5 at Stage III.
 		drops.add(switch (stage) {
 			case 1 -> new Drop("growing_slime_ball", ModInterlude.GROWING_SLIME_BALL, 1, 1, 1, 5, 1);

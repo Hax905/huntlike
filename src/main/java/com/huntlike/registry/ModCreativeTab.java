@@ -70,6 +70,8 @@ public final class ModCreativeTab {
 			output.accept(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD);
 			output.accept(com.huntlike.interlude.ModInterlude.GROWING_SLIME_BALL);
 			output.accept(com.huntlike.interlude.ModInterlude.POMS_SKELETAL_REMAINS);
+			output.accept(com.huntlike.interlude.ModInterlude.HORSESHOE);
+			output.accept(com.huntlike.interlude.ModInterlude.BOUNCY_SLIME_BALL);
 			ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
 			output.accept(ModKoro.WOODEN_BELL);
 			output.accept(ModKoro.GOLDEN_BELL);
@@ -77,6 +79,7 @@ public final class ModCreativeTab {
 			output.accept(ModKoro.KORO_WHAKAMATE);
 			HideBoots.BOOTS.forEach(output::accept);
 			output.accept(HideBoots.FEATHER_CHUTE);
+			output.accept(com.huntlike.interlude.ModInterlude.SLIMY_REBOUNDERS);
 			output.accept(ModItems.MYSTERY_CONCOCTION);
 			output.accept(ModItems.WARM_AND_SLIMY_BEEF_JERKY);
 			output.accept(ModItems.GOLDEN_MEAT);

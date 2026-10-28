@@ -324,6 +324,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(20);
 		context.takeScreenshot("16-apex-instinct");
+
+		// Let a Lunge happen, then finish the fight.
+		float beforeLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		context.waitTicks(220);
+		float afterLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
+		HuntLike.LOGGER.info("[test] health over 11 s of Tier V fighting: {} -> {}", beforeLunge, afterLunge);
+		context.takeScreenshot("17-tier5-fight");
+		int xpBefore = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).progress("animal").xp);
+		hitBoss(singleplayer, 1000.0F);
+		context.waitTicks(20);
+		check(singleplayer, "tier V complete with Daily Quest x2 XP (+1600)", data -> data.quest == null
+				&& data.progress("animal").bossKills[4] == 1 && data.progress("animal").xp == xpBefore + 1600);
+		context.takeScreenshot("18-tier5-complete");
+
 		// Both skins side by side: calm (left) and enraged (right), still, 3 blocks ahead.
 		final java.util.UUID[] skins = new java.util.UUID[2];
 		final net.minecraft.core.BlockPos[] skinsAt = new net.minecraft.core.BlockPos[1];
@@ -351,19 +365,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				}
 			}
 		});
-
-		// Let a Lunge happen, then finish the fight.
-		float beforeLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
-		context.waitTicks(220);
-		float afterLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
-		HuntLike.LOGGER.info("[test] health over 11 s of Tier V fighting: {} -> {}", beforeLunge, afterLunge);
-		context.takeScreenshot("17-tier5-fight");
-		int xpBefore = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).progress("animal").xp);
-		hitBoss(singleplayer, 1000.0F);
-		context.waitTicks(20);
-		check(singleplayer, "tier V complete with Daily Quest x2 XP (+1600)", data -> data.quest == null
-				&& data.progress("animal").bossKills[4] == 1 && data.progress("animal").xp == xpBefore + 1600);
-		context.takeScreenshot("18-tier5-complete");
 	}
 
 	/** v0.4: buy every weapon and armor stage, then check their effects. */

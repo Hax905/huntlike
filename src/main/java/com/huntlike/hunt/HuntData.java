@@ -47,6 +47,8 @@ public final class HuntData {
 	public int towernaarStep;
 	/** Rogue Hunter kills when the current kill quest started (only later kills count). */
 	public int towernaarKillBase;
+	/** Interlude Tokens (1 gold ingot = 16), shared by every Interlude. */
+	public int interludeTokens;
 	/** Used the Magnetic Wand PRD: the Magnetic Wand trade is open. */
 	public boolean wandUnlocked;
 	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
@@ -109,6 +111,7 @@ public final class HuntData {
 		tag.putInt("towernaarStep", towernaarStep);
 		tag.putInt("towernaarKillBase", towernaarKillBase);
 		tag.putBoolean("wandUnlocked", wandUnlocked);
+		tag.putInt("interludeTokens", interludeTokens);
 		tag.putInt("dailyCharges", dailyCharges);
 		tag.putLong("dailyDay", dailyDay);
 		CompoundTag hunts = new CompoundTag();
@@ -163,6 +166,7 @@ public final class HuntData {
 		data.towernaarStep = tag.getIntOr("towernaarStep", 0);
 		data.towernaarKillBase = tag.getIntOr("towernaarKillBase", 0);
 		data.wandUnlocked = tag.getBooleanOr("wandUnlocked", false);
+		data.interludeTokens = tag.getIntOr("interludeTokens", 0);
 		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
 		data.dailyDay = tag.getLongOr("dailyDay", -1L);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");

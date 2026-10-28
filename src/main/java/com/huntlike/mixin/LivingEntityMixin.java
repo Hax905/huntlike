@@ -28,7 +28,7 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
 	private void huntlike$skipBossLoot(ServerLevel level, DamageSource source, CallbackInfo ci) {
 		LivingEntity self = (LivingEntity) (Object) this;
-		if (BossController.isBoss(self) || BossAbilities.isHerd(self)) {
+		if (BossController.isBoss(self) || BossAbilities.isHerd(self) || com.huntlike.interlude.SlimeRiderFight.isInterlude(self)) {
 			ci.cancel();
 		}
 	}

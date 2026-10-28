@@ -26,6 +26,7 @@ public class HuntLike implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ModItems.initialize();
+		com.huntlike.interlude.ModInterlude.initialize();
 		ModSounds.initialize();
 		ModGear.initialize();
 		com.huntlike.gear.ModScythes.initialize();

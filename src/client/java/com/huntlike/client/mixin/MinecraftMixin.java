@@ -19,6 +19,12 @@ public abstract class MinecraftMixin {
 			cir.setReturnValue(true);
 			return;
 		}
+		for (int id : ClientHuntState.interludeIds) {
+			if (entity.getId() == id) {
+				cir.setReturnValue(true);
+				return;
+			}
+		}
 		for (int id : ClientHuntState.bossEntityIds) {
 			if (entity.getId() == id) {
 				cir.setReturnValue(true);

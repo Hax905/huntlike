@@ -50,6 +50,15 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(ModEntities.THROWN_END_STONE, ThrownItemRenderer::new);
 		com.huntlike.client.item.TexturedShieldRenderer.initialize();
 		com.huntlike.client.entity.horns.Horns.registerLayers();
+		EntityRendererRegistry.register(com.huntlike.interlude.ModInterlude.POM, context -> new net.minecraft.client.renderer.entity.UndeadHorseRenderer(
+				context, net.minecraft.client.resources.model.EquipmentClientInfo.LayerType.ZOMBIE_HORSE_SADDLE,
+				net.minecraft.client.model.geom.ModelLayers.ZOMBIE_HORSE_SADDLE, net.minecraft.client.renderer.entity.UndeadHorseRenderer.Type.ZOMBIE,
+				net.minecraft.client.renderer.entity.UndeadHorseRenderer.Type.ZOMBIE_BABY));
+		EntityRendererRegistry.register(com.huntlike.interlude.ModInterlude.REMAINS_HORSE, context -> new net.minecraft.client.renderer.entity.UndeadHorseRenderer(
+				context, net.minecraft.client.resources.model.EquipmentClientInfo.LayerType.SKELETON_HORSE_SADDLE,
+				net.minecraft.client.model.geom.ModelLayers.SKELETON_HORSE_SADDLE, net.minecraft.client.renderer.entity.UndeadHorseRenderer.Type.SKELETON,
+				net.minecraft.client.renderer.entity.UndeadHorseRenderer.Type.SKELETON_BABY));
+		EntityRendererRegistry.register(com.huntlike.interlude.ModInterlude.BARTHOLOMEW, net.minecraft.client.renderer.entity.SlimeRenderer::new);
 		YummyClient.initialize();
 	}
 }

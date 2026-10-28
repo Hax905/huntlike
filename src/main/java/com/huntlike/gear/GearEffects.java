@@ -34,12 +34,13 @@ public final class GearEffects {
 	public static boolean isAnimal(Entity entity) {
 		return entity.getType().builtInRegistryHolder().is(QuestManager.QUOTA_ANIMALS)
 				|| entity instanceof LivingEntity living && BossController.isBoss(living) && !ClusterFight.isBody(entity)
-				|| BossAbilities.isHerd(entity);
+				|| BossAbilities.isHerd(entity) || com.huntlike.interlude.SlimeRiderFight.countsAsAnimal(entity);
 	}
 
 	/** Cluster mobs: slimes, magma cubes and the Cluster bosses' bodies. */
 	public static boolean isCluster(Entity entity) {
-		return ClusterQuota.isClusterMob(entity) || ClusterFight.isBody(entity);
+		return ClusterQuota.isClusterMob(entity) || ClusterFight.isBody(entity)
+				|| com.huntlike.interlude.SlimeRiderFight.countsAsCluster(entity);
 	}
 
 	/** Slippery: a full set of Cluster Hunt Armor. */
@@ -81,6 +82,9 @@ public final class GearEffects {
 
 	/** Called with every damage amount, before armor: Biohazard, Momentum, Fracture and Animalistic. */
 	public static float adjustDamage(LivingEntity target, DamageSource source, float amount) {
+		if (com.huntlike.interlude.SlimeRiderFight.skipAdjust(target)) {
+			return amount;
+		}
 		Entity attacker = source.getEntity();
 		if (attacker instanceof ServerPlayer player && source.getDirectEntity() == player
 				&& ModScythes.stats(player.getMainHandItem()) != null) {

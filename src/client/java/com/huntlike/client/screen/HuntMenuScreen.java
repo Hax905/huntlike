@@ -40,6 +40,8 @@ import com.huntlike.registry.ModItems;
 public class HuntMenuScreen extends Screen {
 	private static final Identifier ANKH = HuntLike.id("textures/gui/ankh.png");
 	private static final Identifier MERCURY = HuntLike.id("textures/gui/mercury.png");
+	private static final Identifier INTERLUDE = HuntLike.id("textures/gui/interlude.png");
+	private static final int RAIL_SIZE = 3;
 	/** Vanilla's padlock (the cartography table's "locked" icon) and iron chain. */
 	private static final Identifier LOCK = Identifier.withDefaultNamespace("container/cartography_table/locked");
 	private static final Identifier CHAIN = Identifier.withDefaultNamespace("textures/block/iron_chain.png");
@@ -67,6 +69,12 @@ public class HuntMenuScreen extends Screen {
 	/** False: the Hunt rail only. True: the selected Hunt's panel is open. */
 	private boolean panelOpen;
 	private int huntIndex;
+	/** Rail position: 0 Animal, 1 the Slime Rider Interlude, 2 Cluster. */
+	private int railPos;
+	private int interludeStage = 1;
+	/** The Interlude token trade button (x, y, w, h) from the last frame, or null. */
+	private int[] interludeTokenButton;
+	private boolean giveUpArmed;
 	private int questTier = 1;
 	private int rankView;
 	private int abilityScroll;
@@ -120,6 +128,12 @@ public class HuntMenuScreen extends Screen {
 			this.huntIndex = 0;
 			ClientPlayNetworking.send(new HuntPayloads.Action("select", hunt().id(), 0));
 		}
+		this.railPos = huntIndex == 0 ? 0 : 2;
+		if (com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.selectedHunt)) {
+			this.railPos = com.huntlike.interlude.InterludeDefs.open(data) ? 1 : 0;
+			this.huntIndex = 0;
+		}
+		this.interludeStage = highestOpenStage();
 		this.rankView = progress().rank();
 		this.questTier = highestUnlockedTier();
 		// After the first visit in this world, the menu opens straight onto the selected Hunt's panel.
@@ -143,6 +157,21 @@ public class HuntMenuScreen extends Screen {
 
 	private Hunt hunt() {
 		return HuntDefs.HUNTS.get(huntIndex);
+	}
+
+	/** The Slime Rider Interlude is selected on the rail. */
+	private boolean interlude() {
+		return railPos == 1;
+	}
+
+	private int highestOpenStage() {
+		int best = 1;
+		for (com.huntlike.interlude.InterludeDefs.Stage stage : com.huntlike.interlude.InterludeDefs.STAGES) {
+			if (com.huntlike.interlude.InterludeDefs.stageOpen(ClientHuntState.data, stage)) {
+				best = stage.number();
+			}
+		}
+		return best;
 	}
 
 	private HuntData.Progress progress() {
@@ -206,8 +235,15 @@ public class HuntMenuScreen extends Screen {
 		drawRail(g, mouseX, mouseY);
 
 		boolean questRunning = activeQuest() != null;
+		interludeTokenButton = null;
 		if (tab == 0 && questRunning) {
 			drawActiveQuest(g, mouseX, mouseY);
+		} else if (panelOpen && interlude()) {
+			if (tab == 0) {
+				drawInterludeCard(g, mouseX, mouseY);
+			} else {
+				drawInterludeOther(g);
+			}
 		} else if (panelOpen) {
 			switch (tab) {
 				case 0 -> drawBossCard(g, mouseX, mouseY);
@@ -217,7 +253,7 @@ public class HuntMenuScreen extends Screen {
 		} else if (!hintSeen()) {
 			g.text(this.font, Component.literal("Click a symbol or press Enter"), px + 8, iy + ih - 14, TEXT_DIM, false);
 		}
-		if (tab == 0) {
+		if (tab == 0 && !interlude()) {
 			drawDailyCharges(g, mouseX, mouseY);
 		}
 		if (dropsHover != null) {
@@ -315,12 +351,17 @@ public class HuntMenuScreen extends Screen {
 		line(g, railX(iy, cx, cy), iy, cx, cy, RAIL);
 		line(g, cx, cy, railX(iy + ih, cx, cy), iy + ih, RAIL);
 		for (int offset = -1; offset <= 1; offset++) {
-			int index = huntIndex + offset;
-			if (index < 0 || index >= HuntDefs.HUNTS.size()) {
+			int pos = railPos + offset;
+			if (pos < 0 || pos >= RAIL_SIZE) {
 				continue;
 			}
 			int sy = cy + offset * 56;
 			int size = offset == 0 ? 32 : 22;
+			if (pos == 1) {
+				drawInterludeSymbol(g, Math.round(railX(sy, cx, cy)), sy, offset == 0 ? 28 : 18, offset == 0, mouseX, mouseY);
+				continue;
+			}
+			int index = pos == 0 ? 0 : 1;
 			// Each symbol sits centered on the rail.
 			int x0 = Math.round(railX(sy, cx, cy)) - size / 2;
 			int y0 = sy - size / 2;
@@ -351,6 +392,34 @@ public class HuntMenuScreen extends Screen {
 								mouseX, mouseY);
 					}
 				}
+			}
+		}
+	}
+
+	/** The Interlude's node on the rail, between the Animal and Cluster symbols. */
+	private void drawInterludeSymbol(GuiGraphicsExtractor g, int x, int y, int size, boolean selected, int mouseX, int mouseY) {
+		int x0 = x - size / 2;
+		int y0 = y - size / 2;
+		boolean hover = mouseX >= x0 && mouseX < x0 + size && mouseY >= y0 && mouseY < y0 + size;
+		boolean locked = !com.huntlike.interlude.InterludeDefs.open(ClientHuntState.data);
+		sprite(g, hover ? "symbol_hover" : "symbol", x0 - 1, y0 - 1, size + 2, size + 2);
+		g.blit(RenderPipelines.GUI_TEXTURED, INTERLUDE, x0 + 2, y0 + 2, 0.0F, 0.0F, size - 4, size - 4, 26, 26, 26, 26);
+		if (locked) {
+			g.fill(x0, y0, x0 + size, y0 + size, 0x90101010);
+			int lw = selected ? 13 : 9;
+			int lh = selected ? 18 : 12;
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK, x0 + (size - lw) / 2, y0 + (size - lh) / 2, lw, lh);
+		}
+		if (selected) {
+			hits.add(new Hit(x0, y0, size, size, this::openPanel));
+			if (hover) {
+				List<Component> tip = new ArrayList<>();
+				tip.add(colored("Interlude: " + com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR));
+				if (locked) {
+					tip.add(colored("Locked: unlocks at Animal Rank " + HuntDefs.ROMAN[com.huntlike.interlude.InterludeDefs.STAGES.get(0)
+							.animalRank()], HuntDefs.RED));
+				}
+				g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
 			}
 		}
 	}
@@ -470,7 +539,7 @@ public class HuntMenuScreen extends Screen {
 			g.text(this.font, colored("Regeneration: ", TEXT_GRAY).append(colored(tier.regen() + "/s", HuntDefs.LIME)),
 					px + 6, y, WHITE, false);
 			y += 12;
-			drawAbilities(g, tier, px + 4, y, pw - 8, py + ph - 26 - y);
+			drawAbilities(g, tier.abilities(), px + 4, y, pw - 8, py + ph - 26 - y);
 		}
 		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
 		if (!huntOpen()) {
@@ -503,7 +572,193 @@ public class HuntMenuScreen extends Screen {
 				mouseX, mouseY, this::startQuest);
 	}
 
-	private void drawAbilities(GuiGraphicsExtractor g, Tier tier, int x, int y, int w, int h) {
+	private boolean interludeCanStart() {
+		com.huntlike.interlude.InterludeDefs.Stage stage = com.huntlike.interlude.InterludeDefs.stage(interludeStage);
+		HuntData data = ClientHuntState.data;
+		return com.huntlike.interlude.InterludeDefs.stageOpen(data, stage) && data.interludeTokens >= stage.tokenCost()
+				&& !ClientHuntState.peaceful && ClientHuntState.interludeStage == 0 && activeQuest() == null;
+	}
+
+	/** The Slime Rider Interlude's card: stage, stats, abilities, tokens and Start. */
+	private void drawInterludeCard(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+		panelBox(g);
+		HuntData data = ClientHuntState.data;
+		com.huntlike.interlude.InterludeDefs.Stage stage = com.huntlike.interlude.InterludeDefs.stage(interludeStage);
+		boolean open = com.huntlike.interlude.InterludeDefs.open(data);
+		boolean stageOpen = com.huntlike.interlude.InterludeDefs.stageOpen(data, stage);
+		int running = ClientHuntState.interludeStage;
+		int cx = px + pw / 2;
+		int y = py + 5;
+		g.centeredText(this.font, colored("Interlude", com.huntlike.interlude.InterludeDefs.COLOR), cx, y, WHITE);
+		y += 11;
+		g.centeredText(this.font, colored("<  ", TEXT_GRAY).append(colored("Stage " + stage.roman(), stage.color()))
+				.append(colored("  >", TEXT_GRAY)), cx, y, WHITE);
+		hits.add(new Hit(cx - 44, y - 2, 20, 12, () -> changeTier(-1)));
+		hits.add(new Hit(cx + 24, y - 2, 20, 12, () -> changeTier(1)));
+		y += 12;
+		g.centeredText(this.font, colored(com.huntlike.interlude.InterludeDefs.NAME, stage.color()), cx, y, WHITE);
+		y += 10;
+		g.centeredText(this.font, colored(com.huntlike.interlude.InterludeDefs.TITLE, TEXT_GRAY), cx, y, WHITE);
+		y += 12;
+		int statsTop = y;
+		boolean affordable = data.interludeTokens >= stage.tokenCost();
+		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
+				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
+		y += 10;
+		g.text(this.font, colored("Experience: ", TEXT_GRAY).append(colored("none", TEXT_DIM)), px + 6, y, WHITE, false);
+		y += 12;
+		int bottom = py + ph - 44;
+		if (!stageOpen) {
+			String lock = !com.huntlike.interlude.InterludeDefs.ranksMet(data, stage)
+					? "Unlocks at " + com.huntlike.interlude.InterludeDefs.rankText(stage)
+					: "Win Stage " + HuntDefs.ROMAN[stage.number() - 1] + " to unlock";
+			for (FormattedCharSequence line : this.font.split(colored(lock, HuntDefs.RED), pw - 90)) {
+				g.text(this.font, line, px + 6, y, WHITE, false);
+				y += 9;
+			}
+		} else {
+			g.text(this.font, colored("Health: ", TEXT_GRAY).append(colored(String.valueOf(stage.health()), HuntDefs.RED)),
+					px + 6, y, WHITE, false);
+			y += 10;
+			g.text(this.font, colored("Damage: ", TEXT_GRAY).append(colored(String.valueOf(stage.melee()), HuntDefs.GOLD)),
+					px + 6, y, WHITE, false);
+			y += 12;
+			drawAbilities(g, com.huntlike.interlude.InterludeDefs.abilities(stage.number()), px + 4, y, pw - 8, bottom - 2 - y);
+		}
+		drawInterludeModel(g, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		if (!open) {
+			g.nextStratum();
+			drawChains(g, px, py, pw, ph, 2.0F);
+		}
+
+		// Interlude Tokens: 1 gold ingot = 16 (Shift: 10 = 160).
+		int tokenY = py + ph - 38;
+		interludeTokenButton = new int[] {px + 4, tokenY, pw - 8, 16};
+		boolean tokenHover = button(g, px + 4, tokenY, pw - 8, 16, Component.literal("Buy 16 Interlude Tokens [1 Gold Ingot]"), true,
+				mouseX, mouseY, null);
+		if (tokenHover) {
+			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 1 Gold Ingot -> 16 Interlude Tokens", WHITE),
+					colored("Shift-click: 10 Gold Ingots -> 160 Interlude Tokens", TEXT_GRAY)), mouseX, mouseY);
+		}
+
+		int by = py + ph - 20;
+		int startX = px + 4;
+		int startW = pw - 8;
+		boolean won = data.progress(com.huntlike.interlude.InterludeDefs.SLIME_RIDER).bossKills[stage.number() - 1] > 0;
+		if (won) {
+			boolean hover = button(g, startX, by, 34, 16, Component.literal("Lore"), true, mouseX, mouseY, null);
+			if (hover) {
+				List<FormattedCharSequence> lines = new ArrayList<>();
+				lines.add(colored(com.huntlike.interlude.InterludeDefs.NAME + ", " + com.huntlike.interlude.InterludeDefs.TITLE,
+						stage.color()).getVisualOrderText());
+				lines.addAll(this.font.split(colored(stage.lore(), 0xFFDDDDDD), 220));
+				g.setTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+			}
+			startX += 38;
+			startW -= 38;
+		}
+		boolean dropsHover = button(g, startX, by, 44, 16, Component.literal("Drops"), true, mouseX, mouseY, null);
+		if (dropsHover) {
+			g.setComponentTooltipForNextFrame(this.font, interludeDropLines(stage.number()), mouseX, mouseY);
+		}
+		startX += 48;
+		startW -= 48;
+		if (running > 0) {
+			int seconds = ClientHuntState.interludeTicksLeft / 20;
+			g.text(this.font, colored(String.format("Stage %s in progress - %d:%02d left", HuntDefs.ROMAN[running], seconds / 60,
+					seconds % 60), com.huntlike.interlude.InterludeDefs.COLOR), px + 6, tokenY - 11, WHITE, false);
+			Component label = giveUpArmed ? colored("Confirm?", HuntDefs.RED) : Component.literal("Give Up");
+			button(g, startX, by, startW, 16, label, true, mouseX, mouseY, () -> {
+				if (giveUpArmed) {
+					giveUpArmed = false;
+					ClientPlayNetworking.send(new HuntPayloads.Action("interlude_cancel", com.huntlike.interlude.InterludeDefs.SLIME_RIDER, 0));
+				} else {
+					giveUpArmed = true;
+				}
+			});
+		} else {
+			button(g, startX, by, startW, 16, Component.literal("Start [" + stage.tokenCost() + " Tokens]"), interludeCanStart(),
+					mouseX, mouseY, () -> ClientPlayNetworking.send(new HuntPayloads.Action("interlude_start",
+							com.huntlike.interlude.InterludeDefs.SLIME_RIDER, interludeStage)));
+		}
+	}
+
+	private List<Component> interludeDropLines(int stage) {
+		List<Component> lines = new ArrayList<>();
+		lines.add(colored("If Pom stays:", com.huntlike.interlude.InterludeDefs.COLOR));
+		for (Drop drop : com.huntlike.interlude.InterludeDefs.pomDrops(stage)) {
+			lines.add(dropLine(drop));
+		}
+		lines.add(colored("If Bartholomew stays:", com.huntlike.interlude.InterludeDefs.COLOR));
+		for (Drop drop : com.huntlike.interlude.InterludeDefs.bartholomewDrops(stage)) {
+			lines.add(dropLine(drop));
+		}
+		return lines;
+	}
+
+	private Component dropLine(Drop drop) {
+		String name = drop.id().equals("leaping_potion") ? "Potion of Leaping (3:00)" : new ItemStack(drop.item()).getHoverName().getString();
+		return colored(" " + name + " x" + drop.minCount(), WHITE).append(colored("  " + drop.chanceNum() + "/" + drop.chanceDen(), TEXT_GRAY));
+	}
+
+	/** Pom with Bartholomew on its back, from client-only copies. */
+	private void drawInterludeModel(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2) {
+		if (this.minecraft.level == null) {
+			return;
+		}
+		LivingEntity pom = previews.computeIfAbsent(100, n -> {
+			LivingEntity created = com.huntlike.interlude.ModInterlude.POM.create(this.minecraft.level, EntitySpawnReason.LOAD);
+			if (created != null) {
+				created.setId(-1100);
+			}
+			return created;
+		});
+		LivingEntity slime = previews.computeIfAbsent(101, n -> {
+			com.huntlike.interlude.Bartholomew created = com.huntlike.interlude.ModInterlude.BARTHOLOMEW.create(this.minecraft.level,
+					EntitySpawnReason.LOAD);
+			if (created != null) {
+				created.setId(-1101);
+				created.setSize(2, false);
+			}
+			return created;
+		});
+		double time = System.currentTimeMillis() / 1000.0;
+		float lookX = (x1 + x2) / 2.0F + (float) Math.sin(time * 0.7) * 80.0F;
+		float lookY = (y1 + y2) / 2.0F - 10.0F;
+		int scale = 22;
+		if (pom != null) {
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 8, x2, y2 + 8, scale, 0.0625F, lookX, lookY, pom);
+		}
+		if (slime != null) {
+			int lift = Math.round(scale * 1.15F);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 8 - lift, x2, y2 + 8 - lift, scale, 0.0625F, lookX, lookY, slime);
+		}
+	}
+
+	/** The Gear and Ranks tabs of an Interlude: nothing to buy or rank up, just its record. */
+	private void drawInterludeOther(GuiGraphicsExtractor g) {
+		panelBox(g);
+		int cx = px + pw / 2;
+		int y = py + 8;
+		g.centeredText(this.font, colored("Interlude: " + com.huntlike.interlude.InterludeDefs.NAME, com.huntlike.interlude.InterludeDefs.COLOR),
+				cx, y, WHITE);
+		y += 16;
+		String text = tab == 1 ? "Interludes have no Gear. Their tokens are bought on the Quests tab."
+				: "Interludes have no Ranks and give no Hunt XP.";
+		for (FormattedCharSequence line : this.font.split(colored(text, TEXT_GRAY), pw - 16)) {
+			g.centeredText(this.font, line, cx, y, WHITE);
+			y += 10;
+		}
+		y += 8;
+		HuntData.Progress progress = ClientHuntState.data.progress(com.huntlike.interlude.InterludeDefs.SLIME_RIDER);
+		for (com.huntlike.interlude.InterludeDefs.Stage stage : com.huntlike.interlude.InterludeDefs.STAGES) {
+			g.centeredText(this.font, colored("Stage " + stage.roman() + " wins: ", stage.color())
+					.append(colored(String.valueOf(progress.bossKills[stage.number() - 1]), WHITE)), cx, y, WHITE);
+			y += 11;
+		}
+	}
+
+	private void drawAbilities(GuiGraphicsExtractor g, List<Ability> abilities, int x, int y, int w, int h) {
 		if (h < 20) {
 			return;
 		}
@@ -511,7 +766,7 @@ public class HuntMenuScreen extends Screen {
 		g.text(this.font, colored("Abilities", WHITE), x + 4, y + 3, WHITE, false);
 		List<FormattedCharSequence> lines = new ArrayList<>();
 		List<Integer> colors = new ArrayList<>();
-		for (Ability ability : tier.abilities()) {
+		for (Ability ability : abilities) {
 			if (!lines.isEmpty()) {
 				lines.add(FormattedCharSequence.EMPTY);
 				colors.add(WHITE);
@@ -1052,17 +1307,26 @@ public class HuntMenuScreen extends Screen {
 	}
 
 	private void changeHunt(int direction) {
-		int size = HuntDefs.HUNTS.size();
-		int next = Math.max(0, Math.min(size - 1, huntIndex + direction));
-		if (next != huntIndex) {
-			huntIndex = next;
+		int next = Math.max(0, Math.min(RAIL_SIZE - 1, railPos + direction));
+		if (next != railPos) {
+			railPos = next;
+			huntIndex = railPos == 2 ? 1 : 0;
 			rankView = progress().rank();
 			questTier = highestUnlockedTier();
-			ClientPlayNetworking.send(new HuntPayloads.Action("select", hunt().id(), 0));
+			interludeStage = highestOpenStage();
+			abilityScroll = 0;
+			giveUpArmed = false;
+			ClientPlayNetworking.send(new HuntPayloads.Action("select",
+					interlude() ? com.huntlike.interlude.InterludeDefs.SLIME_RIDER : hunt().id(), 0));
 		}
 	}
 
 	private void changeTier(int direction) {
+		if (interlude()) {
+			interludeStage = Math.max(1, Math.min(com.huntlike.interlude.InterludeDefs.STAGES.size(), interludeStage + direction));
+			abilityScroll = 0;
+			return;
+		}
 		questTier = Math.max(1, Math.min(hunt().tiers().size(), questTier + direction));
 		abilityScroll = 0;
 	}
@@ -1123,6 +1387,11 @@ public class HuntMenuScreen extends Screen {
 		if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 			if (!panelOpen && !questPanelShowing()) {
 				openPanel();
+			} else if (tab == 0 && !questPanelShowing() && interlude()) {
+				if (interludeCanStart()) {
+					ClientPlayNetworking.send(new HuntPayloads.Action("interlude_start", com.huntlike.interlude.InterludeDefs.SLIME_RIDER,
+							interludeStage));
+				}
 			} else if (tab == 0 && !questPanelShowing()) {
 				Tier tier = hunt().tier(questTier);
 				HuntData.Progress progress = progress();
@@ -1142,6 +1411,13 @@ public class HuntMenuScreen extends Screen {
 			double my = event.y();
 			boolean shift = (event.modifiers() & InputConstants.MOD_SHIFT) != 0;
 			// The token trade reads Shift, so it is handled here.
+			int[] ib = interludeTokenButton;
+			if (tab == 0 && panelOpen && interlude() && ib != null && mx >= ib[0] && mx < ib[0] + ib[2] && my >= ib[1]
+					&& my < ib[1] + ib[3]) {
+				ClientPlayNetworking.send(new HuntPayloads.Action("interlude_tokens", com.huntlike.interlude.InterludeDefs.SLIME_RIDER,
+						shift ? 1 : 0));
+				return true;
+			}
 			int[] tb = tokenButton;
 			if (tab == 1 && panelOpen && tb != null && mx >= tb[0] && mx < tb[0] + tb[2] && my >= tb[1] && my < tb[1] + tb[3]) {
 				ClientPlayNetworking.send(new HuntPayloads.Action("buy_tokens", hunt().id(), shift ? 1 : 0));
@@ -1150,14 +1426,19 @@ public class HuntMenuScreen extends Screen {
 			for (Hit hit : List.copyOf(hits)) {
 				if (hit.contains(mx, my)) {
 					boolean wasArmed = cancelArmed;
+					boolean wasGiveUp = giveUpArmed;
 					hit.action().run();
 					if (wasArmed && cancelArmed) {
 						cancelArmed = false;
+					}
+					if (wasGiveUp && giveUpArmed) {
+						giveUpArmed = false;
 					}
 					return true;
 				}
 			}
 			cancelArmed = false;
+			giveUpArmed = false;
 		}
 		return super.mouseClicked(event, doubleClick);
 	}

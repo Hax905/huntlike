@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.chicken.Chicken;
 
@@ -177,6 +178,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			upgradedMonolith(context, singleplayer);
 			rogueHunters(context, singleplayer);
 			towernaar(context, singleplayer);
+			slimeRider(context, singleplayer);
 			assertServer(singleplayer, "Ovis Ammon spawns in random wool colors", server -> {
 				ServerPlayer player = player(server);
 				java.util.Set<net.minecraft.world.item.DyeColor> colors = new java.util.HashSet<>();
@@ -1384,6 +1386,189 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			cow.discard();
 			wolf.discard();
 			return bought && pulled == 1 && motion.x < 0 && wolf.getDeltaMovement().x <= 0.0;
+		});
+	}
+
+	private static com.huntlike.interlude.Pom interludePom(MinecraftServer server) {
+		ServerPlayer player = player(server);
+		var list = player.level().getEntitiesOfClass(com.huntlike.interlude.Pom.class, player.getBoundingBox().inflate(40), e -> e.isAlive());
+		return list.isEmpty() ? null : list.get(0);
+	}
+
+	private static List<com.huntlike.interlude.Bartholomew> interludeSlimes(MinecraftServer server) {
+		ServerPlayer player = player(server);
+		return player.level().getEntitiesOfClass(com.huntlike.interlude.Bartholomew.class, player.getBoundingBox().inflate(40), e -> e.isAlive());
+	}
+
+	private static void interludeAction(ClientGameTestContext context, String action, int value) {
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action(action, com.huntlike.interlude.InterludeDefs.SLIME_RIDER, value)));
+	}
+
+	/** Starts a stage and waits for Pom and Bartholomew to arrive. */
+	private static void startInterlude(ClientGameTestContext context, TestSingleplayerContext singleplayer, int stage) {
+		interludeAction(context, "interlude_start", stage);
+		for (int i = 0; i < 80; i++) {
+			context.waitTicks(1);
+			if (singleplayer.getServer().computeOnServer(server -> interludePom(server) != null)) {
+				context.waitTicks(2);
+				return;
+			}
+		}
+		throw new AssertionError("The Slime Rider didn't spawn");
+	}
+
+	private static void hurt(ServerPlayer player, LivingEntity entity, float amount) {
+		entity.invulnerableTime = 0;
+		entity.hurtServer(player.level(), player.level().damageSources().playerAttack(player), amount);
+	}
+
+	/** The Slime Rider Interlude: tokens, the menu card, both phases, splitting, drops, the Growing Slimeball and the Remains. */
+	private static void slimeRider(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.getInventory().clearContent();
+			player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.RESISTANCE, 20 * 600, 4));
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
+				e.discard();
+			}
+			give(player, net.minecraft.world.item.Items.GOLD_INGOT, 11);
+		});
+		interludeAction(context, "select", 0);
+		context.waitTicks(3);
+		interludeAction(context, "interlude_tokens", 0);
+		context.waitTicks(3);
+		interludeAction(context, "interlude_tokens", 1);
+		context.waitTicks(3);
+		check(singleplayer, "1 gold ingot = 16 Interlude Tokens (Shift: 10 = 160)", data -> data.interludeTokens == 176
+				&& com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(data.selectedHunt));
+		context.setScreen(() -> new HuntMenuScreen(0));
+		context.waitTicks(10);
+		context.takeScreenshot("95-interlude-card");
+		context.setScreen(() -> null);
+
+		// Stage I: Phase 1 shares Pom's health; hits on Bartholomew go there.
+		startInterlude(context, singleplayer, 1);
+		context.waitTicks(20);
+		context.takeScreenshot("96-slime-rider");
+		assertServer(singleplayer, "Phase 1: Bartholomew rides Pom; hitting Bartholomew hurts Pom; both Hunts' weapons work", server -> {
+			ServerPlayer player = player(server);
+			var pom = interludePom(server);
+			var bart = interludeSlimes(server).get(0);
+			float before = pom.getHealth();
+			hurt(player, bart, 5.0F);
+			HuntLike.LOGGER.info("[test] Slime Rider Phase 1: riding {} pom {} -> {} bart {}", bart.getVehicle() == pom, before, pom.getHealth(),
+					bart.getHealth());
+			return bart.getVehicle() == pom && pom.getHealth() < before && bart.getHealth() == bart.getMaxHealth()
+					&& com.huntlike.gear.GearEffects.isAnimal(pom) && com.huntlike.gear.GearEffects.isCluster(pom)
+					&& com.huntlike.gear.GearEffects.isAnimal(bart) && com.huntlike.gear.GearEffects.isCluster(bart);
+		});
+		singleplayer.getServer().runOnServer(server -> hurt(player(server), interludePom(server), 1000.0F));
+		context.waitTicks(3);
+		boolean pomStayed = singleplayer.getServer().computeOnServer(server -> interludePom(server) != null);
+		assertServer(singleplayer, "Phase 2: one of them stays with half the health, and only its Hunt's weapons work", server -> {
+			var pom = interludePom(server);
+			var slimes = interludeSlimes(server);
+			HuntLike.LOGGER.info("[test] Slime Rider Phase 2: Pom {} Bartholomew {}", pom == null ? "-" : pom.getHealth() + "/" + pom.getMaxHealth(),
+					slimes.isEmpty() ? "-" : slimes.get(0).getHealth() + "/" + slimes.get(0).getMaxHealth());
+			if (pom != null) {
+				return slimes.isEmpty() && pom.getMaxHealth() == 25.0F && com.huntlike.gear.GearEffects.isAnimal(pom)
+						&& !com.huntlike.gear.GearEffects.isCluster(pom);
+			}
+			return slimes.size() == 1 && slimes.get(0).getMaxHealth() == 25.0F && slimes.get(0).getVehicle() == null
+					&& com.huntlike.gear.GearEffects.isCluster(slimes.get(0)) && !com.huntlike.gear.GearEffects.isAnimal(slimes.get(0));
+		});
+		context.waitTicks(20);
+		context.takeScreenshot(pomStayed ? "97-phase2-pom" : "97-phase2-bartholomew");
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var pom = interludePom(server);
+			if (pom != null) {
+				hurt(player, pom, 1000.0F);
+			} else {
+				hurt(player, interludeSlimes(server).get(0), 1000.0F);
+			}
+		});
+		context.waitTicks(3);
+		check(singleplayer, "Stage I won: counted, no Hunt XP, tokens spent", data -> data.progress("slime_rider").bossKills[0] == 1
+				&& data.interludeTokens == 174);
+		assertServer(singleplayer, "the fight is over", server -> !com.huntlike.interlude.SlimeRiderFight.active(player(server))
+				&& interludePom(server) == null && interludeSlimes(server).isEmpty());
+
+		// Stage III with Bartholomew staying: "Are we for real?" splits him in two (10% of 140 = 14 health each).
+		singleplayer.getServer().runOnServer(server -> {
+			HuntData data = QuestManager.data(player(server));
+			data.progress("slime_rider").bossKills[1] = 1;
+		});
+		boolean split = false;
+		for (int attempt = 0; attempt < 8 && !split; attempt++) {
+			startInterlude(context, singleplayer, 3);
+			singleplayer.getServer().runOnServer(server -> hurt(player(server), interludePom(server), 1000.0F));
+			context.waitTicks(3);
+			if (singleplayer.getServer().computeOnServer(server -> interludePom(server) != null)) {
+				singleplayer.getServer().runOnServer(server -> hurt(player(server), interludePom(server), 1000.0F));
+				context.waitTicks(3);
+				continue;
+			}
+			singleplayer.getServer().runOnServer(server -> hurt(player(server), interludeSlimes(server).get(0), 1000.0F));
+			context.waitTicks(3);
+			assertServer(singleplayer, "Are we for real?: two halves with 14 health each", server -> {
+				var slimes = interludeSlimes(server);
+				HuntLike.LOGGER.info("[test] Bartholomew split: {}", slimes.stream().map(e -> e.getHealth() + "/size " + e.getSize()).toList());
+				return slimes.size() == 2 && slimes.stream().allMatch(e -> e.getMaxHealth() == 14.0F && e.getSize() == 1);
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("98-bartholomew-split");
+			singleplayer.getServer().runOnServer(server -> interludeSlimes(server).forEach(e -> hurt(player(server), e, 1000.0F)));
+			context.waitTicks(3);
+			split = true;
+		}
+		if (!split) {
+			throw new AssertionError("Bartholomew never stayed in 8 tries");
+		}
+		check(singleplayer, "Stage III won", data -> data.progress("slime_rider").bossKills[2] >= 1);
+
+		// The Growing Slimeball on an anvil: Sharpness II -> III for 10 levels; refused at the maximum.
+		assertServer(singleplayer, "Growing Slimeball raises a single-enchantment book by one level", server -> {
+			ServerPlayer player = player(server);
+			var registry = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
+			var sharpness = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
+			var book = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ENCHANTED_BOOK);
+			var enchants = new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
+					net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+			enchants.set(sharpness, 2);
+			book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchants.toImmutable());
+			var menu = new net.minecraft.world.inventory.AnvilMenu(0, player.getInventory());
+			menu.getSlot(0).set(book);
+			menu.getSlot(1).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.GROWING_SLIMEBALL));
+			menu.createResult();
+			var result = menu.getSlot(2).getItem();
+			var stored = result.get(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS);
+			int level = stored == null ? -1 : stored.getLevel(sharpness);
+			enchants.set(sharpness, 5);
+			book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchants.toImmutable());
+			menu.getSlot(0).set(book);
+			menu.createResult();
+			boolean refused = menu.getSlot(2).getItem().isEmpty();
+			HuntLike.LOGGER.info("[test] Growing Slimeball: Sharpness II -> {} cost {}; at V refused {}", level, 10, refused);
+			return level == 3 && refused;
+		});
+
+		// Slime Rider Remains: a saddled skeleton horse with the player on it; again, and it's gone.
+		assertServer(singleplayer, "Slime Rider Remains call and dismiss the skeleton horse", server -> {
+			ServerPlayer player = player(server);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+					new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.SLIME_RIDER_REMAINS));
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			var horse = player.getVehicle();
+			boolean riding = horse instanceof com.huntlike.interlude.RemainsHorse remains && remains.getMaxHealth() == 40.0F
+					&& !remains.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.SADDLE).isEmpty();
+			player.stopRiding();
+			player.getMainHandItem().use(player.level(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+			boolean gone = horse == null || !horse.isAlive();
+			HuntLike.LOGGER.info("[test] Remains: riding a saddled 40-health horse {}, gone after the second use {}", riding, gone);
+			return riding && gone;
 		});
 	}
 

@@ -153,7 +153,7 @@ public final class QuestManager {
 		Hunt hunt = HuntDefs.hunt(action.hunt());
 		switch (action.action()) {
 			case "select" -> {
-				data.selectedHunt = hunt.id();
+				data.selectedHunt = com.huntlike.interlude.InterludeDefs.SLIME_RIDER.equals(action.hunt()) ? action.hunt() : hunt.id();
 				save(player, data);
 			}
 			case "start" -> startQuest(player, data, hunt, action.value());
@@ -165,6 +165,9 @@ public final class QuestManager {
 			case "buy_tokens" -> buyTokens(player, data, hunt, action.value() == 1);
 			case "buy_gear" -> buyGear(player, data, hunt, action.value());
 			case "koro_click" -> KoroManager.click(player, data);
+			case "interlude_start" -> com.huntlike.interlude.SlimeRiderFight.start(player, data, action.value());
+			case "interlude_tokens" -> com.huntlike.interlude.SlimeRiderFight.buyTokens(player, data, action.value() == 1);
+			case "interlude_cancel" -> com.huntlike.interlude.SlimeRiderFight.cancel(player);
 			case "towernaar_click" -> com.huntlike.towernaar.TowernaarManager.click(player, data);
 			case "towernaar_start" -> com.huntlike.towernaar.TowernaarFight.start(player, data);
 			case "yummy_key" -> {
@@ -304,7 +307,7 @@ public final class QuestManager {
 	// ---------------------------------------------------------------- quest lifecycle
 
 	private static void startQuest(ServerPlayer player, HuntData data, Hunt hunt, int tierNumber) {
-		if (data.quest != null) {
+		if (data.quest != null || com.huntlike.interlude.SlimeRiderFight.active(player)) {
 			player.sendSystemMessage(Messages.error("You already have an active quest."));
 			return;
 		}
@@ -738,6 +741,9 @@ public final class QuestManager {
 		CompoundTag tag = data.toTag();
 		tag.putBoolean("peaceful", isPeaceful(player));
 		tag.putInt("towernaarPhase", com.huntlike.towernaar.TowernaarFight.phase(player));
+		tag.putInt("interludeStage", com.huntlike.interlude.SlimeRiderFight.runningStage(player));
+		tag.putInt("interludeTicksLeft", com.huntlike.interlude.SlimeRiderFight.ticksLeft(player));
+		tag.putIntArray("interludeEntities", com.huntlike.interlude.SlimeRiderFight.bodyIds(player));
 		Quest quest = data.quest;
 		if (quest != null && quest.phase == HuntData.PHASE_BOSS) {
 			long elapsed = player.level().getGameTime() - quest.bossSpawnTime;

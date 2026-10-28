@@ -68,6 +68,8 @@ public final class ModCreativeTab {
 			com.huntlike.gear.ModShields.SHIELDS.forEach(output::accept);
 			output.accept(com.huntlike.gear.ModShields.MAGNETIC_WAND);
 			output.accept(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD);
+			output.accept(com.huntlike.interlude.ModInterlude.GROWING_SLIMEBALL);
+			output.accept(com.huntlike.interlude.ModInterlude.SLIME_RIDER_REMAINS);
 			ModGear.ARMOR_SETS.forEach(set -> set.pieces().forEach(output::accept));
 			output.accept(ModKoro.WOODEN_BELL);
 			output.accept(ModKoro.GOLDEN_BELL);

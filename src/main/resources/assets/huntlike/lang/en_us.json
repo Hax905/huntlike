@@ -195,5 +195,10 @@
   "item.huntlike.magnetic_wand_prd": "Magnetic Wand PRD",
   "entity.huntlike.rogue_hunter": "Rogue Hunter",
   "entity.huntlike.towernaar_undead": "Towernaar the Undead",
-  "entity.huntlike.thrown_end_stone": "End Stone"
+  "entity.huntlike.thrown_end_stone": "End Stone",
+  "item.huntlike.growing_slimeball": "Growing Slimeball",
+  "item.huntlike.slime_rider_remains": "Slime Rider Remains",
+  "entity.huntlike.pom": "Pom",
+  "entity.huntlike.bartholomew": "Bartholomew",
+  "entity.huntlike.remains_horse": "Skeleton Horse"
 }

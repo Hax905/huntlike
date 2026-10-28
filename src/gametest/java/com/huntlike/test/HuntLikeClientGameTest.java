@@ -1415,7 +1415,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(3);
 
 		// The Magnetic Wand pulls mobs to where you look and holds them there for 1.5 s, but not your pets.
-		final Object[] wand = new Object[4];
+		final Object[] wand = new Object[5];
 		assertServer(singleplayer, "Magnetic Wand bought; it catches a cow but not a tamed wolf", server -> {
 			ServerPlayer player = player(server);
 			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
@@ -1447,10 +1447,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			wand[1] = cow.getUUID();
 			wand[2] = wolf.getUUID();
 			wand[3] = wolf.position();
+			wand[4] = player.level().getGameTime();
 			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} aim {} caught {}", bought, point, pulled);
 			return bought && pulled == 1;
 		});
-		context.waitTicks(15);
+		// Count server ticks (CI servers can lag behind the client).
+		waitServerTicks(context, singleplayer, (long) wand[4], 15);
 		assertServer(singleplayer, "after 0.75 s the cow is at the spot, without being launched", server -> {
 			var level = player(server).level();
 			var cow = level.getEntity((java.util.UUID) wand[1]);
@@ -1460,7 +1462,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					cow == null ? 0 : cow.getY() - point.y);
 			return flat < 1.5 && cow.getY() - point.y < 2.0;
 		});
-		context.waitTicks(12);
+		waitServerTicks(context, singleplayer, (long) wand[4], 27);
 		assertServer(singleplayer, "it is still held there at 1.35 s; the tamed wolf never moved toward it", server -> {
 			var level = player(server).level();
 			var cow = level.getEntity((java.util.UUID) wand[1]);
@@ -2784,6 +2786,17 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.setAttached(QuestManager.DATA, data);
 			QuestManager.sync(player);
 		});
+	}
+
+	/** Waits until the server is at least {@code ticks} game ticks past {@code start} (at most 400 client ticks). */
+	private static void waitServerTicks(ClientGameTestContext context, TestSingleplayerContext singleplayer, long start, int ticks) {
+		for (int i = 0; i < 400; i++) {
+			long now = singleplayer.getServer().computeOnServer(server -> player(server).level().getGameTime());
+			if (now - start >= ticks) {
+				return;
+			}
+			context.waitTick();
+		}
 	}
 
 	private static void check(TestSingleplayerContext singleplayer, String what, java.util.function.Predicate<HuntData> test) {

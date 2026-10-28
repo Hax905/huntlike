@@ -1426,7 +1426,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				bought |= player.getInventory().getItem(i).is(com.huntlike.gear.ModShields.MAGNETIC_WAND);
 			}
 			player.setYRot(0.0F);
-			player.setXRot(10.0F);
+			// Aim at the ground about 4.5 blocks ahead, so the creatures stay within the test world's ticking range.
+			player.setXRot(20.0F);
 			var eye = player.getEyePosition();
 			var end = eye.add(player.getLookAngle().scale(com.huntlike.gear.ModShields.WAND_REACH));
 			var hit = player.level().clip(new net.minecraft.world.level.ClipContext(eye, end, net.minecraft.world.level.ClipContext.Block.COLLIDER,

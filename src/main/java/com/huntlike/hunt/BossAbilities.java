@@ -197,6 +197,9 @@ public final class BossAbilities {
 		}
 		if (tier.number() >= 5 && !state.apex && boss.getHealth() <= threshold(boss, 0.4)) {
 			state.apex = true;
+			if (boss instanceof com.huntlike.entity.animal.EpicyonHaydeni epicyon) {
+				epicyon.setEnraged(true);
+			}
 			apexInstinct(boss, owner, level);
 		}
 	}

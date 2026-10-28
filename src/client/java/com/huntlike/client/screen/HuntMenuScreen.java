@@ -408,15 +408,9 @@ public class HuntMenuScreen extends Screen {
 		int y0 = y - size / 2;
 		boolean hover = mouseX >= x0 - 2 && mouseX < x0 + size + 2 && mouseY >= y0 - 2 && mouseY < y0 + size + 2;
 		boolean locked = !com.huntlike.interlude.InterludeDefs.open(ClientHuntState.data);
-		if (selected || hover) {
-			// A soft halo around the selected or hovered orb.
-			g.fill(x0 - 2, y0, x0 + size + 2, y0 + size, 0x3055AAFF);
-			g.fill(x0, y0 - 2, x0 + size, y0 + size + 2, 0x3055AAFF);
-		}
-		g.blit(RenderPipelines.GUI_TEXTURED, INTERLUDE, x0, y0, 0.0F, 0.0F, size, size, 16, 16, 16, 16);
-		if (locked) {
-			g.fill(x0 + 1, y0 + 1, x0 + size - 1, y0 + size - 1, 0x90101010);
-		}
+		// Just the orb, no box: a locked orb is drawn darker instead of under a veil.
+		g.blit(RenderPipelines.GUI_TEXTURED, INTERLUDE, x0, y0, 0.0F, 0.0F, size, size, 16, 16, 16, 16,
+				locked ? 0xFF505050 : 0xFFFFFFFF);
 		if (selected) {
 			hits.add(new Hit(x0 - 2, y0 - 2, size + 4, size + 4, this::openPanel));
 		}

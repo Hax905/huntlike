@@ -313,13 +313,45 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
-			HuntLike.LOGGER.info("[test] Apex Instinct: boss health {}", boss.getHealth());
+			boolean enraged = boss instanceof com.huntlike.entity.animal.EpicyonHaydeni epicyon && epicyon.isEnraged();
+			HuntLike.LOGGER.info("[test] Apex Instinct: boss health {} enraged {}", boss.getHealth(), enraged);
 			if (boss.getHealth() < 107.0F) {
 				throw new AssertionError("Apex Instinct did not heal");
+			}
+			if (!enraged) {
+				throw new AssertionError("Epicyon Haydeni is not enraged after Apex Instinct");
 			}
 		});
 		context.waitTicks(20);
 		context.takeScreenshot("16-apex-instinct");
+		// Both skins side by side: calm (left) and enraged (right), still, 3 blocks ahead.
+		final java.util.UUID[] skins = new java.util.UUID[2];
+		final net.minecraft.core.BlockPos[] skinsAt = new net.minecraft.core.BlockPos[1];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			for (int i = 0; i < 2; i++) {
+				var epicyon = com.huntlike.entity.ModEntities.EPICYON_HAYDENI.create(player.level(), EntitySpawnReason.COMMAND);
+				epicyon.snapTo(player.getX() - 0.9 + i * 1.8, player.getY(), player.getZ() + 3.0, 180.0F, 0.0F);
+				epicyon.setYHeadRot(180.0F);
+				epicyon.setNoAi(true);
+				epicyon.setInvulnerable(true);
+				epicyon.setEnraged(i == 1);
+				player.level().addFreshEntity(epicyon);
+				skins[i] = epicyon.getUUID();
+			}
+			skinsAt[0] = net.minecraft.core.BlockPos.containing(player.getX(), player.getY(), player.getZ() + 3.0);
+		});
+		context.getInput().lookAt(skinsAt[0]);
+		context.waitTicks(10);
+		context.takeScreenshot("16b-epicyon-skins");
+		singleplayer.getServer().runOnServer(server -> {
+			for (var id : skins) {
+				var entity = player(server).level().getEntity(id);
+				if (entity != null) {
+					entity.discard();
+				}
+			}
+		});
 
 		// Let a Lunge happen, then finish the fight.
 		float beforeLunge = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());

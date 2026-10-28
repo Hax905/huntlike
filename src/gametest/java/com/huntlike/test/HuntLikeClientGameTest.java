@@ -177,6 +177,16 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			upgradedMonolith(context, singleplayer);
 			rogueHunters(context, singleplayer);
 			towernaar(context, singleplayer);
+			assertServer(singleplayer, "Ovis Ammon spawns in random wool colors", server -> {
+				ServerPlayer player = player(server);
+				java.util.Set<net.minecraft.world.item.DyeColor> colors = new java.util.HashSet<>();
+				for (int i = 0; i < 20; i++) {
+					var ovis = com.huntlike.entity.ModEntities.OVIS_AMMON.create(player.level(), EntitySpawnReason.MOB_SUMMONED);
+					colors.add(ovis.getColor());
+				}
+				HuntLike.LOGGER.info("[test] Ovis Ammon colors from 20 spawns: {}", colors);
+				return colors.size() >= 4;
+			});
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
 	}

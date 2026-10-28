@@ -1845,8 +1845,17 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] shield {} | server blocking {}", state, serverBlocking);
 			shieldStates.add(state + " server " + serverBlocking);
 			context.takeScreenshot("99s-shield-" + i);
+			if (i < 2) {
+				context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+				context.waitTicks(3);
+				context.takeScreenshot("99t-shield-" + i + "-third-person");
+				context.runOnClient(client -> client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+			}
 			context.getInput().releaseKey(options -> options.keyUse);
 			context.waitTicks(5);
+			if (i < 2) {
+				context.takeScreenshot("99u-shield-" + i + "-held");
+			}
 		}
 		singleplayer.getServer().runOnServer(server -> player(server).setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
 				net.minecraft.world.item.ItemStack.EMPTY));

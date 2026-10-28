@@ -20,6 +20,15 @@ public class RemainsHorse extends SkeletonHorse {
 		super(type, level);
 	}
 
+	/**
+	 * Always saddled, on both sides. The saddle item set on the server didn't always reach the client, and a client that
+	 * thinks the horse has no saddle won't let its rider steer it.
+	 */
+	@Override
+	public boolean isSaddled() {
+		return true;
+	}
+
 	@Override
 	protected boolean canShearEquipment(Player player) {
 		return false;
@@ -56,6 +65,12 @@ public class RemainsHorse extends SkeletonHorse {
 	@Override
 	public void tick() {
 		super.tick();
+		// Show the saddle on the client too: put it on again a moment after spawning, so the change is sent.
+		if (this.level() instanceof ServerLevel && this.tickCount == 2) {
+			this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.SADDLE, ItemStack.EMPTY);
+		} else if (this.level() instanceof ServerLevel && this.tickCount == 3) {
+			this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.SADDLE, new ItemStack(net.minecraft.world.item.Items.SADDLE));
+		}
 		// A horse from an older call (left loaded somewhere) goes away once a new one exists.
 		if (this.level() instanceof ServerLevel && this.tickCount % 20 == 0 && this.getOwnerReference() != null
 				&& !RemainsItem.isCurrent(this.getOwnerReference().getUUID(), this.getUUID())) {

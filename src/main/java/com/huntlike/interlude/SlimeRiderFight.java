@@ -764,9 +764,11 @@ public final class SlimeRiderFight {
 			}
 			progress.dropsSeen.add(drop.id());
 			progress.dropCounts.merge(drop.id(), drop.minCount(), Integer::sum);
+			// The name is read before the stack goes into the inventory (afterwards it may be empty: "Air").
+			net.minecraft.network.chat.Component name = stack.getStyledHoverName();
 			QuestManager.giveStack(player, stack);
 			if (drop.dropClass() > 0) {
-				player.sendSystemMessage(Messages.rareDrop(drop.dropClass(), stack.getStyledHoverName()));
+				player.sendSystemMessage(Messages.rareDrop(drop.dropClass(), name));
 				QuestManager.playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
 			}
 		}

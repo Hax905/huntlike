@@ -1134,6 +1134,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
 		context.waitTicks(2);
 		assertServer(singleplayer, "Mitosis: The Vile split into 4", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 4);
+		// Thermodynamic keeps going after the split: every piece switches its core.
+		final int[] magmaBefore = new int[1];
+		singleplayer.getServer().runOnServer(server -> {
+			magmaBefore[0] = (int) com.huntlike.hunt.ClusterFight.bodies(player(server)).stream()
+					.filter(b -> ((com.huntlike.entity.cluster.TheVile) b).isMagmaCore()).count();
+			com.huntlike.hunt.ClusterFight.switchCoresSoon(player(server));
+		});
+		context.waitTicks(3);
+		assertServer(singleplayer, "Thermodynamic: after The Vile splits, its pieces still switch cores", server -> {
+			var bodies = com.huntlike.hunt.ClusterFight.bodies(player(server));
+			int magmaAfter = (int) bodies.stream().filter(b -> ((com.huntlike.entity.cluster.TheVile) b).isMagmaCore()).count();
+			HuntLike.LOGGER.info("[test] split Vile: magma cores {} -> {} of {}", magmaBefore[0], magmaAfter, bodies.size());
+			return bodies.size() == 4 && magmaAfter == 4 - magmaBefore[0];
+		});
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
 		context.waitTicks(2);
 		assertServer(singleplayer, "...and does it keep going? 16", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 16);

@@ -5,8 +5,8 @@
     "#": "huntlike:bouncy_slime_ball"
   },
   "pattern": [
-    "##",
-    "##"
+    "# #",
+    "# #"
   ],
   "result": {
     "count": 1,

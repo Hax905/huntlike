@@ -303,9 +303,14 @@ public final class ClusterFight {
 					startWatch(fight);
 				}
 			}
-			if (t >= 5 && main instanceof TheVile vile && --fight.coreTimer <= 0) {
-				fight.coreTimer = 100 + player.getRandom().nextInt(101);
-				switchCore(vile, level);
+		}
+		// Thermodynamic: The Vile switches cores every 5-10 seconds, and keeps doing it after it splits (every piece switches).
+		if (tier.number() >= 5 && --fight.coreTimer <= 0) {
+			fight.coreTimer = 100 + player.getRandom().nextInt(101);
+			for (Mob body : bodies) {
+				if (body instanceof TheVile vile && vile.isAlive()) {
+					switchCore(vile, level);
+				}
 			}
 		}
 		// Sticky Fingers, second line: once split, every living body deals 1 damage per second.
@@ -394,6 +399,14 @@ public final class ClusterFight {
 			return 0.0F;
 		}
 		return fight.yummyActive ? tier.regen() / 2.0F : tier.regen();
+	}
+
+	/** Brings the next Thermodynamic switch forward to the next tick (for the tests). */
+	public static void switchCoresSoon(ServerPlayer player) {
+		Fight fight = FIGHTS.get(player.getUUID());
+		if (fight != null) {
+			fight.coreTimer = 1;
+		}
 	}
 
 	/** The boss's regeneration right now (for the tests), or -1 when there's no fight. */

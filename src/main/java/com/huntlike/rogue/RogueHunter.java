@@ -18,13 +18,19 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * A Rogue Hunter: hunts one player during their Hunt Quests. Invisible (only the hunted player sees its red outline) until
- * it's hit the first time. 40 health and 8 damage; a special one has 80 and 12.
+ * it's hit the first time. 40 health and 5 damage (8 once its player is at Rank VIII in any Hunt); a special one has
+ * 80 health and 8 damage (12).
  */
 public class RogueHunter extends Monster {
 	public static final float HEALTH = 40.0F;
-	public static final float DAMAGE = 8.0F;
 	public static final float SPECIAL_HEALTH = 80.0F;
-	public static final float SPECIAL_DAMAGE = 12.0F;
+	/** Damage before the player reaches Rank VIII in any Hunt: 5 (special 8). */
+	public static final float DAMAGE = 5.0F;
+	public static final float SPECIAL_DAMAGE = 8.0F;
+	/** From Rank VIII in any Hunt on: 8 (special 12). */
+	public static final int STRONG_RANK = 8;
+	public static final float STRONG_DAMAGE = 8.0F;
+	public static final float STRONG_SPECIAL_DAMAGE = 12.0F;
 	/** Red outline color. */
 	public static final int OUTLINE = 0xFF2020;
 
@@ -81,11 +87,16 @@ public class RogueHunter extends Monster {
 		return this.entityData.get(SPECIAL);
 	}
 
-	public void setSpecial(boolean special) {
+	/** Its stats: special or not, and stronger once its player is at Rank VIII in any Hunt. */
+	public void setStats(boolean special, boolean strong) {
 		this.entityData.set(SPECIAL, special);
 		this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(special ? SPECIAL_HEALTH : HEALTH);
-		this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(special ? SPECIAL_DAMAGE : DAMAGE);
+		this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(damage(special, strong));
 		this.setHealth(this.getMaxHealth());
+	}
+
+	public static float damage(boolean special, boolean strong) {
+		return strong ? (special ? STRONG_SPECIAL_DAMAGE : STRONG_DAMAGE) : (special ? SPECIAL_DAMAGE : DAMAGE);
 	}
 
 	/** A player's reach: about 3 blocks. */

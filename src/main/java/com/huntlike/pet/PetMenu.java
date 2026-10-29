@@ -38,7 +38,7 @@ public class PetMenu extends AbstractContainerMenu {
 
 	/** Client side. */
 	public PetMenu(int id, Inventory inventory) {
-		this(id, inventory, new SimpleContainer(1), new SimpleContainer(PetState.PAGE), new net.minecraft.world.inventory.SimpleContainerData(3),
+		this(id, inventory, new SimpleContainer(1), new SimpleContainer(PetState.PAGE), new net.minecraft.world.inventory.SimpleContainerData(4),
 				null, null);
 	}
 
@@ -98,8 +98,12 @@ public class PetMenu extends AbstractContainerMenu {
 		return data.get(1);
 	}
 
+	/**
+	 * The pet's entity id. Menu numbers travel as 16-bit values, so the id is sent in two halves: in a world that has
+	 * spawned over 32,767 entities a single number would arrive cut off and the preview couldn't find the pet.
+	 */
 	public int petId() {
-		return data.get(0);
+		return (data.get(0) & 0xFFFF) | (data.get(3) & 0xFFFF) << 16;
 	}
 
 	private boolean storageEmpty() {
@@ -273,7 +277,7 @@ public class PetMenu extends AbstractContainerMenu {
 		}
 	}
 
-	/** Synced numbers: the pet's entity id (for the preview), the page and its health. */
+	/** Synced numbers: the pet's entity id in two halves (0 low, 3 high; for the preview), the page and its health. */
 	private static class StateData implements ContainerData {
 		private final PetState state;
 		private final PetCube pet;
@@ -286,8 +290,9 @@ public class PetMenu extends AbstractContainerMenu {
 		@Override
 		public int get(int index) {
 			return switch (index) {
-				case 0 -> pet.getId();
+				case 0 -> pet.getId() & 0xFFFF;
 				case 1 -> state.page;
+				case 3 -> pet.getId() >>> 16 & 0xFFFF;
 				default -> state.heat;
 			};
 		}
@@ -298,7 +303,7 @@ public class PetMenu extends AbstractContainerMenu {
 
 		@Override
 		public int getCount() {
-			return 3;
+			return 4;
 		}
 	}
 }

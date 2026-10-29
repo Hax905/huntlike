@@ -70,6 +70,16 @@ public final class RogueHunters {
 		return false;
 	}
 
+	/** From Rank VIII in any Hunt, Rogue Hunters hit harder. */
+	public static boolean strong(HuntData data) {
+		for (HuntDefs.Hunt hunt : HuntDefs.HUNTS) {
+			if (data.progress(hunt.id()).rank() >= RogueHunter.STRONG_RANK) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** A Rogue Hunter is on its way or hunting this player: the Spirit Lure and the quota wait. */
 	public static boolean active(ServerPlayer player) {
 		return ENCOUNTERS.containsKey(player.getUUID());
@@ -217,7 +227,7 @@ public final class RogueHunters {
 		}
 		RogueHunter hunter = ModEntities.ROGUE_HUNTER.create(level, EntitySpawnReason.MOB_SUMMONED);
 		hunter.setHunted(player.getUUID());
-		hunter.setSpecial(special);
+		hunter.setStats(special, strong(QuestManager.data(player)));
 		hunter.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360.0F, 0.0F);
 		hunter.setTarget(player);
 		level.addFreshEntity(hunter);

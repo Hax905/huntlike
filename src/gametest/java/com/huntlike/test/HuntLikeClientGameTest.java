@@ -294,6 +294,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.getInput().lookAt(new net.minecraft.core.BlockPos(3, -60, 0));
 		context.waitTicks(10);
 		context.takeScreenshot("15-herd-call");
+		// A herd animal far away (or stuck) comes back to the player.
+		final java.util.UUID[] strayId = new java.util.UUID[1];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			Mob stray = player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64), com.huntlike.hunt.BossAbilities::isHerd)
+					.get(0);
+			stray.teleportTo(player.getX() + 30.0, player.getY(), player.getZ());
+			strayId[0] = stray.getUUID();
+		});
+		context.waitTicks(10);
+		assertServer(singleplayer, "Herd Call: an animal 30 blocks away teleports back near the player", server -> {
+			var stray = player(server).level().getEntity(strayId[0]);
+			double distance = stray == null ? -1 : stray.distanceTo(player(server));
+			HuntLike.LOGGER.info("[test] stray herd animal now {} blocks from the player", distance);
+			return stray != null && distance < 8.0;
+		});
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			for (Mob mob : player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64), com.huntlike.hunt.BossAbilities::isHerd)) {
@@ -1146,14 +1162,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(5);
 		context.takeScreenshot("81-rogue-hunter-revealed");
-		assertServer(singleplayer, "a hit reveals the Rogue Hunter (40 health, 8 damage)", server -> {
+		assertServer(singleplayer, "a hit reveals the Rogue Hunter (40 health; 5 damage, 8 from Rank VIII)", server -> {
 			var hunter = rogue(server);
-			// One in ten is special (80 health, 12 damage) even before the 10th.
+			// One in ten is special (80 health; 8 damage, 12 from Rank VIII) even before the 10th.
 			float health = hunter.isSpecial() ? 80.0F : 40.0F;
-			double damage = hunter.isSpecial() ? 12.0 : 8.0;
+			boolean strong = com.huntlike.rogue.RogueHunters.strong(QuestManager.data(player(server)));
+			double damage = strong ? (hunter.isSpecial() ? 12.0 : 8.0) : (hunter.isSpecial() ? 8.0 : 5.0);
+			HuntLike.LOGGER.info("[test] Rogue Hunter: special {} strong {} damage {}", hunter.isSpecial(), strong,
+					hunter.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
 			return !hunter.isInvisible() && hunter.getMaxHealth() == health
 					&& hunter.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage;
 		});
+		check(singleplayer, "Rogue Hunter damage: 5 / special 8 before Rank VIII, 8 / special 12 from Rank VIII", data ->
+				com.huntlike.rogue.RogueHunter.damage(false, false) == 5.0F && com.huntlike.rogue.RogueHunter.damage(true, false) == 8.0F
+						&& com.huntlike.rogue.RogueHunter.damage(false, true) == 8.0F && com.huntlike.rogue.RogueHunter.damage(true, true) == 12.0F);
 		// The lure is stuck at 3 of 3 spawns with a lured cow alive: the hunter's death starts the lure over.
 		final java.util.UUID[] luredCow = new java.util.UUID[1];
 		singleplayer.getServer().runOnServer(server -> {
@@ -2257,6 +2279,22 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	/** The Cluster Hunt's slime pet: taming, upgrades, riding, the menu, splitting, regrowing, Magma Cube, the core and reviving. */
 	private static void slimePet(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		// Like a world that has spawned a lot (the Spirit Lure spawns plenty): entity ids past 65,535, which a menu
+		// can't send as one number. The pet's preview in its menu must still find it.
+		singleplayer.getServer().runOnServer(server -> {
+			try {
+				for (var field : net.minecraft.world.entity.Entity.class.getDeclaredFields()) {
+					if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+							&& field.getType() == java.util.concurrent.atomic.AtomicInteger.class) {
+						field.setAccessible(true);
+						var counter = (java.util.concurrent.atomic.AtomicInteger) field.get(null);
+						counter.set(Math.max(counter.get(), 70000));
+					}
+				}
+			} catch (ReflectiveOperationException e) {
+				throw new AssertionError(e);
+			}
+		});
 		int[] wild = singleplayer.getServer().computeOnServer(server -> {
 			ServerPlayer player = player(server);
 			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
@@ -2330,6 +2368,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(com.huntlike.client.pet.PetScreen.class);
 		context.waitTicks(5);
 		context.takeScreenshot("54-pet-menu-no-chest");
+		int serverPetId = singleplayer.getServer().computeOnServer(server -> petPieces(server).get(0).getId());
+		int screenPetId = context.computeOnClient(client -> client.gui.screen() instanceof com.huntlike.client.pet.PetScreen screen
+				? screen.getMenu().petId() : -1);
+		HuntLike.LOGGER.info("[test] pet menu preview: pet id {} (server) / {} (menu)", serverPetId, screenPetId);
+		if (serverPetId <= 65535 || screenPetId != serverPetId) {
+			throw new AssertionError("The pet menu doesn't find a pet with a large entity id");
+		}
 		singleplayer.getServer().runOnServer(server -> {
 			var menu = (com.huntlike.pet.PetMenu) player(server).containerMenu;
 			menu.getSlot(0).set(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHEST));

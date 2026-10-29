@@ -70,7 +70,14 @@ public final class BossAbilities {
 		/** Ticks the boss stands still (Herd Call). */
 		int freeze;
 		final Map<UUID, Integer> herdCooldown = new HashMap<>();
+		/** Per herd animal: its closest distance to the owner so far and the ticks since it last got closer. */
+		final Map<UUID, double[]> herdStuck = new HashMap<>();
 	}
+
+	/** A herd animal more than this far away comes to the owner at once. */
+	public static final double HERD_FAR = 24.0;
+	/** Or after this long more than 6 blocks away without getting half a block closer (stuck, or not moving). */
+	public static final int HERD_STUCK_TICKS = 5 * 20;
 
 	/** Whether the boss is standing still for an ability (no chasing, melee or eggs). */
 	public static boolean frozen(Mob boss) {
@@ -330,6 +337,7 @@ public final class BossAbilities {
 			if (elapsed % 10 == 0) {
 				mob.getNavigation().moveTo(owner, 1.3);
 			}
+			herdCatchUp(mob, owner, state, level);
 			int cooldown = state.herdCooldown.getOrDefault(id, 0);
 			if (cooldown > 0) {
 				state.herdCooldown.put(id, cooldown - 1);
@@ -341,6 +349,48 @@ public final class BossAbilities {
 		if (elapsed % 5 == 0) {
 			level.sendParticles(ParticleTypes.ENCHANTED_HIT, boss.getX(), boss.getY() + boss.getBbHeight() / 2.0, boss.getZ(),
 					6, boss.getBbWidth() / 2.0, boss.getBbHeight() / 2.0, boss.getBbWidth() / 2.0, 0.0);
+		}
+	}
+
+	/** A herd animal that is far away, stuck or idle teleports to about 4 blocks from the owner. */
+	private static void herdCatchUp(Mob mob, ServerPlayer owner, State state, ServerLevel level) {
+		if (owner.level() != level) {
+			return;
+		}
+		double distance = mob.distanceTo(owner);
+		double[] track = state.herdStuck.computeIfAbsent(mob.getUUID(), id -> new double[] {Double.MAX_VALUE, 0});
+		if (distance <= 6.0) {
+			track[0] = distance;
+			track[1] = 0;
+			return;
+		}
+		if (distance < track[0] - 0.5) {
+			track[0] = distance;
+			track[1] = 0;
+		} else {
+			track[1]++;
+		}
+		if ((distance > HERD_FAR || track[1] >= HERD_STUCK_TICKS) && (owner.onGround() || owner.isInWater())) {
+			// A free spot about 4 blocks from the owner, or the owner's own spot if none is free (a cave, a corridor).
+			double tx = owner.getX();
+			double tz = owner.getZ();
+			double start = mob.getRandom().nextDouble() * Math.PI * 2.0;
+			for (int i = 0; i < 8; i++) {
+				double angle = start + Math.PI * 2.0 * i / 8;
+				double x = owner.getX() + Math.cos(angle) * 4.0;
+				double z = owner.getZ() + Math.sin(angle) * 4.0;
+				if (level.noCollision(mob, mob.getDimensions(mob.getPose()).makeBoundingBox(x, owner.getY(), z))
+						&& !level.getBlockState(net.minecraft.core.BlockPos.containing(x, owner.getY() - 0.5, z)).isAir()) {
+					tx = x;
+					tz = z;
+					break;
+				}
+			}
+			mob.teleportTo(tx, owner.getY(), tz);
+			mob.getNavigation().stop();
+			level.sendParticles(ParticleTypes.CLOUD, mob.getX(), mob.getY() + 0.5, mob.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+			track[0] = Double.MAX_VALUE;
+			track[1] = 0;
 		}
 	}
 

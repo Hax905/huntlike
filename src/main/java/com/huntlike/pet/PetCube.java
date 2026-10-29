@@ -34,10 +34,10 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 	public static final String GEN_PREFIX = "huntlike_petgen:";
 	public static final String ID_PREFIX = "huntlike_petid:";
 
-	/** Ridden: 90% of the player's sprinting speed (5.6 blocks/s), in blocks per tick. */
-	public static final double RIDE_SPEED = 5.612 * 0.9 / 20.0;
-	/** On water (or lava for a magma pet): 75% of the player's walking speed (50% faster than before). */
-	public static final double SWIM_SPEED = 4.317 * 0.75 / 20.0;
+	/** Ridden: 110% of the player's sprinting speed (about 6.2 blocks/s), in blocks per tick. */
+	public static final double RIDE_SPEED = 5.612 * 1.1 / 20.0;
+	/** On water (or lava for a magma pet): 150% of the player's walking speed (about 6.5 blocks/s; it slides along). */
+	public static final double SWIM_SPEED = 4.317 * 1.5 / 20.0;
 
 	private int hopTimer;
 	private int attackCooldown;
@@ -274,7 +274,7 @@ public abstract class PetCube extends AbstractCubeMob implements PlayerRideableJ
 		this.setYRot(yaw);
 		this.yBodyRot = yaw;
 		this.yHeadRot = yaw;
-		double speed = this.getSize() >= 4 ? 0.3 : 0.25;
+		double speed = this.getSize() >= 4 ? 0.33 : 0.28;
 		if (inFluid) {
 			speed = SWIM_SPEED;
 		}

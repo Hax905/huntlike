@@ -2279,20 +2279,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	/** The Cluster Hunt's slime pet: taming, upgrades, riding, the menu, splitting, regrowing, Magma Cube, the core and reviving. */
 	private static void slimePet(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
-		// Like a world that has spawned a lot (the Spirit Lure spawns plenty): entity ids past 65,535, which a menu
-		// can't send as one number. The pet's preview in its menu must still find it.
+		// Like a world that has spawned a lot (the Spirit Lure, item drops, experience orbs): entity ids past 65,535, which a
+		// menu can't send as one number. The pet's preview in its menu must still find it.
 		singleplayer.getServer().runOnServer(server -> {
-			try {
-				for (var field : net.minecraft.world.entity.Entity.class.getDeclaredFields()) {
-					if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
-							&& field.getType() == java.util.concurrent.atomic.AtomicInteger.class) {
-						field.setAccessible(true);
-						var counter = (java.util.concurrent.atomic.AtomicInteger) field.get(null);
-						counter.set(Math.max(counter.get(), 70000));
-					}
-				}
-			} catch (ReflectiveOperationException e) {
-				throw new AssertionError(e);
+			var level = player(server).level();
+			while (level.getNextEntityId() < 70000) {
+				// Each call hands out the next id.
 			}
 		});
 		int[] wild = singleplayer.getServer().computeOnServer(server -> {

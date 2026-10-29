@@ -87,8 +87,8 @@ public final class HuntLikeJeiPlugin implements IModPlugin {
 
 	@Override
 	public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-		registration.addRecipeCatalysts(DropsCategory.TYPE, ModBlocks.ALPHA_ALTAR);
-		registration.addRecipeCatalysts(TradesCategory.TYPE, ModBlocks.ALPHA_ALTAR);
+		registration.addRecipeCatalyst(mezz.jei.api.constants.VanillaTypes.ITEM_STACK, new ItemStack(ModBlocks.ALPHA_ALTAR),
+				DropsCategory.TYPE, TradesCategory.TYPE);
 	}
 
 	@Override

@@ -72,13 +72,15 @@ public final class Lore {
 		}
 	}
 
-	/** An ability: a blank line, its name in gold, then its wrapped description. */
+	/** An ability: a blank line, its name, then its wrapped description (none when the description is empty). */
 	public static void ability(List<Component> lore, String name, String description) {
 		if (!lore.isEmpty()) {
 			lore.add(Component.empty());
 		}
 		lore.add(Component.literal(name).withStyle(style -> style.withColor(ABILITY_COLOR).withItalic(false))
 				.append(Component.literal(" (Ability)").withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY).withItalic(false))));
-		gray(lore, description);
+		if (!description.isEmpty()) {
+			gray(lore, description);
+		}
 	}
 }

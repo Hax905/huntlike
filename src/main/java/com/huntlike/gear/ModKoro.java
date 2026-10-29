@@ -52,6 +52,10 @@ public final class ModKoro {
 	private static Item bell(String name, float heal, int absorption, Rarity rarity, String description) {
 		List<Component> lore = new ArrayList<>();
 		Lore.gray(lore, description);
+		// What to do with it: the "Safe and Sound" ability (no description) and how to use it.
+		Lore.ability(lore, "Safe and Sound", "");
+		lore.add(Component.literal("Right-click, 10 second cooldown.").withStyle(style -> style.withColor(ChatFormatting.DARK_GRAY)
+				.withItalic(false)));
 		return ModItems.register(name, properties -> new BellItem(properties, heal, absorption), new Item.Properties()
 				.stacksTo(1)
 				.rarity(rarity)

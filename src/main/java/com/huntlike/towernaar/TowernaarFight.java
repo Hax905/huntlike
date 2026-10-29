@@ -200,6 +200,7 @@ public final class TowernaarFight {
 		boss.hurtServer(level, level.damageSources().genericKill(), Float.MAX_VALUE);
 		FIGHTS.remove(player.getUUID());
 		fight.bar.removeAllPlayers();
+		QuestManager.awardBossExperience(player, java.util.List.of());
 		HuntData data = QuestManager.data(player);
 		TowernaarManager.complete(player, data, TowernaarScript.CHAPTERS.get(TowernaarScript.FINAL));
 	}

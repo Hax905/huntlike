@@ -552,6 +552,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		context.takeScreenshot("26-koro-finished");
 		check(singleplayer, "Koro questline finished", data -> data.koroDone == 4);
+		assertServer(singleplayer, "the bells tell you what to do: Safe and Sound, right-click", server -> {
+			var lore = new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModKoro.WOODEN_BELL)
+					.get(net.minecraft.core.component.DataComponents.LORE);
+			String text = lore.lines().stream().map(c -> c.getString()).reduce("", (a, b) -> a + " | " + b);
+			HuntLike.LOGGER.info("[test] Wooden Bell lore: {}", text);
+			return text.contains("Safe and Sound (Ability)") && text.contains("Right-click, 10 second cooldown.");
+		});
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			ServerLevel level = player.level();

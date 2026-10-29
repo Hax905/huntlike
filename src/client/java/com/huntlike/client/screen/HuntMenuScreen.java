@@ -622,15 +622,11 @@ public class HuntMenuScreen extends Screen {
 		y += 12;
 		int statsTop = y;
 		boolean affordable = data.interludeTokens >= stage.tokenCost();
-		Component tokensLine = colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
-				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED));
-		g.text(this.font, tokensLine, px + 6, y, WHITE, false);
-		// Interlude Tokens: a small "+16" button on the Tokens line (1 gold ingot = 16; Shift: 10 = 160).
-		int tokenX = px + 6 + this.font.width(tokensLine) + 4;
-		interludeTokenButton = new int[] {tokenX, y - 2, 26, 12};
-		boolean tokenHover = button(g, tokenX, y - 2, 26, 12, Component.literal("+16"), true, mouseX, mouseY, null);
+		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
+				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
 		y += 12;
-		int bottom = py + ph - 26;
+		// Lore / Drops / Start sit one row up; the token bar is the bottom row.
+		int bottom = py + ph - 44;
 		if (!stageOpen) {
 			String lock = !com.huntlike.interlude.InterludeDefs.ranksMet(data, stage)
 					? "Unlocks at " + com.huntlike.interlude.InterludeDefs.rankText(stage)
@@ -660,13 +656,17 @@ public class HuntMenuScreen extends Screen {
 			drawChains(g, px, py, pw, ph, 2.0F);
 		}
 
+		// Interlude Tokens, the bottom row: 1 gold ingot = 16 (Shift: 10 = 160).
+		int tokenY = py + ph - 20;
+		interludeTokenButton = new int[] {px + 4, tokenY, pw - 8, 16};
+		boolean tokenHover = button(g, px + 4, tokenY, pw - 8, 16, Component.literal("Buy 16 Interlude Tokens [1 Gold Ingot]"), true,
+				mouseX, mouseY, null);
 		if (tokenHover) {
-			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Buy 16 Interlude Tokens [1 Gold Ingot]", WHITE),
-					colored("Click: 1 Gold Ingot -> 16 Interlude Tokens", TEXT_GRAY),
+			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 1 Gold Ingot -> 16 Interlude Tokens", WHITE),
 					colored("Shift-click: 10 Gold Ingots -> 160 Interlude Tokens", TEXT_GRAY)), mouseX, mouseY);
 		}
 
-		int by = py + ph - 20;
+		int by = py + ph - 38;
 		int startX = px + 4;
 		int startW = pw - 8;
 		boolean won = data.progress(com.huntlike.interlude.InterludeDefs.SLIME_RIDER).bossKills[stage.number() - 1] > 0;

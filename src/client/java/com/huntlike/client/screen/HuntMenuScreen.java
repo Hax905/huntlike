@@ -622,10 +622,15 @@ public class HuntMenuScreen extends Screen {
 		y += 12;
 		int statsTop = y;
 		boolean affordable = data.interludeTokens >= stage.tokenCost();
-		g.text(this.font, colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
-				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED)), px + 6, y, WHITE, false);
+		Component tokensLine = colored("Tokens: ", TEXT_GRAY).append(colored(String.valueOf(stage.tokenCost()), WHITE))
+				.append(colored(" [" + data.interludeTokens + "]", affordable ? HuntDefs.LIME : HuntDefs.RED));
+		g.text(this.font, tokensLine, px + 6, y, WHITE, false);
+		// Interlude Tokens: a small "+16" button on the Tokens line (1 gold ingot = 16; Shift: 10 = 160).
+		int tokenX = px + 6 + this.font.width(tokensLine) + 4;
+		interludeTokenButton = new int[] {tokenX, y - 2, 26, 12};
+		boolean tokenHover = button(g, tokenX, y - 2, 26, 12, Component.literal("+16"), true, mouseX, mouseY, null);
 		y += 12;
-		int bottom = py + ph - 44;
+		int bottom = py + ph - 26;
 		if (!stageOpen) {
 			String lock = !com.huntlike.interlude.InterludeDefs.ranksMet(data, stage)
 					? "Unlocks at " + com.huntlike.interlude.InterludeDefs.rankText(stage)
@@ -655,13 +660,9 @@ public class HuntMenuScreen extends Screen {
 			drawChains(g, px, py, pw, ph, 2.0F);
 		}
 
-		// Interlude Tokens: 1 gold ingot = 16 (Shift: 10 = 160).
-		int tokenY = py + ph - 38;
-		interludeTokenButton = new int[] {px + 4, tokenY, pw - 8, 16};
-		boolean tokenHover = button(g, px + 4, tokenY, pw - 8, 16, Component.literal("Buy 16 Interlude Tokens [1 Gold Ingot]"), true,
-				mouseX, mouseY, null);
 		if (tokenHover) {
-			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Click: 1 Gold Ingot -> 16 Interlude Tokens", WHITE),
+			g.setComponentTooltipForNextFrame(this.font, List.of(colored("Buy 16 Interlude Tokens [1 Gold Ingot]", WHITE),
+					colored("Click: 1 Gold Ingot -> 16 Interlude Tokens", TEXT_GRAY),
 					colored("Shift-click: 10 Gold Ingots -> 160 Interlude Tokens", TEXT_GRAY)), mouseX, mouseY);
 		}
 

@@ -38,6 +38,28 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_LOG, 32)));
 			context.waitTicks(10);
 
+			// JEI: every tier and Interlude side has a drops page, every trade fits its grid; screenshot both pages.
+			var jeiDrops = com.huntlike.client.jei.HuntLikeJeiPlugin.drops();
+			var jeiTrades = com.huntlike.client.jei.HuntLikeJeiPlugin.trades();
+			if (jeiDrops.size() != 16 || jeiDrops.stream().anyMatch(e -> e.slots().isEmpty() || e.slots().size() > 9)) {
+				throw new AssertionError("JEI drops pages wrong: " + jeiDrops.size());
+			}
+			if (jeiTrades.size() < 20 || jeiTrades.stream().anyMatch(e -> e.cost().size() > 15 || e.result().size() > 4)) {
+				throw new AssertionError("JEI trades don't fit: " + jeiTrades.stream()
+						.map(e -> e.title() + " " + e.cost().size() + "/" + e.result().size()).toList());
+			}
+			if (context.computeOnClient(client -> com.huntlike.client.jei.HuntLikeJeiPlugin.showForTest(0))) {
+				context.waitTicks(10);
+				context.takeScreenshot("00a-jei-drops");
+				context.runOnClient(client -> com.huntlike.client.jei.HuntLikeJeiPlugin.showForTest(1));
+				context.waitTicks(10);
+				context.takeScreenshot("00b-jei-trades");
+				context.setScreen(() -> null);
+				context.waitTicks(3);
+			} else {
+				System.out.println("[HuntLike test] JEI not loaded; skipped JEI screenshots");
+			}
+
 			// Open the menu the way the altar does: from the server.
 			singleplayer.getServer().runOnServer(server -> QuestManager.openMenu(player(server)));
 			context.waitForScreen(HuntMenuScreen.class);

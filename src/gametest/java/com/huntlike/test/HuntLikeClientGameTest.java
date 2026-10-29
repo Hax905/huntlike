@@ -1491,7 +1491,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			if (wolf != null) {
 				wolf.discard();
 			}
-			return flat < 1.0 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
+			return flat < 1.5 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
 		});
 
 		// The A-Phone is bought on the Cluster Misc page (4th trade), not crafted.

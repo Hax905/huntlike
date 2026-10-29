@@ -259,6 +259,10 @@ public final class ModShields {
 		double vz = flat > 0.3 ? to.z / flat * speed : 0.0;
 		// Climb toward a spot above (a little more than gravity), otherwise let it fall onto the spot.
 		double vy = to.y > 0.5 ? Math.min(0.5, 0.1 + to.y * 0.25) : Math.min(motion.y, 0.0);
+		// Pressed against a ledge on the way in: hop it, so a step or a slab doesn't stop the pull short of the spot.
+		if (entity.horizontalCollision && entity.onGround() && flat > 0.3) {
+			vy = 0.42;
+		}
 		entity.setDeltaMovement(vx, vy, vz);
 		entity.resetFallDistance();
 		if (entity instanceof net.minecraft.world.entity.Mob mob) {

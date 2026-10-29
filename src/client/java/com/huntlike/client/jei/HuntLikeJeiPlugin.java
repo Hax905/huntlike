@@ -87,7 +87,8 @@ public final class HuntLikeJeiPlugin implements IModPlugin {
 
 	@Override
 	public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-		registration.addRecipeCatalyst(ModBlocks.ALPHA_ALTAR, DropsCategory.TYPE, TradesCategory.TYPE);
+		registration.addRecipeCatalysts(DropsCategory.TYPE, ModBlocks.ALPHA_ALTAR);
+		registration.addRecipeCatalysts(TradesCategory.TYPE, ModBlocks.ALPHA_ALTAR);
 	}
 
 	@Override

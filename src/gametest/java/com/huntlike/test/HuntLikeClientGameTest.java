@@ -1755,11 +1755,25 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			data.progress("slime_rider").bossKills[1] = 1;
 		});
 		boolean split = false;
-		for (int attempt = 0; attempt < 8 && !split; attempt++) {
+		for (int attempt = 0; attempt < 12 && !split; attempt++) {
+			// A clean start each time: the last fight over, nothing of it left (a quest still open is cancelled).
+			for (int i = 0; i < 60; i++) {
+				boolean clean = singleplayer.getServer().computeOnServer(server -> QuestManager.data(player(server)).quest == null
+						&& interludePom(server) == null && interludeSlimes(server).isEmpty());
+				if (clean) {
+					break;
+				}
+				if (i == 40) {
+					singleplayer.getServer().runCommand("huntlike quest cancel @a");
+				}
+				context.waitTick();
+			}
 			startInterlude(context, singleplayer, 3);
 			singleplayer.getServer().runOnServer(server -> hurt(player(server), interludePom(server), 1000.0F));
 			context.waitTicks(3);
-			if (singleplayer.getServer().computeOnServer(server -> interludePom(server) != null)) {
+			boolean pomStays = singleplayer.getServer().computeOnServer(server -> interludePom(server) != null);
+			HuntLike.LOGGER.info("[test] Stage III try {}: {} stays", attempt + 1, pomStays ? "Pom" : "Bartholomew");
+			if (pomStays) {
 				singleplayer.getServer().runOnServer(server -> hurt(player(server), interludePom(server), 1000.0F));
 				context.waitTicks(3);
 				continue;
@@ -1778,7 +1792,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			split = true;
 		}
 		if (!split) {
-			throw new AssertionError("Bartholomew never stayed in 8 tries");
+			throw new AssertionError("Bartholomew never stayed in 12 tries");
 		}
 		check(singleplayer, "Stage III won", data -> data.progress("slime_rider").bossKills[2] >= 1);
 

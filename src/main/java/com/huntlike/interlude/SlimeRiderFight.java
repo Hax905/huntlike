@@ -772,6 +772,7 @@ public final class SlimeRiderFight {
 				QuestManager.playSound(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F);
 			}
 		}
+		QuestManager.awardBossExperience(player, java.util.List.of());
 		progress.bossKills[fight.stage - 1]++;
 		player.setAttached(QuestManager.DATA, data);
 		player.sendSystemMessage(Messages.complete(InterludeDefs.hunt(), fight.stage));

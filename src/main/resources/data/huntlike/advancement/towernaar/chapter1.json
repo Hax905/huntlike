@@ -15,7 +15,8 @@
     "description": {
       "translate": "advancements.huntlike.towernaar.chapter1.description"
     },
-    "frame": "task"
+    "frame": "task",
+    "hidden": true
   },
   "requirements": [
     [

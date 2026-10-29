@@ -1,5 +1,5 @@
 {
-  "parent": "huntlike:animal/root",
+  "parent": "huntlike:towernaar/chapter2",
   "criteria": {
     "done": {
       "trigger": "minecraft:impossible"
@@ -15,7 +15,8 @@
     "description": {
       "translate": "advancements.huntlike.towernaar.chapter3.description"
     },
-    "frame": "goal"
+    "frame": "goal",
+    "hidden": true
   },
   "requirements": [
     [

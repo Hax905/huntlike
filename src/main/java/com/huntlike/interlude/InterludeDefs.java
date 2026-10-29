@@ -102,45 +102,45 @@ public final class InterludeDefs {
 		return stage.clusterRank() > 0 ? text + " + Cluster Rank " + HuntDefs.ROMAN[stage.clusterRank()] : text;
 	}
 
-	public static final Ability PHASE_1 = new Ability("Phase 1", "Both Animal and Cluster weapons are effective.");
 	public static final Ability TWIN_TACKLE = new Ability("Twin Tackle", "Deals damage on impact.");
 	public static final Ability SUPPORTING_TURRETS = new Ability("Supporting Turrets", "Slimeballs and eggs are thrown at you.");
-	public static final Ability PHASE_2_POM = new Ability("Phase 2: Pom stays",
-			"A 50/50 roll decides who keeps fighting, with half the health. Only Animal weapons are effective.");
 	public static final Ability FRONT_CHARGE = new Ability("Front Charge", "Deals damage on impact.");
 	public static final Ability PAINFUL_KICK = new Ability("Painful Kick", "Kicks the player and stuns for a second.");
 	public static final Ability ULTIMATE_TECHNIQUE = new Ability("Ultimate Technique", "Such a Bizarre technique...");
-	public static final Ability PHASE_2_BARTHOLOMEW = new Ability("Phase 2: Bartholomew stays",
-			"A 50/50 roll decides who keeps fighting, with half the health. Only Cluster weapons are effective.");
 	public static final Ability LUNGE = new Ability("Lunge!", "Deals damage on impact.");
 	public static final Ability EWW = new Ability("Eww...", "Look away! Or you'll have to close your eyes.");
 	public static final Ability FOR_REAL = new Ability("Are we for real?", "Does a very slimy thing...");
 
-	/** The abilities a stage uses, grouped by phase, as the boss card lists them. */
+	/**
+	 * The abilities a stage uses, as the boss card lists them: "Ability (Phase I)" for the pair, "Ability - Who (Phase II)"
+	 * for the one who stays. The phases themselves aren't listed as abilities.
+	 */
 	public static List<Ability> abilities(int stage) {
 		List<Ability> list = new ArrayList<>();
-		list.add(PHASE_1);
-		list.add(TWIN_TACKLE);
+		list.add(label(TWIN_TACKLE, null, 1));
 		if (stage >= 2) {
-			list.add(SUPPORTING_TURRETS);
+			list.add(label(SUPPORTING_TURRETS, null, 1));
 		}
-		list.add(PHASE_2_POM);
-		list.add(FRONT_CHARGE);
+		list.add(label(FRONT_CHARGE, "Pom", 2));
 		if (stage >= 2) {
-			list.add(PAINFUL_KICK);
+			list.add(label(PAINFUL_KICK, "Pom", 2));
 		}
 		if (stage >= 3) {
-			list.add(ULTIMATE_TECHNIQUE);
+			list.add(label(ULTIMATE_TECHNIQUE, "Pom", 2));
 		}
-		list.add(PHASE_2_BARTHOLOMEW);
-		list.add(LUNGE);
+		list.add(label(LUNGE, "Bartholomew", 2));
 		if (stage >= 2) {
-			list.add(EWW);
+			list.add(label(EWW, "Bartholomew", 2));
 		}
 		if (stage >= 3) {
-			list.add(FOR_REAL);
+			list.add(label(FOR_REAL, "Bartholomew", 2));
 		}
 		return list;
+	}
+
+	private static Ability label(Ability ability, String who, int phase) {
+		return new Ability(ability.name() + (who == null ? "" : " - " + who) + " (Phase " + HuntDefs.ROMAN[phase] + ")",
+				ability.description());
 	}
 
 	/** Drops when Pom (the Equus) is the one left: x stage each; 1/5 Lucky, rarer Good, 1/3 no message. */

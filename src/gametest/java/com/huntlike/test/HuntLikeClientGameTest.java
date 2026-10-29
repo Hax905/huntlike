@@ -134,6 +134,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				}
 			});
 			context.takeScreenshot("10-boss-fight");
+			final int[] xpBefore = new int[1];
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = player(server);
 				Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
@@ -141,9 +142,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					throw new AssertionError("Boss not found");
 				}
 				HuntLike.LOGGER.info("[test] Boss {} health {}/{}", boss.getName().getString(), boss.getHealth(), boss.getMaxHealth());
+				xpBefore[0] = player.totalExperience;
 				boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
 			});
 			context.waitTicks(20);
+			assertServer(singleplayer, "a boss kill drops 218 vanilla experience for its owner", server -> {
+				int gained = player(server).totalExperience - xpBefore[0];
+				HuntLike.LOGGER.info("[test] vanilla experience from the boss: {} (level {})", gained, player(server).experienceLevel);
+				return gained >= com.huntlike.hunt.QuestManager.BOSS_EXPERIENCE;
+			});
 			check(singleplayer, "quest complete (Rank 0: no Daily Quest charge used)", data -> data.quest == null
 					&& data.progress("animal").xp == 5 && data.progress("animal").bossKills[0] == 1
 					&& data.dailyCharges == HuntData.DAILY_CHARGES);
@@ -1691,6 +1698,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				&& data.interludeTokens == 174 && data.quest == null);
 		assertServer(singleplayer, "the fight is over", server -> !com.huntlike.interlude.SlimeRiderFight.active(player(server))
 				&& interludePom(server) == null && interludeSlimes(server).isEmpty());
+		// Won once: the card now shows the pair (abilities below it) and Stage II's name; Drops groups Bartholomew, then Pom.
+		context.setScreen(() -> new HuntMenuScreen(0));
+		context.waitTicks(10);
+		context.takeScreenshot("98z-interlude-card-won");
+		hover(context, "Drops");
+		context.takeScreenshot("98z2-interlude-drops");
+		context.setScreen(() -> null);
 
 		// Stage III with Bartholomew staying: "Are we for real?" splits him in two (10% of 140 = 14 health each).
 		singleplayer.getServer().runOnServer(server -> {

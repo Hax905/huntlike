@@ -505,7 +505,7 @@ public class HuntMenuScreen extends Screen {
 		hits.add(new Hit(cx - 40, y - 2, 20, 12, () -> changeTier(-1)));
 		hits.add(new Hit(cx + 20, y - 2, 20, 12, () -> changeTier(1)));
 		y += 12;
-		g.centeredText(this.font, colored(tier.bossName(), tier.color()), cx, y, WHITE);
+		g.centeredText(this.font, bossName(tier.bossName(), tier.color(), unlocked), cx, y, WHITE);
 		y += 10;
 		g.centeredText(this.font, colored(tier.bossTitle(), TEXT_GRAY), cx, y, WHITE);
 		y += 12;
@@ -542,7 +542,12 @@ public class HuntMenuScreen extends Screen {
 			y += 12;
 			drawAbilities(g, tier.abilities(), px + 4, y, pw - 8, py + ph - 26 - y);
 		}
-		drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		// The boss is only shown once it has been defeated; until then, a question mark.
+		if (progress.bossKills[tier.number() - 1] > 0) {
+			drawBossModel(g, tier, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		} else {
+			drawUnknownModel(g, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		}
 		if (!huntOpen()) {
 			// A locked Hunt: two chains cross its whole panel, corner to corner.
 			g.nextStratum();
@@ -573,6 +578,21 @@ public class HuntMenuScreen extends Screen {
 				mouseX, mouseY, this::startQuest);
 	}
 
+	/** A boss's name, scrambled until its tier (or stage) is unlocked. */
+	private static Component bossName(String name, int color, boolean unlocked) {
+		MutableComponent text = colored(name, color);
+		return unlocked ? text : text.withStyle(style -> style.withObfuscated(true));
+	}
+
+	/** In place of a boss nobody has defeated yet: a big gray question mark. */
+	private void drawUnknownModel(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2) {
+		g.pose().pushMatrix();
+		g.pose().translate((x1 + x2) / 2.0F, (y1 + y2) / 2.0F);
+		g.pose().scale(4.0F, 4.0F);
+		g.centeredText(this.font, colored("?", 0x777777), 0, -4, WHITE);
+		g.pose().popMatrix();
+	}
+
 	private boolean interludeCanStart() {
 		com.huntlike.interlude.InterludeDefs.Stage stage = com.huntlike.interlude.InterludeDefs.stage(interludeStage);
 		HuntData data = ClientHuntState.data;
@@ -596,7 +616,7 @@ public class HuntMenuScreen extends Screen {
 		hits.add(new Hit(cx - 44, y - 2, 20, 12, () -> changeTier(-1)));
 		hits.add(new Hit(cx + 24, y - 2, 20, 12, () -> changeTier(1)));
 		y += 12;
-		g.centeredText(this.font, colored(com.huntlike.interlude.InterludeDefs.NAME, stage.color()), cx, y, WHITE);
+		g.centeredText(this.font, bossName(com.huntlike.interlude.InterludeDefs.NAME, stage.color(), stageOpen), cx, y, WHITE);
 		y += 10;
 		g.centeredText(this.font, colored(com.huntlike.interlude.InterludeDefs.TITLE, TEXT_GRAY), cx, y, WHITE);
 		y += 12;
@@ -620,10 +640,16 @@ public class HuntMenuScreen extends Screen {
 			y += 10;
 			g.text(this.font, colored("Damage: ", TEXT_GRAY).append(colored(String.valueOf(stage.melee()), HuntDefs.GOLD)),
 					px + 6, y, WHITE, false);
-			y += 12;
+			// The abilities start where a Hunt card's do (after Experience and Regeneration), leaving the model room.
+			y = statsTop + 58;
 			drawAbilities(g, com.huntlike.interlude.InterludeDefs.abilities(stage.number()), px + 4, y, pw - 8, bottom - 2 - y);
 		}
-		drawInterludeModel(g, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		boolean seen = data.progress(com.huntlike.interlude.InterludeDefs.SLIME_RIDER).bossKills[stage.number() - 1] > 0;
+		if (seen) {
+			drawInterludeModel(g, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		} else {
+			drawUnknownModel(g, px + pw - 84, statsTop - 4, px + pw - 6, statsTop + 54);
+		}
 		if (!open) {
 			g.nextStratum();
 			drawChains(g, px, py, pw, ph, 2.0F);
@@ -668,12 +694,14 @@ public class HuntMenuScreen extends Screen {
 
 	private List<Component> interludeDropLines(int stage) {
 		List<Component> lines = new ArrayList<>();
-		lines.add(colored("If Pom stays:", com.huntlike.interlude.InterludeDefs.COLOR));
-		for (Drop drop : com.huntlike.interlude.InterludeDefs.pomDrops(stage)) {
+		// Grouped by who stays for Phase II: Bartholomew's drops, then Pom's.
+		lines.add(colored("Bartholomew", com.huntlike.interlude.InterludeDefs.COLOR));
+		for (Drop drop : com.huntlike.interlude.InterludeDefs.bartholomewDrops(stage)) {
 			lines.add(dropLine(drop));
 		}
-		lines.add(colored("If Bartholomew stays:", com.huntlike.interlude.InterludeDefs.COLOR));
-		for (Drop drop : com.huntlike.interlude.InterludeDefs.bartholomewDrops(stage)) {
+		lines.add(Component.empty());
+		lines.add(colored("Pom", com.huntlike.interlude.InterludeDefs.COLOR));
+		for (Drop drop : com.huntlike.interlude.InterludeDefs.pomDrops(stage)) {
 			lines.add(dropLine(drop));
 		}
 		return lines;
@@ -731,9 +759,8 @@ public class HuntMenuScreen extends Screen {
 			// The pair: Bartholomew sits on Pom's back. Drawn first, so Pom's head stays in front of him.
 			int scale = 20;
 			int lift = Math.round(scale * 0.95F);
-			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 10 - lift, x2, y2 + 10 - lift, scale, 0.0625F, lookX, lookY,
-					slime);
-			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 + 10, x2, y2 + 10, scale, 0.0625F, lookX, lookY, pom);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1 - lift, x2, y2 - lift, scale, 0.0625F, lookX, lookY, slime);
+			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, scale, 0.0625F, lookX, lookY, pom);
 		} else if (cycle < 7000L) {
 			InventoryScreen.extractEntityInInventoryFollowsMouse(g, x1, y1, x2, y2, 34, 0.0625F, lookX, lookY, slime);
 		} else {

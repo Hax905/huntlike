@@ -14,6 +14,7 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -422,12 +423,32 @@ public final class QuestManager {
 		sync(player);
 	}
 
+	/**
+	 * Vanilla experience for a boss kill: 218 points, so 5 bosses take a player from level 0 to about level 27 (1,089
+	 * points). It drops as orbs at the player's feet (so Mending can use it).
+	 */
+	public static final int BOSS_EXPERIENCE = 218;
+	/** Helpers each get 20% of it on top; the owner's share isn't reduced. */
+	public static final int HELPER_EXPERIENCE = BOSS_EXPERIENCE / 5;
+
+	public static void awardBossExperience(ServerPlayer owner, Collection<UUID> helpers) {
+		ExperienceOrb.award(owner.level(), owner.position(), BOSS_EXPERIENCE);
+		for (UUID helperId : helpers) {
+			ServerPlayer helper = helperId.equals(owner.getUUID()) ? null
+					: owner.level().getServer().getPlayerList().getPlayer(helperId);
+			if (helper != null) {
+				ExperienceOrb.award(helper.level(), helper.position(), HELPER_EXPERIENCE);
+			}
+		}
+	}
+
 	public static void complete(ServerPlayer owner, HuntData data, Collection<UUID> helpers) {
 		Quest quest = data.quest;
 		Hunt hunt = HuntDefs.hunt(quest.hunt);
 		Tier tier = hunt.tier(quest.tier);
 		Progress progress = data.progress(hunt.id());
 		RandomSource random = owner.getRandom();
+		awardBossExperience(owner, helpers);
 
 		for (Drop drop : HuntDefs.drops(tier)) {
 			if (drop.guaranteed()) {

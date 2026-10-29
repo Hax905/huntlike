@@ -1,6 +1,7 @@
 package com.huntlike.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -26,10 +27,29 @@ public abstract class LivingEntityMixin {
 		return GearEffects.adjustDamage((LivingEntity) (Object) this, source, amount);
 	}
 
-	/** Slimy Rebounders: every block bounces the wearer back up like a slime block. */
+	/** Where the entity last stood (on the ground, in water or on a ladder): the height a fall is measured from. */
+	@Unique
+	private double huntlike$standY = Double.NaN;
+
+	@Inject(method = "tick", at = @At("HEAD"))
+	private void huntlike$trackStanding(CallbackInfo ci) {
+		LivingEntity self = (LivingEntity) (Object) this;
+		// On the ground and not on the way up from a bounce, or somewhere a fall can't build up.
+		if (Double.isNaN(huntlike$standY) || self.onGround() && self.getDeltaMovement().y <= 0.0 || self.isInWater()
+				|| self.onClimbable() || self.isFallFlying()) {
+			huntlike$standY = self.getY();
+		}
+	}
+
+	/**
+	 * Slimy Rebounders: a landing more than 1 block below where the wearer last stood bounces like a slime block. Walking,
+	 * stepping down a block or jumping on flat ground doesn't bounce, so moving around keeps its speed.
+	 */
 	@Inject(method = "getEntityBounciness", at = @At("RETURN"), cancellable = true)
 	private void huntlike$rebounders(CallbackInfoReturnable<Double> cir) {
-		if (com.huntlike.interlude.SlimyRebounders.bounces((LivingEntity) (Object) this)) {
+		LivingEntity self = (LivingEntity) (Object) this;
+		if (com.huntlike.interlude.SlimyRebounders.bounces(self) && !Double.isNaN(huntlike$standY)
+				&& huntlike$standY - self.getY() > com.huntlike.interlude.SlimyRebounders.MIN_DROP) {
 			cir.setReturnValue(Math.max(cir.getReturnValueD(),
 					net.minecraft.world.level.block.Blocks.SLIME_BLOCK.getBounceRestitution()));
 		}

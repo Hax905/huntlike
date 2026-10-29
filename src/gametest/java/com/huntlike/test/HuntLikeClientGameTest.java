@@ -2168,6 +2168,43 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			}
 			return ok;
 		});
+
+		// ...but a drop of just 1 block (a step down) doesn't bounce, so walking around keeps its speed.
+		final java.util.UUID[] stepPig = new java.util.UUID[1];
+		final double[] step = {Double.MAX_VALUE, -Double.MAX_VALUE};
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var pig = net.minecraft.world.entity.EntityTypes.PIG.create(player.level(), EntitySpawnReason.COMMAND);
+			pig.snapTo(player.getX() + 6, player.getY() + 1.0, player.getZ() - 6, 0, 0);
+			pig.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+					new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.SLIMY_REBOUNDERS));
+			player.level().addFreshEntity(pig);
+			stepPig[0] = pig.getUUID();
+		});
+		for (int t = 0; t < 30; t++) {
+			context.waitTick();
+			singleplayer.getServer().runOnServer(server -> {
+				var pig = player(server).level().getEntity(stepPig[0]);
+				if (pig == null) {
+					return;
+				}
+				if (pig.getY() < step[0]) {
+					step[0] = pig.getY();
+					step[1] = pig.getY();
+				} else {
+					step[1] = Math.max(step[1], pig.getY());
+				}
+			});
+		}
+		assertServer(singleplayer, "Slimy Rebounders: a 1-block drop lands without bouncing", server -> {
+			double rebound = step[1] - step[0];
+			HuntLike.LOGGER.info("[test] Rebounders 1-block drop: rebound {} blocks", rebound);
+			var pig = player(server).level().getEntity(stepPig[0]);
+			if (pig != null) {
+				pig.discard();
+			}
+			return rebound < 0.1;
+		});
 	}
 
 	private static boolean done(ServerPlayer player, String path) {

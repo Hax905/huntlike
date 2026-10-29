@@ -83,9 +83,10 @@ public class TowernaarUndead extends Monster {
 		return this.entityData.get(ENDING);
 	}
 
+	/** His outline, seen only by the player he hunts: dark red. */
 	@Override
 	public int getTeamColor() {
-		return 0xAA00AA;
+		return 0xAA0000;
 	}
 
 	@Override

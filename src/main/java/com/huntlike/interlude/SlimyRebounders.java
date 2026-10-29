@@ -31,12 +31,16 @@ import com.huntlike.registry.Lore;
 import com.huntlike.registry.ModItems;
 
 /**
- * Slimy Rebounders: +1 armor and nothing else, but every block works like a slime block for the wearer: landing bounces
- * back up and never hurts. Sneaking lands normally (and takes the fall damage), as on a real slime block.
+ * Slimy Rebounders: +1 armor and nothing else, but a fall of more than 1 block bounces the wearer back up like a slime
+ * block and never hurts (walking, stepping down and jumping on flat ground don't bounce). Sneaking lands normally and takes
+ * the fall damage, as on a real slime block.
  */
 public final class SlimyRebounders {
 	private SlimyRebounders() {
 	}
+
+	/** Only a landing more than this many blocks below where the wearer last stood bounces. */
+	public static final double MIN_DROP = 1.0;
 
 	public static final TagKey<Item> REPAIRS = TagKey.create(Registries.ITEM, HuntLike.id("repairs_slimy_rebounders"));
 

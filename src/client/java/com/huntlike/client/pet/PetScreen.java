@@ -74,8 +74,13 @@ public class PetScreen extends AbstractContainerScreen<PetMenu> {
 			}
 		}
 		if (!this.menu.hasChest()) {
-			g.text(this.font, Component.literal("Put a chest in the chest slot"), x + 8, y + PetMenu.STORAGE_Y + 14, TEXT, false);
-			g.text(this.font, Component.literal("to carry a double chest."), x + 8, y + PetMenu.STORAGE_Y + 25, TEXT, false);
+			// "Put a chest in <name>'s body slot!", wrapped to the panel for long names.
+			int ty = y + PetMenu.STORAGE_Y + 14;
+			for (var line : this.font.split(Component.literal("Put a chest in " + this.title.getString() + "'s body slot!"),
+					this.imageWidth - 16)) {
+				g.text(this.font, line, x + 8, ty, TEXT, false);
+				ty += 11;
+			}
 		}
 	}
 

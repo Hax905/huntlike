@@ -18,16 +18,16 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * A Rogue Hunter: hunts one player during their Hunt Quests. Invisible (only the hunted player sees its red outline) until
- * it's hit the first time. 40 health and 5 damage (8 once its player is at Rank VIII in any Hunt); a special one has
+ * it's hit the first time. 40 health and 5 damage (8 when its player is Rank VIII in the quest's Hunt); a special one has
  * 80 health and 8 damage (12).
  */
 public class RogueHunter extends Monster {
 	public static final float HEALTH = 40.0F;
 	public static final float SPECIAL_HEALTH = 80.0F;
-	/** Damage before the player reaches Rank VIII in any Hunt: 5 (special 8). */
+	/** Damage below Rank VIII in the quest's Hunt: 5 (special 8). */
 	public static final float DAMAGE = 5.0F;
 	public static final float SPECIAL_DAMAGE = 8.0F;
-	/** From Rank VIII in any Hunt on: 8 (special 12). */
+	/** At Rank VIII or higher in the quest's Hunt: 8 (special 12). */
 	public static final int STRONG_RANK = 8;
 	public static final float STRONG_DAMAGE = 8.0F;
 	public static final float STRONG_SPECIAL_DAMAGE = 12.0F;
@@ -87,7 +87,7 @@ public class RogueHunter extends Monster {
 		return this.entityData.get(SPECIAL);
 	}
 
-	/** Its stats: special or not, and stronger once its player is at Rank VIII in any Hunt. */
+	/** Its stats: special or not, and stronger when its player is Rank VIII in the quest's Hunt. */
 	public void setStats(boolean special, boolean strong) {
 		this.entityData.set(SPECIAL, special);
 		this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(special ? SPECIAL_HEALTH : HEALTH);

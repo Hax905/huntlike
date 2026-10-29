@@ -70,14 +70,20 @@ public final class RogueHunters {
 		return false;
 	}
 
-	/** From Rank VIII in any Hunt, Rogue Hunters hit harder. */
+	/**
+	 * Rogue Hunters hit harder when the player is Rank VIII in the Hunt of the quest they're doing (Animal Rank VIII and
+	 * Cluster Rank III: strong during Animal quests, normal during Cluster quests). An Interlude belongs to both Hunts, so
+	 * Rank VIII in either counts.
+	 */
 	public static boolean strong(HuntData data) {
-		for (HuntDefs.Hunt hunt : HuntDefs.HUNTS) {
-			if (data.progress(hunt.id()).rank() >= RogueHunter.STRONG_RANK) {
-				return true;
-			}
+		if (data.quest == null) {
+			return false;
 		}
-		return false;
+		if (com.huntlike.interlude.InterludeDefs.isInterlude(data.quest.hunt)) {
+			return data.progress(HuntDefs.ANIMAL.id()).rank() >= RogueHunter.STRONG_RANK
+					|| data.progress(HuntDefs.CLUSTER.id()).rank() >= RogueHunter.STRONG_RANK;
+		}
+		return data.progress(data.quest.hunt).rank() >= RogueHunter.STRONG_RANK;
 	}
 
 	/** A Rogue Hunter is on its way or hunting this player: the Spirit Lure and the quota wait. */

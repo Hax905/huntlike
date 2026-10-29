@@ -1173,6 +1173,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return !hunter.isInvisible() && hunter.getMaxHealth() == health
 					&& hunter.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == damage;
 		});
+		check(singleplayer, "stronger Rogue Hunters only when Rank VIII in the quest's own Hunt", data -> {
+			HuntData copy = HuntData.fromTag(data.toTag());
+			copy.quest = new HuntData.Quest();
+			copy.progress("animal").xp = 1_000_000;
+			copy.progress("cluster").xp = 0;
+			copy.quest.hunt = "animal";
+			boolean animal = com.huntlike.rogue.RogueHunters.strong(copy);
+			copy.quest.hunt = "cluster";
+			boolean cluster = com.huntlike.rogue.RogueHunters.strong(copy);
+			copy.quest.hunt = com.huntlike.interlude.InterludeDefs.SLIME_RIDER;
+			boolean interlude = com.huntlike.rogue.RogueHunters.strong(copy);
+			HuntLike.LOGGER.info("[test] strong Rogue Hunters: Animal quest {} Cluster quest {} Interlude {}", animal, cluster, interlude);
+			return animal && !cluster && interlude;
+		});
 		check(singleplayer, "Rogue Hunter damage: 5 / special 8 before Rank VIII, 8 / special 12 from Rank VIII", data ->
 				com.huntlike.rogue.RogueHunter.damage(false, false) == 5.0F && com.huntlike.rogue.RogueHunter.damage(true, false) == 8.0F
 						&& com.huntlike.rogue.RogueHunter.damage(false, true) == 8.0F && com.huntlike.rogue.RogueHunter.damage(true, true) == 12.0F);

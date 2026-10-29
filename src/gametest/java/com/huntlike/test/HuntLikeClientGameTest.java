@@ -795,6 +795,52 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 	private static net.minecraft.world.item.ItemStack trophyStack = net.minecraft.world.item.ItemStack.EMPTY;
 
+	/**
+	 * A full-strength Slick Kama swing on every Cluster boss: the boss should lose the weapon's attack damage plus its
+	 * Cluster damage (2). Logs what each boss actually lost.
+	 */
+	private static void clusterWeaponDamage(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		List<String> results = new java.util.ArrayList<>();
+		for (int tier = 1; tier <= 5; tier++) {
+			int t = tier;
+			singleplayer.getServer().runCommand("huntlike quest cancel @a");
+			context.waitTicks(3);
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = player(server);
+				player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+						new net.minecraft.world.item.ItemStack(com.huntlike.gear.ModScythes.SLICK_KAMA));
+				player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.RESISTANCE, 600, 4));
+				QuestManager.forceBoss(player, com.huntlike.hunt.HuntDefs.CLUSTER, t);
+			});
+			for (int i = 0; i < 100; i++) {
+				context.waitTick();
+				if (singleplayer.getServer().computeOnServer(server -> !com.huntlike.hunt.ClusterFight.bodies(player(server)).isEmpty())) {
+					break;
+				}
+			}
+			context.waitTicks(25);
+			String result = singleplayer.getServer().computeOnServer(server -> {
+				ServerPlayer player = player(server);
+				var bodies = com.huntlike.hunt.ClusterFight.bodies(player);
+				if (bodies.isEmpty()) {
+					return "Tier " + t + ": no boss";
+				}
+				var body = bodies.get(0);
+				body.setInvulnerableTime(0);
+				float before = body.getHealth();
+				double weapon = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+				player.attack(body);
+				float lost = before - body.getHealth();
+				return "Tier " + t + " " + body.getType().getDescriptionId() + ": lost " + lost + " (weapon " + weapon + " + cluster 2 = "
+						+ (weapon + 2) + ", charge " + player.getAttackStrengthScale(0.5F) + ")";
+			});
+			HuntLike.LOGGER.info("[test] Cluster weapon damage: {}", result);
+			results.add(result);
+		}
+		singleplayer.getServer().runCommand("huntlike quest cancel @a");
+		context.waitTicks(3);
+	}
+
 	private static void killAll(TestSingleplayerContext singleplayer, java.util.function.Function<ServerPlayer, List<? extends net.minecraft.world.entity.LivingEntity>> which) {
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -1082,6 +1128,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
 		context.waitTicks(5);
 		check(singleplayer, "cluster tier V complete", data -> data.quest == null && data.progress("cluster").bossKills[4] == 1);
+		clusterWeaponDamage(context, singleplayer);
 		assertServer(singleplayer, "Better Than Ever! ends when the boss perishes", server ->
 				!com.huntlike.hunt.ClusterFight.betterThanEver(player(server)));
 	}

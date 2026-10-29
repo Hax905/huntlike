@@ -18,6 +18,16 @@ public class HotHead extends MagmaCube {
 		super(type, level);
 	}
 
+	/**
+	 * No armor: vanilla gives a magma cube 3 armor per size (15 at size 5), which would eat about half of every hit and of
+	 * the Cluster weapons' bonus. Cluster bosses take attack damage + Cluster damage in full.
+	 */
+	@Override
+	public void setSize(int size, boolean resetHealth) {
+		super.setSize(size, resetHealth);
+		this.getAttribute(Attributes.ARMOR).setBaseValue(0.0);
+	}
+
 	@Override
 	protected int getSplitCount() {
 		return 0;

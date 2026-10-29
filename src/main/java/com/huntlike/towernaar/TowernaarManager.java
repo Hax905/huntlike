@@ -44,6 +44,29 @@ public final class TowernaarManager {
 		reveal(player, data, chapter, data.towernaarStep + 1);
 	}
 
+	/** A lost Magnetic Wand PRD can be traded for again: 1 Paper, 1 Ink Sac and 1 Ender Pearl. */
+	public static final java.util.List<HuntDefs.Cost> PRD_COST = java.util.List.of(HuntDefs.Cost.of(net.minecraft.world.item.Items.PAPER, 1),
+			HuntDefs.Cost.of(net.minecraft.world.item.Items.INK_SAC, 1), HuntDefs.Cost.of(net.minecraft.world.item.Items.ENDER_PEARL, 1));
+
+	/** The PRD trade shows after the Final Chapter, until the PRD has been used (the wand trade is learned). */
+	public static boolean prdTradeOpen(HuntData data) {
+		return data.towernaarDone > TowernaarScript.FINAL && !data.wandUnlocked;
+	}
+
+	public static void buyPrd(ServerPlayer player, HuntData data) {
+		if (!prdTradeOpen(data)) {
+			return;
+		}
+		if (!KoroManager.hasAll(player, PRD_COST)) {
+			QuestManager.playSound(player, SoundEvents.ENDERMAN_HURT, 1.2F);
+			return;
+		}
+		KoroManager.take(player, PRD_COST);
+		QuestManager.giveStack(player, new ItemStack(ModShields.MAGNETIC_WAND_PRD));
+		QuestManager.playSound(player, SoundEvents.ENDERMAN_TELEPORT, 1.0F);
+		QuestManager.sync(player);
+	}
+
 	/** Rogue Hunters slain since the current kill quest started. */
 	public static int killsDone(HuntData data) {
 		return data.rogueKills - data.towernaarKillBase;

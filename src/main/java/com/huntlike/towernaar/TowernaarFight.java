@@ -57,11 +57,28 @@ public final class TowernaarFight {
 
 	/** Started from the menu, waiting for an enderman kill. */
 	private static final Set<UUID> WAITING = new HashSet<>();
+
+	/** The summoning before he appears: a five-pointed star of portal and red particles where he will stand. */
+	public static final int RITUAL_TICKS = 40;
+
+	private static final class Ritual {
+		final ServerLevel level;
+		final net.minecraft.world.phys.Vec3 at;
+		int ticks;
+
+		Ritual(ServerLevel level, net.minecraft.world.phys.Vec3 at) {
+			this.level = level;
+			this.at = at;
+		}
+	}
+
+	private static final Map<UUID, Ritual> RITUALS = new HashMap<>();
 	private static final Map<UUID, Fight> FIGHTS = new HashMap<>();
 
 	/** 0 = nothing, 1 = waiting for an enderman kill, 2 = fighting (shown in his menu). */
 	public static int phase(ServerPlayer player) {
-		return FIGHTS.containsKey(player.getUUID()) ? 2 : WAITING.contains(player.getUUID()) ? 1 : 0;
+		return FIGHTS.containsKey(player.getUUID()) || RITUALS.containsKey(player.getUUID()) ? 2
+				: WAITING.contains(player.getUUID()) ? 1 : 0;
 	}
 
 	public static boolean canStart(HuntData data) {
@@ -90,14 +107,52 @@ public final class TowernaarFight {
 				|| !WAITING.remove(player.getUUID())) {
 			return;
 		}
-		spawn(player);
+		// The summoning: 2 seconds of the star, then he steps out of it.
+		ServerLevel level = player.level();
+		double angle = player.getRandom().nextDouble() * Math.PI * 2.0;
+		net.minecraft.world.phys.Vec3 at = new net.minecraft.world.phys.Vec3(player.getX() + Math.cos(angle) * 4.0, player.getY(),
+				player.getZ() + Math.sin(angle) * 4.0);
+		RITUALS.put(player.getUUID(), new Ritual(level, at));
+		level.playSound(null, at.x, at.y, at.z, SoundEvents.PORTAL_TRIGGER, net.minecraft.sounds.SoundSource.HOSTILE, 0.6F, 0.7F);
+		QuestManager.sync(player);
+	}
+
+	/** One frame of the summoning star: five points on a circle, each joined to the second one after it. */
+	private static void drawStar(ServerLevel level, net.minecraft.world.phys.Vec3 at, int tick) {
+		double radius = 2.2;
+		double spin = tick * 0.03;
+		net.minecraft.core.particles.DustParticleOptions red = new net.minecraft.core.particles.DustParticleOptions(0xD01010, 1.3F);
+		double[][] points = new double[5][2];
+		for (int i = 0; i < 5; i++) {
+			double a = spin - Math.PI / 2 + Math.PI * 2.0 * i / 5;
+			points[i][0] = at.x + Math.cos(a) * radius;
+			points[i][1] = at.z + Math.sin(a) * radius;
+		}
+		for (int i = 0; i < 5; i++) {
+			double[] from = points[i];
+			double[] to = points[(i + 2) % 5];
+			for (int k = 0; k <= 10; k++) {
+				double x = from[0] + (to[0] - from[0]) * k / 10.0;
+				double z = from[1] + (to[1] - from[1]) * k / 10.0;
+				net.minecraft.core.particles.ParticleOptions particle = k % 2 == 0 ? red : ParticleTypes.PORTAL;
+				level.sendParticles(particle, x, at.y + 0.1, z, 1, 0.0, 0.0, 0.0, 0.0);
+			}
+			// Each point: a column of portal particles rising as the summoning goes on.
+			level.sendParticles(ParticleTypes.PORTAL, from[0], at.y + 0.2 + tick / 20.0, from[1], 3, 0.05, 0.3, 0.05, 0.3);
+		}
 	}
 
 	public static TowernaarUndead spawn(ServerPlayer player) {
-		ServerLevel level = player.level();
-		TowernaarUndead boss = ModEntities.TOWERNAAR_UNDEAD.create(level, EntitySpawnReason.MOB_SUMMONED);
 		double angle = player.getRandom().nextDouble() * Math.PI * 2.0;
-		boss.snapTo(player.getX() + Math.cos(angle) * 4.0, player.getY(), player.getZ() + Math.sin(angle) * 4.0, 0.0F, 0.0F);
+		return spawn(player, new net.minecraft.world.phys.Vec3(player.getX() + Math.cos(angle) * 4.0, player.getY(),
+				player.getZ() + Math.sin(angle) * 4.0));
+	}
+
+	public static TowernaarUndead spawn(ServerPlayer player, net.minecraft.world.phys.Vec3 at) {
+		ServerLevel level = player.level();
+		RITUALS.remove(player.getUUID());
+		TowernaarUndead boss = ModEntities.TOWERNAAR_UNDEAD.create(level, EntitySpawnReason.MOB_SUMMONED);
+		boss.snapTo(at.x, at.y, at.z, 0.0F, 0.0F);
 		boss.setHunted(player.getUUID());
 		boss.setTarget(player);
 		level.addFreshEntity(boss);
@@ -116,6 +171,21 @@ public final class TowernaarFight {
 
 	public static void tick(MinecraftServer server) {
 		WAITING.removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+		for (Map.Entry<UUID, Ritual> entry : new ArrayList<>(RITUALS.entrySet())) {
+			ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+			Ritual ritual = entry.getValue();
+			if (player == null || !player.isAlive() || player.level() != ritual.level) {
+				RITUALS.remove(entry.getKey());
+				continue;
+			}
+			ritual.ticks++;
+			if (ritual.ticks % 2 == 0) {
+				drawStar(ritual.level, ritual.at, ritual.ticks);
+			}
+			if (ritual.ticks >= RITUAL_TICKS) {
+				spawn(player, ritual.at);
+			}
+		}
 		for (Map.Entry<UUID, Fight> entry : new ArrayList<>(FIGHTS.entrySet())) {
 			ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
 			Fight fight = entry.getValue();
@@ -131,6 +201,7 @@ public final class TowernaarFight {
 			long elapsed = player.level().getGameTime() - fight.spawnedAt;
 			if (boss.isEnding()) {
 				fight.endingTicks++;
+				pullPortal((ServerLevel) boss.level(), boss);
 				fight.bar.setProgress(0.0F);
 				if (fight.endingTicks == 60) {
 					player.sendSystemMessage(Component.empty().append(Messages.c("Towernaar", PURPLE))
@@ -152,6 +223,21 @@ public final class TowernaarFight {
 			fight.bar.setName(Component.literal("Towernaar the Undead").withColor(PURPLE)
 					.append(Messages.c("  ❤ " + (int) Math.ceil(boss.getHealth()) + "/" + (int) boss.getMaxHealth(), HuntDefs.RED))
 					.append(Messages.c(String.format("  %d:%02d", seconds / 60, seconds % 60), HuntDefs.GRAY)));
+		}
+	}
+
+	/** His last moments: portal particles drawn into him from all around (a portal particle flies back to where it's sent from). */
+	private static void pullPortal(ServerLevel level, TowernaarUndead boss) {
+		net.minecraft.util.RandomSource random = boss.getRandom();
+		for (int i = 0; i < 6; i++) {
+			double yaw = random.nextDouble() * Math.PI * 2.0;
+			double pitch = (random.nextDouble() - 0.5) * Math.PI;
+			double distance = 2.5 + random.nextDouble() * 1.5;
+			double dx = Math.cos(yaw) * Math.cos(pitch) * distance;
+			double dy = Math.sin(pitch) * distance;
+			double dz = Math.sin(yaw) * Math.cos(pitch) * distance;
+			// Count 0: the offset is the particle's motion, so it starts out there and closes in on him.
+			level.sendParticles(ParticleTypes.PORTAL, boss.getX(), boss.getY() + 1.4, boss.getZ(), 0, dx, dy, dz, 1.0);
 		}
 	}
 
@@ -192,6 +278,10 @@ public final class TowernaarFight {
 	/** His last breath: the Magnetic Wand PRD drops and the questline is complete. */
 	private static void win(ServerPlayer player, Fight fight, TowernaarUndead boss) {
 		ServerLevel level = (ServerLevel) boss.level();
+		// He goes out with a bang.
+		level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, boss.getX(), boss.getY() + 1.4, boss.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+		level.playSound(null, boss.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), net.minecraft.sounds.SoundSource.HOSTILE, 1.0F,
+				0.9F);
 		ItemEntity drop = new ItemEntity(level, boss.getX(), boss.getY() + 0.5, boss.getZ(), new ItemStack(ModShields.MAGNETIC_WAND_PRD));
 		drop.setUnlimitedLifetime();
 		level.addFreshEntity(drop);
@@ -207,6 +297,7 @@ public final class TowernaarFight {
 
 	public static void forget(ServerPlayer player) {
 		WAITING.remove(player.getUUID());
+		RITUALS.remove(player.getUUID());
 	}
 
 	public static void initialize() {

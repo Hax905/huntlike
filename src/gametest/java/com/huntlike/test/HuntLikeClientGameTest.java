@@ -837,6 +837,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] Cluster weapon damage: {}", result);
 			results.add(result);
 		}
+		// Every Cluster boss takes a full swing: attack damage 4 + Cluster damage 2 (no armor on the magma ones).
+		if (!results.stream().allMatch(r -> r.contains("lost 6.0"))) {
+			throw new AssertionError("A Cluster boss doesn't take attack damage + Cluster damage in full: " + results);
+		}
 		singleplayer.getServer().runCommand("huntlike quest cancel @a");
 		context.waitTicks(3);
 	}
@@ -1088,6 +1092,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		assertServer(singleplayer, "Yummy!: the owner is consumed", server -> com.huntlike.hunt.ClusterFight.isConsumed(player(server))
 				&& com.huntlike.hunt.ClusterFight.yummyKeys(player(server)).length == 15);
+		assertServer(singleplayer, "Yummy!: the boss regenerates at half its rate", server -> {
+			float regen = com.huntlike.hunt.ClusterFight.regenNow(player(server));
+			HuntLike.LOGGER.info("[test] regeneration during Yummy!: {}", regen);
+			return regen == com.huntlike.hunt.HuntDefs.CLUSTER.tier(5).regen() / 2.0F;
+		});
 		context.waitTicks(10);
 		context.takeScreenshot("46-yummy");
 		int[] keys = context.computeOnClient(client -> com.huntlike.client.YummyClient.keys.clone());
@@ -1112,6 +1121,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		singleplayer.getServer().runOnServer(server -> player(server).setHealth(player(server).getMaxHealth()));
 		context.waitTicks(30);
 		assertServer(singleplayer, "Watch out! started (below 75%)", server -> com.huntlike.hunt.ClusterFight.isWatching(player(server)));
+		assertServer(singleplayer, "Watch out!: no regeneration while it lasts", server -> {
+			float regen = com.huntlike.hunt.ClusterFight.regenNow(player(server));
+			HuntLike.LOGGER.info("[test] regeneration during Watch out!: {}", regen);
+			return regen == 0.0F;
+		});
 		context.takeScreenshot("47-watch-out");
 		// Watch out! now deals double damage: keep the test player alive through all three rounds, even when the server lags.
 		singleplayer.getServer().runOnServer(server -> player(server).addEffect(new net.minecraft.world.effect.MobEffectInstance(
@@ -1252,6 +1266,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		killRogue(singleplayer);
 		context.waitTicks(3);
 		check(singleplayer, "a Rogue Hunter kill is counted and the quest goes on", data -> data.rogueKills == 1 && data.quest != null);
+		assertServer(singleplayer, "a killed Rogue Hunter vanishes in smoke: no body left behind", server -> rogue(server) == null);
 		assertServer(singleplayer, "the Rogue Hunter's death resets the Spirit Lure: 0 of 3 spawns, the old lured cow no longer counts",
 				server -> {
 					ServerPlayer player = player(server);
@@ -1437,7 +1452,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var enderman = spawnTest(player, EntityTypes.ENDERMAN, 3.0, 0.0, 1.0F);
 			enderman.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 100.0F);
 		});
-		context.waitTicks(5);
+		// The summoning star first (2 seconds), then he appears.
+		context.waitTicks(20);
+		assertServer(singleplayer, "the summoning star plays before he appears", server -> {
+			ServerPlayer player = player(server);
+			return com.huntlike.towernaar.TowernaarFight.phase(player) == 2 && player.level().getEntitiesOfClass(
+					com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(20)).isEmpty();
+		});
+		context.takeScreenshot("88b-towernaar-summoning");
+		context.waitTicks(30);
 		assertServer(singleplayer, "Towernaar the Undead appears (300 health)", server -> {
 			ServerPlayer player = player(server);
 			var bosses = player.level().getEntitiesOfClass(com.huntlike.towernaar.TowernaarUndead.class, player.getBoundingBox().inflate(20));
@@ -1469,7 +1492,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			boss.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
 			return boss.isAlive() && boss.isEnding() && boss.getHealth() == 1.0F;
 		});
-		context.waitTicks(70);
+		context.waitTicks(30);
+		context.takeScreenshot("89b-towernaar-ending");
+		context.waitTicks(40);
 		context.takeScreenshot("90-towernaar-thank-you");
 		context.waitTicks(60);
 		assertServer(singleplayer, "he dies and drops the Magnetic Wand PRD; the questline is complete", server -> {
@@ -1482,6 +1507,35 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					data.towernaarDone, done(player, "towernaar/final"));
 			prd.forEach(net.minecraft.world.entity.Entity::discard);
 			return bosses.isEmpty() && prd.size() == 1 && data.towernaarDone == 4 && done(player, "towernaar/final");
+		});
+		// The PRD is lost (thrown away above): Towernaar's tab now offers another for 1 Paper, 1 Ink Sac and 1 Ender Pearl.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			give(player, net.minecraft.world.item.Items.PAPER, 1);
+			give(player, net.minecraft.world.item.Items.INK_SAC, 1);
+			give(player, net.minecraft.world.item.Items.ENDER_PEARL, 1);
+		});
+		context.setScreen(() -> new com.huntlike.client.screen.TowernaarScreen(null));
+		context.waitTicks(10);
+		context.takeScreenshot("91b-towernaar-prd-trade");
+		context.runOnClient(client -> net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+				new com.huntlike.network.HuntPayloads.Action("towernaar_prd", "cluster", 0)));
+		context.waitTicks(5);
+		context.setScreen(() -> null);
+		assertServer(singleplayer, "a lost PRD is traded for again: Paper, Ink Sac and Ender Pearl taken", server -> {
+			var inventory = player(server).getInventory();
+			int prds = 0;
+			boolean costsLeft = false;
+			for (int i = 0; i < inventory.getContainerSize(); i++) {
+				var stack = inventory.getItem(i);
+				if (stack.is(com.huntlike.gear.ModShields.MAGNETIC_WAND_PRD)) {
+					prds += stack.getCount();
+				}
+				costsLeft |= stack.is(net.minecraft.world.item.Items.PAPER) || stack.is(net.minecraft.world.item.Items.INK_SAC)
+						|| stack.is(net.minecraft.world.item.Items.ENDER_PEARL);
+			}
+			HuntLike.LOGGER.info("[test] PRD trade: PRDs {} costs left {}", prds, costsLeft);
+			return prds == 1 && !costsLeft;
 		});
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -1503,6 +1557,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(3);
 		check(singleplayer, "the PRD is used up and the trade unlocked", data -> data.wandUnlocked);
+		check(singleplayer, "once the PRD is used, Towernaar's tab no longer offers it", data ->
+				!com.huntlike.towernaar.TowernaarManager.prdTradeOpen(data));
 		context.setScreen(() -> new HuntMenuScreen(1));
 		context.waitTicks(5);
 		context.takeScreenshot("91-cluster-misc-trades");
@@ -1568,13 +1624,20 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
 			double wolfMoved = wolf == null ? 0 : wolf.position().distanceTo((net.minecraft.world.phys.Vec3) wand[3]);
 			HuntLike.LOGGER.info("[test] Magnetic Wand at 27 ticks: cow {} blocks from the spot; wolf moved {}", flat, wolfMoved);
-			if (cow != null) {
-				cow.discard();
-			}
-			if (wolf != null) {
-				wolf.discard();
-			}
 			return flat < 1.5 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
+		});
+		waitServerTicks(context, singleplayer, (long) wand[4], 35);
+		assertServer(singleplayer, "the cow reached the spot, so the hold lasts 33% longer: still on at 1.75 s",
+				server -> com.huntlike.gear.ModShields.activeFields() > 0);
+		waitServerTicks(context, singleplayer, (long) wand[4], 45);
+		assertServer(singleplayer, "...and over by 2.25 s", server -> com.huntlike.gear.ModShields.activeFields() == 0);
+		singleplayer.getServer().runOnServer(server -> {
+			for (int k = 1; k <= 2; k++) {
+				var entity = player(server).level().getEntity((java.util.UUID) wand[k]);
+				if (entity != null) {
+					entity.discard();
+				}
+			}
 		});
 
 		// The A-Phone is bought on the Cluster Misc page (4th trade), not crafted.

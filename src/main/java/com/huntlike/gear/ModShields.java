@@ -180,6 +180,12 @@ public final class ModShields {
 
 	/** How long a cast holds its creatures at the spot: 1.5 seconds. */
 	public static final int WAND_HOLD_TICKS = 30;
+	/** Once everything caught has reached the spot, the hold lasts 33% longer (+0.5 s). */
+	public static final int WAND_GATHERED_BONUS = WAND_HOLD_TICKS / 3;
+	/** Within this far (flat) of the spot counts as gathered. */
+	public static final double WAND_GATHERED = 1.0;
+	private static final int WAND_OUTER = 0xA040FF;
+	private static final int WAND_INNER = 0x8A8A8A;
 
 	/** A cast's magnetic field: the spot, the creatures it caught, and the ticks it has left. */
 	private static final class Field {
@@ -187,6 +193,8 @@ public final class ModShields {
 		final Vec3 point;
 		final List<java.util.UUID> caught;
 		int ticksLeft = WAND_HOLD_TICKS;
+		int age;
+		boolean gathered;
 
 		Field(ServerLevel level, Vec3 point, List<java.util.UUID> caught) {
 			this.level = level;
@@ -196,6 +204,11 @@ public final class ModShields {
 	}
 
 	private static final List<Field> FIELDS = new ArrayList<>();
+
+	/** Fields still holding something (for the tests). */
+	public static long activeFields() {
+		return FIELDS.stream().filter(field -> !field.caught.isEmpty()).count();
+	}
 
 	/**
 	 * Catches every creature within 8 blocks of the spot you look at (up to 20 blocks away), then for 1.5 seconds draws them
@@ -223,8 +236,13 @@ public final class ModShields {
 			Vec3 at = eye.add(step.scale(d));
 			level.sendParticles(ParticleTypes.REVERSE_PORTAL, at.x, at.y, at.z, 1, 0.02, 0.02, 0.02, 0.0);
 		}
-		level.sendParticles(ParticleTypes.REVERSE_PORTAL, point.x, point.y + 0.5, point.z, 40, WAND_RADIUS / 3, 0.6, WAND_RADIUS / 3, 0.05);
-		level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8F, 0.6F);
+		// The field's edge flashes in purple; the rings then close in toward the spot (see tickFields).
+		ring(level, point, WAND_RADIUS, 1.0, 64);
+		if (caught.isEmpty()) {
+			// Nothing caught: one quick pulse inward so the cast still reads.
+			FIELDS.add(new Field(level, point, caught));
+		}
+		level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.0F, 1.2F);
 		return caught.size();
 	}
 
@@ -255,16 +273,56 @@ public final class ModShields {
 				it.remove();
 				continue;
 			}
+			field.age++;
+			boolean allThere = !field.caught.isEmpty();
 			for (java.util.UUID id : field.caught) {
 				if (field.level.getEntity(id) instanceof LivingEntity entity && entity.isAlive() && entity.level() == field.level) {
 					attract(entity, field.point);
+					double dx = entity.getX() - field.point.x;
+					double dz = entity.getZ() - field.point.z;
+					allThere &= Math.sqrt(dx * dx + dz * dz) <= WAND_GATHERED;
 				}
 			}
-			if (field.ticksLeft % 4 == 0) {
-				field.level.sendParticles(ParticleTypes.REVERSE_PORTAL, field.point.x, field.point.y + 0.4, field.point.z, 8, 0.4, 0.3,
-						0.4, 0.02);
+			// Everything caught is at the spot: the hold lasts a third longer (once).
+			if (allThere && !field.gathered) {
+				field.gathered = true;
+				field.ticksLeft += WAND_GATHERED_BONUS;
+			}
+			// Rings closing in from the edge to the spot, purple outside turning grey toward the middle. A new ring starts
+			// every 6 ticks and takes 12 to close; a field that caught nothing shows just one.
+			int rings = field.caught.isEmpty() ? 1 : Integer.MAX_VALUE;
+			for (int start = 0; start <= field.age && start / 6 < rings; start += 6) {
+				int t = field.age - start;
+				if (t < 12 && t % 2 == 0) {
+					double fraction = 1.0 - t / 12.0;
+					ring(field.level, field.point, WAND_RADIUS * fraction, fraction, Math.max(10, (int) (48 * fraction)));
+				}
+			}
+			if (field.caught.isEmpty() && field.age >= 12) {
+				it.remove();
 			}
 		}
+	}
+
+	/** One ring of dust around the spot; fraction 1 is the edge (purple), 0 the middle (grey). */
+	private static void ring(ServerLevel level, Vec3 point, double radius, double fraction, int points) {
+		int r = (int) Math.round(lerp(WAND_INNER >> 16 & 255, WAND_OUTER >> 16 & 255, fraction));
+		int g = (int) Math.round(lerp(WAND_INNER >> 8 & 255, WAND_OUTER >> 8 & 255, fraction));
+		int b = (int) Math.round(lerp(WAND_INNER & 255, WAND_OUTER & 255, fraction));
+		net.minecraft.core.particles.DustParticleOptions dust = new net.minecraft.core.particles.DustParticleOptions(r << 16 | g << 8 | b,
+				1.4F);
+		for (int i = 0; i < points; i++) {
+			double angle = Math.PI * 2.0 * i / points;
+			level.sendParticles(dust, point.x + Math.cos(angle) * radius, point.y + 0.3, point.z + Math.sin(angle) * radius, 1, 0.0,
+					0.05, 0.0, 0.0);
+		}
+		if (fraction < 0.2) {
+			level.sendParticles(ParticleTypes.REVERSE_PORTAL, point.x, point.y + 0.4, point.z, 6, 0.3, 0.3, 0.3, 0.02);
+		}
+	}
+
+	private static double lerp(double a, double b, double t) {
+		return a + (b - a) * t;
 	}
 
 	// ---------------------------------------------------------------- Magnetic Wand PRD

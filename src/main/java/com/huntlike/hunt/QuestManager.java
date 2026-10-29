@@ -170,6 +170,7 @@ public final class QuestManager {
 			case "interlude_tokens" -> com.huntlike.interlude.SlimeRiderFight.buyTokens(player, data, action.value() == 1);
 			case "towernaar_click" -> com.huntlike.towernaar.TowernaarManager.click(player, data);
 			case "towernaar_start" -> com.huntlike.towernaar.TowernaarFight.start(player, data);
+			case "towernaar_prd" -> com.huntlike.towernaar.TowernaarManager.buyPrd(player, data);
 			case "yummy_key" -> {
 				ClusterFight.onYummyKey(player, action.value());
 				return;

@@ -61,6 +61,8 @@ public class TowernaarScreen extends Screen {
 	private boolean stickToBottom = true;
 	private long bobUntil;
 	private int[] startButton;
+	/** The PRD trade's button (after the Final Chapter, until the PRD is used), or null. */
+	private int[] prdButton;
 	private LivingEntity preview;
 
 	public TowernaarScreen(Screen parent) {
@@ -194,6 +196,7 @@ public class TowernaarScreen extends Screen {
 		left = (this.width - W) / 2;
 		top = (this.height - H) / 2;
 		startButton = null;
+		prdButton = null;
 		sprite(g, "window", left, top, W, H);
 		g.text(this.font, c("Questline - " + TowernaarScript.name(data), 0x404040), left + 10, top + 7, 0xFF404040, false);
 		sprite(g, "content", left + 6, top + 18, W - 12, H - 24);
@@ -214,11 +217,37 @@ public class TowernaarScreen extends Screen {
 		g.centeredText(this.font, c(TowernaarScript.name(data), PURPLE), colX + colW / 2, portraitY + 60, WHITE);
 
 		int y = portraitY + 74;
-		sprite(g, "panel_dark", colX, y, colW, top + H - 14 - y);
-		g.text(this.font, c("Quest Items", 0xFFFFFF), colX + 4, y + 4, WHITE, false);
+		int boxBottom = top + H - 14;
+		sprite(g, "panel_dark", colX, y, colW, boxBottom - y);
+		boolean prdTrade = com.huntlike.towernaar.TowernaarManager.prdTradeOpen(data);
+		g.text(this.font, prdTrade ? c("Magnetic Wand PRD", HuntDefs.GOLD) : c("Quest Items", 0xFFFFFF), colX + 4, y + 4, WHITE, false);
 		y += 15;
 		Step open = openStep(data);
-		if (open == null) {
+		if (prdTrade) {
+			// Lost the PRD? Towernaar draws another one: 1 Paper, 1 Ink Sac and 1 Ender Pearl.
+			boolean all = true;
+			for (Cost cost : com.huntlike.towernaar.TowernaarManager.PRD_COST) {
+				boolean have = carried(cost.item()) >= cost.count();
+				all &= have;
+				MutableComponent name = Component.empty().append(itemName(cost.item())).append(c(" [x" + cost.count() + "]", LIGHT_BLUE));
+				if (!have) {
+					name = Component.empty().append(name).append(c(" ✖", HuntDefs.RED));
+				}
+				for (FormattedCharSequence l : this.font.split(name, colW - 8)) {
+					g.text(this.font, l, colX + 4, y, WHITE, false);
+					y += 9;
+				}
+				y += 1;
+			}
+			int by = boxBottom - 20;
+			boolean tradeHover = mouseX >= colX + 4 && mouseX < colX + colW - 4 && mouseY >= by && mouseY < by + 16;
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace(!all ? "widget/button_disabled"
+					: tradeHover ? "widget/button_highlighted" : "widget/button"), colX + 4, by, colW - 8, 16);
+			g.centeredText(this.font, c("Trade", all ? 0xFFFFFF : 0xA0A0A0), colX + colW / 2, by + 4, WHITE);
+			if (all) {
+				prdButton = new int[] {colX + 4, by, colW - 8, 16};
+			}
+		} else if (open == null) {
 			g.text(this.font, c("None", GRAY), colX + 4, y, WHITE, false);
 			y += 10;
 		} else if (open.kind() == Kind.KILLS) {
@@ -363,6 +392,11 @@ public class TowernaarScreen extends Screen {
 					&& event.y() >= startButton[1] && event.y() < startButton[1] + startButton[3]) {
 				ClientPlayNetworking.send(new HuntPayloads.Action("towernaar_start", "cluster", 0));
 				this.minecraft.gui.setScreen(null);
+				return true;
+			}
+			if (prdButton != null && event.x() >= prdButton[0] && event.x() < prdButton[0] + prdButton[2]
+					&& event.y() >= prdButton[1] && event.y() < prdButton[1] + prdButton[3]) {
+				ClientPlayNetworking.send(new HuntPayloads.Action("towernaar_prd", "cluster", 0));
 				return true;
 			}
 			if (!finalChapter(ClientHuntState.data) && event.x() >= portraitX && event.x() < portraitX + 56 && event.y() >= portraitY

@@ -281,7 +281,7 @@ public final class ClusterFight {
 		if (main != null) {
 			main.setNoAi(frozen);
 			if (elapsed % 20 == 0) {
-				main.heal(tier.regen());
+				main.heal(regen(tier, fight));
 			}
 			int t = tier.number();
 			float fraction = main.getHealth() / main.getMaxHealth();
@@ -386,6 +386,24 @@ public final class ClusterFight {
 			return;
 		}
 		FIGHTS.computeIfAbsent(ownerId, id -> new Fight()).helpers.add(player.getUUID());
+	}
+
+	/** Health per second: none while Watch out! is on, half while Yummy! is on, the tier's regeneration otherwise. */
+	private static float regen(Tier tier, Fight fight) {
+		if (fight.watchActive) {
+			return 0.0F;
+		}
+		return fight.yummyActive ? tier.regen() / 2.0F : tier.regen();
+	}
+
+	/** The boss's regeneration right now (for the tests), or -1 when there's no fight. */
+	public static float regenNow(ServerPlayer player) {
+		Fight fight = FIGHTS.get(player.getUUID());
+		HuntData data = QuestManager.data(player);
+		if (fight == null || data.quest == null) {
+			return -1.0F;
+		}
+		return regen(HuntDefs.hunt(data.quest.hunt).tier(data.quest.tier), fight);
 	}
 
 	/** Removes every body, the boss bar and any Yummy! hold. */

@@ -189,8 +189,21 @@ public final class RogueHunters {
 	private static void end(UUID player, RogueHunter hunter) {
 		ENCOUNTERS.remove(player);
 		if (hunter != null && hunter.isAlive()) {
-			hunter.discard();
+			vanish(hunter);
 		}
+	}
+
+	/** A Rogue Hunter leaves in a puff of smoke: killed or fading away, its body never stays behind. */
+	public static void vanish(RogueHunter hunter) {
+		if (hunter.level() instanceof ServerLevel level) {
+			double y = hunter.getY() + hunter.getBbHeight() / 2.0;
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, hunter.getX(), y, hunter.getZ(), 30, 0.35, 0.6,
+					0.35, 0.02);
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, hunter.getX(), y, hunter.getZ(), 15, 0.3, 0.5, 0.3, 0.04);
+			level.playSound(null, hunter.blockPosition(), net.minecraft.sounds.SoundEvents.FIRE_EXTINGUISH,
+					net.minecraft.sounds.SoundSource.HOSTILE, 0.6F, 0.8F);
+		}
+		hunter.discard();
 	}
 
 	private static RogueHunter find(MinecraftServer server, UUID id) {
@@ -265,8 +278,16 @@ public final class RogueHunters {
 		QuestManager.sync(player);
 	}
 
+	/** Every Rogue Hunter that dies vanishes in smoke, whoever killed it. */
+	public static void afterDeath(LivingEntity entity, DamageSource source) {
+		if (entity instanceof RogueHunter hunter && entity.level() instanceof ServerLevel) {
+			vanish(hunter);
+		}
+	}
+
 	public static void initialize() {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(RogueHunters::tick);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register(RogueHunters::onDeath);
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register(RogueHunters::afterDeath);
 	}
 }

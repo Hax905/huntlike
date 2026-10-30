@@ -9,6 +9,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
@@ -24,9 +27,9 @@ import com.huntlike.nexus.SoulNexus;
  */
 public class SoulNexusScreen extends Screen {
 	private static final int W = 300;
-	private static final int H = 230;
+	private static final int H = 212;
 	private static final int RADIUS = 58;
-	private static final int CORNER_W = 78;
+	private static final int CORNER_W = 34;
 	private static final int CORNER_H = 34;
 	private static final int CYAN = 0xFF55FFFF;
 	private static final int DIM = 0xFF3A6A78;
@@ -86,14 +89,9 @@ public class SoulNexusScreen extends Screen {
 		cx = left + W / 2;
 		cy = top + 114;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/window"), left, top, W, H);
-		g.text(this.font, "Soul Nexus", left + 10, top + 7, 0xFF404040, false);
+		Component title = Component.literal("Soul Nexus").withStyle(style -> style.withBold(true)).withColor(0x404040);
+		g.text(this.font, title, cx - this.font.width(title) / 2, top + 7, 0xFF404040, false);
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/content"), left + 6, top + 18, W - 12, H - 24);
-
-		int free = SoulNexus.free(data);
-		int earned = SoulNexus.earned(data);
-		g.centeredText(this.font, Component.literal("Soul Points: ").withColor(0xFFFFFF)
-				.append(Component.literal(free + " free").withColor(free > 0 ? 0x55FFFF : 0xAAAAAA))
-				.append(Component.literal(" / " + earned + " earned").withColor(0xAAAAAA)), cx, top + 188, WHITE);
 
 		// The triangle, then the cyan shape of the points spent (each corner's share of the cap).
 		for (int i = 0; i < 3; i++) {
@@ -121,26 +119,62 @@ public class SoulNexusScreen extends Screen {
 			boolean hover = inside(b, mouseX, mouseY);
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id(hover ? "menu/panel" : "menu/panel_dark"), b[0], b[1], b[2], b[3]);
 			int points = SoulNexus.get(data, CORNERS[i]);
-			g.centeredText(this.font, Component.literal(NAMES[i]).withColor(COLORS[i] & 0xFFFFFF), b[0] + b[2] / 2, b[1] + 4, WHITE);
+			// The symbol: a heart, a shield or a sword; then the points.
+			int sx = b[0] + (b[2] - 16) / 2;
+			int sy = b[1] + 3;
+			if (i == 0) {
+				g.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("hud/heart/container"), sx + 1, sy + 1, 14, 14);
+				g.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("hud/heart/full"), sx + 1, sy + 1, 14, 14);
+			} else {
+				g.item(new ItemStack(i == 1 ? Items.SHIELD : Items.IRON_SWORD), sx, sy);
+			}
 			g.centeredText(this.font, Component.literal(points + "/" + SoulNexus.CAP).withColor(points >= SoulNexus.CAP ? 0xFFAA00 : 0xFFFFFF),
-					b[0] + b[2] / 2, b[1] + 14, WHITE);
-			g.centeredText(this.font, Component.literal(effect(i, points)).withColor(0x55FFFF), b[0] + b[2] / 2, b[1] + 24, WHITE);
+					b[0] + b[2] / 2, b[1] + 22, WHITE);
 			if (hover) {
 				g.setTooltipForNextFrame(this.font, List.of(Component.literal(NAMES[i]).withColor(COLORS[i] & 0xFFFFFF),
-						Component.literal(describe(i)).withColor(0xAAAAAA),
-						Component.literal("Right-click: add a point").withColor(0xAAAAAA),
-						Component.literal("Left-click: take a point back").withColor(0xAAAAAA),
-						Component.literal("Shift: 10 at once").withColor(0xAAAAAA)), java.util.Optional.empty(), mouseX, mouseY);
+						Component.literal(points + "/" + SoulNexus.CAP).withColor(0xFFFFFF),
+						Component.literal(effect(i, points)).withColor(0x55FFFF)), java.util.Optional.empty(), mouseX, mouseY);
 			}
 		}
 		if (overSoul(mouseX, mouseY)) {
 			g.setTooltipForNextFrame(this.font, List.of(Component.literal("Your soul").withColor(0x55FFFF),
 					Component.literal("The Paths will open from here.").withColor(0xAAAAAA)), java.util.Optional.empty(), mouseX, mouseY);
 		}
-		g.centeredText(this.font, Component.literal("1 point for every boss tier beaten for the first time").withColor(0x808080), cx,
-				top + 200, WHITE);
-		g.centeredText(this.font, Component.literal("Right-click: add · Left-click: take back · Shift: x10").withColor(0x808080), cx,
-				top + 212, WHITE);
+		// The Soul Point counter: free points, with a small soul beside them.
+		int free = SoulNexus.free(data);
+		String count = Integer.toString(free);
+		int counterW = 12 + this.font.width(count);
+		int counterX = cx - counterW / 2;
+		int counterY = top + 192;
+		drawOrb(g, counterX + 4, counterY + 4, 4, 0xFF55FFFF);
+		drawOrb(g, counterX + 4, counterY + 4, 2, 0xFFCCFFFF);
+		g.text(this.font, Component.literal(count).withColor(free > 0 ? 0x55FFFF : 0xAAAAAA), counterX + 12, counterY, WHITE, false);
+		if (mouseX >= counterX - 2 && mouseX < counterX + counterW + 2 && mouseY >= counterY - 2 && mouseY < counterY + 10) {
+			g.setTooltipForNextFrame(this.font, List.of(Component.literal("Gain a ").withColor(0xFFFFFF)
+					.append(Component.literal("Soul Point").withColor(0x55FFFF))
+					.append(Component.literal(" for every new boss you hunt!").withColor(0xFFFFFF))), java.util.Optional.empty(), mouseX, mouseY);
+		}
+	}
+
+	private boolean shiftHeld;
+
+	/** Holding Shift (10 points per click) plays a soft menu click. */
+	@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if ((event.input() == InputConstants.KEY_LSHIFT || event.input() == InputConstants.KEY_RSHIFT) && !shiftHeld) {
+			shiftHeld = true;
+			this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+					net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.6F));
+		}
+		return super.keyPressed(event);
+	}
+
+	@Override
+	public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
+		if (event.input() == InputConstants.KEY_LSHIFT || event.input() == InputConstants.KEY_RSHIFT) {
+			shiftHeld = false;
+		}
+		return super.keyReleased(event);
 	}
 
 	private static String effect(int i, int points) {
@@ -148,14 +182,6 @@ public class SoulNexusScreen extends Screen {
 			case 0 -> "+" + points / 2 + " max health";
 			case 1 -> "-" + trim(points * 0.25) + "% damage taken";
 			default -> "+" + trim(points * 0.5) + "% damage";
-		};
-	}
-
-	private static String describe(int i) {
-		return switch (i) {
-			case 0 -> "2 points: +1 max health";
-			case 1 -> "1 point: 0.25% less damage taken (not Soul Strike)";
-			default -> "1 point: 0.5% more damage dealt";
 		};
 	}
 

@@ -189,7 +189,7 @@ public final class HuntLikeJeiPlugin implements IModPlugin {
 		}
 		list.add(factory.createAnvilRecipe(remains, List.of(new ItemStack(ModInterlude.HORSESHOE)), upgraded,
 				Identifier.fromNamespaceAndPath(HuntLike.MOD_ID, "anvil/horseshoe")));
-		// Growing Slime Ball: every enchantment below its maximum goes up one (books and armor). Shown per enchantment on
+		// Growing Slime Ball: every enchantment below its maximum goes up one (books and any enchanted item). Shown per enchantment on
 		// books, and on each diamond armor piece with Protection II and Unbreaking II.
 		var level = Minecraft.getInstance().level;
 		if (level != null) {
@@ -248,7 +248,7 @@ public final class HuntLikeJeiPlugin implements IModPlugin {
 				"Ritual Tokens: 10 Logs buy 64 Animal tokens, 5 Soul Sand buy 64 Cluster tokens. Interlude Tokens: 1 Gold Ingot buys 16.",
 				"The Hunt's trades are listed under the Alpha Altar's recipes.");
 		page(registration, ModInterlude.GROWING_SLIME_BALL,
-				"On an anvil, with an enchanted book or an armor piece: every enchantment below its maximum goes up one level. Costs 5 levels per enchantment raised.");
+				"On an anvil, with an enchanted book or any enchanted item: every enchantment below its maximum goes up one level. Costs 5 levels per enchantment raised.");
 		page(registration, ModInterlude.POMS_SKELETAL_REMAINS,
 				"Right-click to call Pom's skeletal horse; right-click again to send it away.",
 				"A Horseshoe on an anvil adds a star (up to 5). Each star makes the horse faster.");

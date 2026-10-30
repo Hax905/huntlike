@@ -3,15 +3,14 @@ package com.huntlike.interlude;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 /**
- * The Growing Slime Ball on an anvil: on an enchanted book or an armor piece, every enchantment below its maximum goes
- * up one level. Costs 5 levels per enchantment raised.
+ * The Growing Slime Ball on an anvil: on an enchanted book or any enchanted item (armor, weapons, tools), every
+ * enchantment below its maximum goes up one level. Costs 5 levels per enchantment raised.
  */
 public final class GrowingSlimeBall {
 	public static final int LEVELS_PER_ENCHANTMENT = 5;
@@ -24,11 +23,7 @@ public final class GrowingSlimeBall {
 		if (stack.is(Items.ENCHANTED_BOOK)) {
 			return DataComponents.STORED_ENCHANTMENTS;
 		}
-		var equippable = stack.get(DataComponents.EQUIPPABLE);
-		if (equippable != null && equippable.slot().getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
-			return DataComponents.ENCHANTMENTS;
-		}
-		return null;
+		return stack.isEnchanted() ? DataComponents.ENCHANTMENTS : null;
 	}
 
 	/** How many enchantments on this item can still go up a level. */

@@ -18,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import com.huntlike.interlude.ModInterlude;
 
 /**
- * The Growing Slime Ball on an anvil: an enchanted book or an armor piece on the left, the Slimeball on the right, and
+ * The Growing Slime Ball on an anvil: an enchanted book or any enchanted item on the left, the Slimeball on the right, and
  * every enchantment below its maximum goes up one level, for 5 levels per enchantment raised (see GrowingSlimeBall). A Horseshoe on Pom's
  * Skeletal Remains adds a star (up to 5) for 5 levels.
  */

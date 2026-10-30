@@ -59,7 +59,7 @@ public final class ModInterlude {
 	public static final Item GROWING_SLIME_BALL = ModItems.register("growing_slime_ball", Item::new, new Item.Properties()
 			.rarity(Rarity.RARE).component(DataComponents.LORE, new ItemLore(lore(
 					"A fragment of Bartholomew. His courage and valor keep him alive, and for some reason it was a weird reaction "
-							+ "with enchanted books. (Use it)"))));
+							+ "with enchantments. (Use it)"))));
 	public static final Item POMS_SKELETAL_REMAINS = ModItems.register("poms_skeletal_remains", RemainsItem::new, new Item.Properties()
 			.stacksTo(1).rarity(Rarity.EPIC).component(DataComponents.LORE, new ItemLore(lines("The bones are alive!", "(Right-Click)"))));
 

@@ -1604,7 +1604,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		final Object[] wand = new Object[7];
 		assertServer(singleplayer, "Magnetic Wand bought; it catches a cow, a boss and a dropped item but not a tamed wolf", server -> {
 			ServerPlayer player = player(server);
-			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
+			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Entity.class, player.getBoundingBox().inflate(40),
+					e -> e instanceof net.minecraft.world.entity.Mob || e instanceof net.minecraft.world.entity.item.ItemEntity
+							|| e instanceof net.minecraft.world.entity.ExperienceOrb)) {
 				e.discard();
 			}
 			boolean bought = false;
@@ -1956,9 +1958,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		check(singleplayer, "Stage III won", data -> data.progress("slime_rider").bossKills[2] >= 1);
 
-		// The Growing Slime Ball on an anvil: every enchantment below its maximum goes up one, 5 levels each; books and
-		// armor only.
-		assertServer(singleplayer, "Growing Slime Ball raises every enchantment of a book or armor piece by one level", server -> {
+		// The Growing Slime Ball on an anvil: every enchantment below its maximum goes up one, 5 levels each; books and any
+		// enchanted item.
+		assertServer(singleplayer, "Growing Slime Ball raises every enchantment of a book or enchanted item by one level", server -> {
 			ServerPlayer player = player(server);
 			var registry = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
 			var sharpness = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
@@ -1990,16 +1992,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var chest = menu.getSlot(2).getItem().get(applied);
 			int chestCost = menu.getCost();
 			boolean chestOk = chest != null && chest.getLevel(protection) == 4 && chest.getLevel(unbreaking) == 3 && chestCost == 5;
-			// Refused: a maxed book, and a sword.
+			// Sword: Sharpness II -> III, 5 levels.
+			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.DIAMOND_SWORD, new Object[] {sharpness, 2}));
+			menu.createResult();
+			var sword = menu.getSlot(2).getItem().get(applied);
+			boolean swordOk = sword != null && sword.getLevel(sharpness) == 3 && menu.getCost() == 5;
+			// Refused: a maxed book, and an unenchanted sword.
 			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.ENCHANTED_BOOK, new Object[] {sharpness, 5}));
 			menu.createResult();
 			boolean maxedRefused = menu.getSlot(2).getItem().isEmpty();
-			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.DIAMOND_SWORD, new Object[] {sharpness, 2}));
+			menu.getSlot(0).set(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
 			menu.createResult();
-			boolean swordRefused = menu.getSlot(2).getItem().isEmpty();
-			HuntLike.LOGGER.info("[test] Growing Slime Ball: book {} cost {}; chestplate {} cost {}; maxed refused {}; sword refused {}",
-					book, bookCost, chest, chestCost, maxedRefused, swordRefused);
-			return bookOk && chestOk && maxedRefused && swordRefused;
+			boolean plainRefused = menu.getSlot(2).getItem().isEmpty();
+			HuntLike.LOGGER.info("[test] Growing Slime Ball: book {} cost {}; chestplate {} cost {}; sword {}; maxed refused {}; plain refused {}",
+					book, bookCost, chest, chestCost, sword, maxedRefused, plainRefused);
+			return bookOk && chestOk && swordOk && maxedRefused && plainRefused;
 		});
 
 		// Pom's Skeletal Remains: a saddled skeleton horse with the player on it; again, and it's gone.

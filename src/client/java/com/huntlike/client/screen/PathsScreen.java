@@ -79,7 +79,7 @@ public class PathsScreen extends Screen {
 	}
 
 	private int originY() {
-		return (int) (top + 64 + panY);
+		return (int) (top + 72 + panY);
 	}
 
 	private int[] node(int i) {
@@ -119,7 +119,19 @@ public class PathsScreen extends Screen {
 		g.text(this.font, title, left + W / 2 - this.font.width(title) / 2, top + 7, 0xFF404040, false);
 		g.fill(mapX0(), mapY0(), mapX1(), mapY1(), 0xFF0C0A12);
 		g.enableScissor(mapX0(), mapY0(), mapX1(), mapY1());
-		drawBricks(g);
+		drawPortal(g);
+		if (WildfirePath.discovered(data)) {
+			// The Path of the Wildfire's own ground: nether bricks in a lava frame.
+			int[] r = wildfireArea();
+			g.enableScissor(r[0], r[1], r[2], r[3]);
+			drawBricks(g);
+			g.disableScissor();
+			var lava = block("lava_still");
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1] - 2, r[2] - r[0] + 4, 2);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[3], r[2] - r[0] + 4, 2);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1], 2, r[3] - r[1]);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[2], r[1], 2, r[3] - r[1]);
+		}
 		List<Component> tooltip = null;
 		if (!WildfirePath.discovered(data)) {
 			Component none = Component.literal("No Paths discovered yet...").withStyle(style -> style.withItalic(true)).withColor(0x808080);
@@ -143,7 +155,33 @@ public class PathsScreen extends Screen {
 	private static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",
 			"chiseled_nether_bricks"};
 
-	/** The map's floor: a random mix of nether bricks that moves with the map. */
+	private static final net.minecraft.resources.Identifier END_PORTAL = net.minecraft.resources.Identifier.withDefaultNamespace(
+			"textures/entity/end_portal.png");
+
+	/** The Paths map's floor: the end portal's starfield, darkened, drifting slowly and moving with the map. */
+	private void drawPortal(GuiGraphicsExtractor g) {
+		int size = 256;
+		double drift = System.currentTimeMillis() / 200.0 % size;
+		int ox = (int) Math.floor(panX * 0.5 + drift);
+		int oy = (int) Math.floor(panY * 0.5);
+		for (int y = mapY0() + Math.floorMod(oy, size) - size; y < mapY1(); y += size) {
+			for (int x = mapX0() + Math.floorMod(ox, size) - size; x < mapX1(); x += size) {
+				g.blit(RenderPipelines.GUI_TEXTURED, END_PORTAL, x, y, 0.0F, 0.0F, size, size, size, size);
+			}
+		}
+		g.fill(mapX0(), mapY0(), mapX1(), mapY1(), 0x99000000);
+	}
+
+	/** The area the Path of the Wildfire covers on the map: left, top, right, bottom. */
+	private int[] wildfireArea() {
+		int left = node(0)[0] - 14;
+		int right = node(WildfirePath.GOALS.size() - 1)[0] + NODE + 14;
+		int top = originY() - 46;
+		int bottom = buff(Buff.WARM_HEART.ordinal())[1] + BUFF + 12;
+		return new int[] {left, top, right, bottom};
+	}
+
+	/** The Path of the Wildfire's floor: a random mix of nether bricks that moves with the map. */
 	private void drawBricks(GuiGraphicsExtractor g) {
 		int ox = (int) Math.floor(panX);
 		int oy = (int) Math.floor(panY);

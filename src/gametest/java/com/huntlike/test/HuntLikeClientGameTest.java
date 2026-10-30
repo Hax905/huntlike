@@ -3109,6 +3109,26 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("96c-soul-nexus-damage");
 		context.setScreen(() -> null);
 		context.waitTicks(3);
+		// Spiritual animals glow light blue for their hunter.
+		final int[] spirit = new int[1];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
+			cow.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0.0F, 0.0F);
+			player.level().addFreshEntity(cow);
+			spirit[0] = cow.getId();
+			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
+					new com.huntlike.network.HuntPayloads.Highlight(cow.getId(), 100));
+		});
+		context.waitTicks(10);
+		boolean blue = context.computeOnClient(client -> {
+			var cow = client.level.getEntity(spirit[0]);
+			return cow != null && client.shouldEntityAppearGlowing(cow) && cow.getTeamColor() == 0x55FFFF;
+		});
+		HuntLike.LOGGER.info("[test] spiritual animal outline light blue: {}", blue);
+		if (!blue) {
+			throw new AssertionError("Spiritual animal outline isn't light blue");
+		}
 	}
 
 	private static void assertServer(TestSingleplayerContext singleplayer, String what,

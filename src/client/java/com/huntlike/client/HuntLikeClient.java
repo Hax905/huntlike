@@ -18,7 +18,8 @@ public class HuntLikeClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.Sync.TYPE,
 				(payload, context) -> ClientHuntState.update(payload.tag()));
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.OpenMenu.TYPE,
-				(payload, context) -> context.client().gui.setScreen(new HuntMenuScreen(payload.tab())));
+				(payload, context) -> context.client().gui.setScreen(payload.tab() == com.huntlike.nexus.SoulNexus.SCREEN_TAB
+						? new com.huntlike.client.screen.SoulNexusScreen() : new HuntMenuScreen(payload.tab())));
 		ClientPlayNetworking.registerGlobalReceiver(HuntPayloads.Highlight.TYPE, (payload, context) -> {
 			ClientHuntState.highlights.put(payload.entityId(), context.client().level.getGameTime() + payload.ticks());
 		});

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "X": "huntlike:soul_stone",
+    "A": "minecraft:amethyst_shard",
+    "B": "minecraft:book",
+    "O": "minecraft:obsidian"
+  },
+  "pattern": [
+    " X ",
+    "ABA",
+    "OOO"
+  ],
+  "result": {
+    "count": 1,
+    "id": "huntlike:soul_nexus"
+  }
+}

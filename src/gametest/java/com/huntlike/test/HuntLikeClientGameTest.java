@@ -205,6 +205,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			rogueHunters(context, singleplayer);
 			towernaar(context, singleplayer);
 			slimeRider(context, singleplayer);
+			soulNexus(context, singleplayer);
 			assertServer(singleplayer, "Ovis Ammon spawns in random wool colors", server -> {
 				ServerPlayer player = player(server);
 				java.util.Set<net.minecraft.world.item.DyeColor> colors = new java.util.HashSet<>();
@@ -3048,6 +3049,66 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	private static boolean hasAdvancement(ServerPlayer player, String path) {
 		var holder = player.level().getServer().getAdvancements().get(HuntLike.id(path));
 		return holder != null && player.getAdvancements().getOrStartProgress(holder).isDone();
+	}
+
+	/** The Soul Nexus: points from first boss kills, the three corners, the cap, taking points back, and their effects. */
+	private static void soulNexus(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			for (String hunt : new String[] {"animal", "cluster"}) {
+				for (int i = 0; i < 5; i++) {
+					data.progress(hunt).bossKills[i] = Math.max(1, data.progress(hunt).bossKills[i]);
+				}
+			}
+			for (int i = 0; i < 3; i++) {
+				data.progress("slime_rider").bossKills[i] = Math.max(1, data.progress("slime_rider").bossKills[i]);
+			}
+			data.nexusHealth = 0;
+			data.nexusDefense = 0;
+			data.nexusDamage = 0;
+			player.setAttached(QuestManager.DATA, data);
+			var pos = player.blockPosition().relative(player.getDirection(), 2);
+			player.level().setBlockAndUpdate(pos, com.huntlike.registry.ModBlocks.SOUL_NEXUS.defaultBlockState());
+			QuestManager.openNexus(player);
+		});
+		context.waitForScreen(com.huntlike.client.screen.SoulNexusScreen.class);
+		context.waitTicks(5);
+		check(singleplayer, "13 Soul Points: 5 + 5 boss tiers and 3 Interlude stages", data -> com.huntlike.nexus.SoulNexus.earned(data) == 13);
+		context.takeScreenshot("96a-soul-nexus-empty");
+		java.util.function.BiConsumer<String, Integer> send = (corner, value) -> context.runOnClient(client ->
+				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new com.huntlike.network.HuntPayloads.Action("nexus", corner, value)));
+		send.accept("health", 10);
+		context.waitTicks(5);
+		send.accept("defense", 10);
+		context.waitTicks(5);
+		send.accept("damage", 1);
+		context.waitTicks(10);
+		context.takeScreenshot("96b-soul-nexus-spent");
+		check(singleplayer, "Health 10 (capped), Defense 3 (all that's left), Damage refused",
+				data -> data.nexusHealth == 10 && data.nexusDefense == 3 && data.nexusDamage == 0);
+		assertServer(singleplayer, "Health 10 gives +5 max health; Defense 3 means 1.5% less damage", server -> {
+			ServerPlayer player = player(server);
+			var modifier = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH)
+					.getModifier(HuntLike.id("soul_nexus_health"));
+			HuntData data = QuestManager.data(player);
+			return modifier != null && modifier.amount() == 5.0
+					&& Math.abs(com.huntlike.nexus.SoulNexus.defenseFactor(data) - 0.985F) < 1.0E-4F;
+		});
+		send.accept("health", -10);
+		context.waitTicks(5);
+		send.accept("damage", 10);
+		context.waitTicks(10);
+		check(singleplayer, "points taken back from Health go to Damage", data -> data.nexusHealth == 0 && data.nexusDamage == 10);
+		assertServer(singleplayer, "no Health points: the max health bonus is gone; Damage 10 is +10%", server -> {
+			ServerPlayer player = player(server);
+			var modifier = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH)
+					.getModifier(HuntLike.id("soul_nexus_health"));
+			return modifier == null && Math.abs(com.huntlike.nexus.SoulNexus.damageFactor(QuestManager.data(player)) - 1.1F) < 1.0E-4F;
+		});
+		context.takeScreenshot("96c-soul-nexus-damage");
+		context.setScreen(() -> null);
+		context.waitTicks(3);
 	}
 
 	private static void assertServer(TestSingleplayerContext singleplayer, String what,

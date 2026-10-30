@@ -51,6 +51,10 @@ public final class HuntData {
 	public int interludeTokens;
 	/** Used the Magnetic Wand PRD: the Magnetic Wand trade is open. */
 	public boolean wandUnlocked;
+	/** Soul Nexus points on each corner. */
+	public int nexusHealth;
+	public int nexusDefense;
+	public int nexusDamage;
 	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
 	public int dailyCharges = DAILY_CHARGES;
 	public long dailyDay = -1;
@@ -112,6 +116,9 @@ public final class HuntData {
 		tag.putInt("towernaarKillBase", towernaarKillBase);
 		tag.putBoolean("wandUnlocked", wandUnlocked);
 		tag.putInt("interludeTokens", interludeTokens);
+		tag.putInt("nexusHealth", nexusHealth);
+		tag.putInt("nexusDefense", nexusDefense);
+		tag.putInt("nexusDamage", nexusDamage);
 		tag.putInt("dailyCharges", dailyCharges);
 		tag.putLong("dailyDay", dailyDay);
 		CompoundTag hunts = new CompoundTag();
@@ -167,6 +174,9 @@ public final class HuntData {
 		data.towernaarKillBase = tag.getIntOr("towernaarKillBase", 0);
 		data.wandUnlocked = tag.getBooleanOr("wandUnlocked", false);
 		data.interludeTokens = tag.getIntOr("interludeTokens", 0);
+		data.nexusHealth = tag.getIntOr("nexusHealth", 0);
+		data.nexusDefense = tag.getIntOr("nexusDefense", 0);
+		data.nexusDamage = tag.getIntOr("nexusDamage", 0);
 		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
 		data.dailyDay = tag.getLongOr("dailyDay", -1L);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");

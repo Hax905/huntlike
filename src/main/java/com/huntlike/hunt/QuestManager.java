@@ -149,6 +149,11 @@ public final class QuestManager {
 		ServerPlayNetworking.send(player, new HuntPayloads.OpenMenu(0));
 	}
 
+	public static void openNexus(ServerPlayer player) {
+		sync(player);
+		ServerPlayNetworking.send(player, new HuntPayloads.OpenMenu(com.huntlike.nexus.SoulNexus.SCREEN_TAB));
+	}
+
 	private static void handleAction(ServerPlayer player, HuntPayloads.Action action) {
 		HuntData data = data(player);
 		Hunt hunt = HuntDefs.hunt(action.hunt());
@@ -174,6 +179,11 @@ public final class QuestManager {
 			case "yummy_key" -> {
 				ClusterFight.onYummyKey(player, action.value());
 				return;
+			}
+			case "nexus" -> {
+				if (com.huntlike.nexus.SoulNexus.isCorner(action.hunt()) && action.value() != 0) {
+					com.huntlike.nexus.SoulNexus.change(player, data, action.hunt(), action.value());
+				}
 			}
 			case "hint_seen" -> {
 				data.hintSeen = true;

@@ -120,7 +120,7 @@ public final class GearEffects {
 				amount *= 1.0F - set.animalReduction();
 			}
 		}
-		return amount;
+		return com.huntlike.nexus.SoulNexus.adjust(target, source, amount);
 	}
 
 	/** Egg Shell: a full set of Animal Hunt Armor ignores Egg Blaster's eggs. */

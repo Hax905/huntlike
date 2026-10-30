@@ -204,5 +204,7 @@
   "item.huntlike.a_phone": "A-Phone",
   "item.huntlike.horseshoe": "Horseshoe",
   "item.huntlike.bouncy_slime_ball": "Bouncy Slime Ball",
-  "item.huntlike.slimy_rebounders": "Slimy Rebounders"
+  "item.huntlike.slimy_rebounders": "Slimy Rebounders",
+  "block.huntlike.soul_nexus": "Soul Nexus",
+  "block.huntlike.soul_nexus.desc": "Shape your soul with the strength of the bosses you have slain."
 }

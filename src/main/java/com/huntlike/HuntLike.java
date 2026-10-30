@@ -46,6 +46,7 @@ public class HuntLike implements ModInitializer {
 		com.huntlike.hunt.WolfTreats.initialize();
 		HuntCommand.initialize();
 		com.huntlike.nexus.SoulNexus.initialize();
+		com.huntlike.path.ModPaths.initialize();
 		LOGGER.info("HuntLike loaded. The Alpha Altar is listening...");
 	}
 

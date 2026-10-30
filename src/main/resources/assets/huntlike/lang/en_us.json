@@ -206,5 +206,10 @@
   "item.huntlike.bouncy_slime_ball": "Bouncy Slime Ball",
   "item.huntlike.slimy_rebounders": "Slimy Rebounders",
   "block.huntlike.soul_nexus": "Soul Nexus",
-  "block.huntlike.soul_nexus.desc": "Shape your soul with the strength of the bosses you have slain."
+  "block.huntlike.soul_nexus.desc": "Shape your soul with the strength of the bosses you have slain.",
+  "item.huntlike.blazing_heart": "Blazing Heart",
+  "item.huntlike.blazing_heart_star": "Blazing Heart ★",
+  "item.huntlike.blazing_heart_star2": "Blazing Heart ★★",
+  "entity.huntlike.blazing_piglin": "Blazing Piglin",
+  "entity.huntlike.blazing_wither_skeleton": "Blazing Wither Skeleton"
 }

@@ -206,6 +206,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			towernaar(context, singleplayer);
 			slimeRider(context, singleplayer);
 			soulNexus(context, singleplayer);
+			wildfire(context, singleplayer);
 			assertServer(singleplayer, "Ovis Ammon spawns in random wool colors", server -> {
 				ServerPlayer player = player(server);
 				java.util.Set<net.minecraft.world.item.DyeColor> colors = new java.util.HashSet<>();
@@ -3049,6 +3050,148 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 	private static boolean hasAdvancement(ServerPlayer player, String path) {
 		var holder = player.level().getServer().getAdvancements().get(HuntLike.id(path));
 		return holder != null && player.getAdvancements().getOrStartProgress(holder).isDone();
+	}
+
+	/** Path of the Wildfire: the Blazing Heart, its goals, the Blazing mobs, the buffs and the Paths screen. */
+	private static void wildfire(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		assertServer(singleplayer, "Blazing Heart chance: 2%, +1% per Looting level", server -> {
+			HuntData data = QuestManager.data(player(server));
+			return data.wildfireGoals == 0 && com.huntlike.path.WildfirePath.heartChance(data, 0) == 2
+					&& com.huntlike.path.WildfirePath.heartChance(data, 3) == 5;
+		});
+		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("97a-paths-undiscovered");
+		context.setScreen(() -> null);
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+			player.getInventory().clearContent();
+			player.getInventory().add(new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART, 2));
+		});
+		context.waitTicks(30);
+		check(singleplayer, "holding a Blazing Heart discovers the Path (goal 1)", data -> data.wildfireGoals == 1
+				&& com.huntlike.path.WildfirePath.heartChance(data, 0) == 3);
+		assertServer(singleplayer, "eating it: full hunger, on fire, fire beam on; goal 2", server -> {
+			ServerPlayer player = player(server);
+			player.getFoodData().setFoodLevel(2);
+			var stack = player.getInventory().getItem(player.getInventory().findSlotMatchingItem(
+					new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART)));
+			int duration = stack.getUseDuration(player);
+			stack.finishUsingItem(player.level(), player);
+			HuntData data = QuestManager.data(player);
+			HuntLike.LOGGER.info("[test] Blazing Heart eaten: duration {} food {} fire {} beam {} goals {}", duration,
+					player.getFoodData().getFoodLevel(), player.isOnFire(), com.huntlike.path.WildfirePath.beaming(player), data.wildfireGoals);
+			return duration == 96 && player.getFoodData().getFoodLevel() == 20 && player.isOnFire()
+					&& com.huntlike.path.WildfirePath.beaming(player) && data.wildfireGoals == 2;
+		});
+		context.waitTicks(70);
+		assertServer(singleplayer, "the 100th blaze slain reaches goal 3", server -> {
+			ServerPlayer player = player(server);
+			player.clearFire();
+			player.setHealth(player.getMaxHealth());
+			HuntData data = QuestManager.data(player);
+			data.wildfireBlazes = 99;
+			player.setAttached(QuestManager.DATA, data);
+			var blaze = EntityTypes.BLAZE.create(player.level(), EntitySpawnReason.COMMAND);
+			blaze.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0.0F, 0.0F);
+			player.level().addFreshEntity(blaze);
+			blaze.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+			data = QuestManager.data(player);
+			return data.wildfireGoals == 3 && com.huntlike.path.WildfirePath.heartChance(data, 0) == 5;
+		});
+		final java.util.UUID[] mob = new java.util.UUID[1];
+		assertServer(singleplayer, "a Blazing Heart turns a piglin into a Blazing Piglin (60 health, 10 damage, 20% bigger) after its feeder",
+				server -> {
+					ServerPlayer player = player(server);
+					var piglin = EntityTypes.PIGLIN.create(player.level(), EntitySpawnReason.COMMAND);
+					piglin.snapTo(player.getX(), player.getY(), player.getZ() + 4, 180.0F, 0.0F);
+					player.level().addFreshEntity(piglin);
+					var stack = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART);
+					com.huntlike.path.WildfirePath.feed(player, piglin, stack);
+					var found = player.level().getEntitiesOfClass(com.huntlike.path.BlazingPiglin.class, player.getBoundingBox().inflate(10));
+					if (found.size() != 1) {
+						return false;
+					}
+					var blazing = found.get(0);
+					mob[0] = blazing.getUUID();
+					return piglin.isRemoved() && stack.isEmpty() && blazing.getMaxHealth() == 60.0F
+							&& blazing.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 10.0
+							&& Math.abs(blazing.getScale() - 1.2F) < 0.01F && blazing.getTarget() == player;
+				});
+		context.getInput().lookAt(new net.minecraft.core.BlockPos(0, -59, 6));
+		context.waitTicks(20);
+		context.takeScreenshot("97b-blazing-piglin");
+		assertServer(singleplayer, "slaying it drops a Blazing Heart ★ and reaches goal 4", server -> {
+			ServerPlayer player = player(server);
+			var blazing = (net.minecraft.world.entity.LivingEntity) player.level().getEntity(mob[0]);
+			blazing.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+			boolean star = !player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR)).isEmpty();
+			return star && QuestManager.data(player).wildfireGoals == 4;
+		});
+		assertServer(singleplayer, "two Blazing Hearts ★ make a Blazing Wither Skeleton (80 health, 12 damage, 30% bigger)", server -> {
+			ServerPlayer player = player(server);
+			player.setHealth(player.getMaxHealth());
+			var skeleton = EntityTypes.WITHER_SKELETON.create(player.level(), EntitySpawnReason.COMMAND);
+			skeleton.snapTo(player.getX(), player.getY(), player.getZ() + 5, 180.0F, 0.0F);
+			player.level().addFreshEntity(skeleton);
+			var stars = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR, 2);
+			com.huntlike.path.WildfirePath.feed(player, skeleton, stars);
+			boolean halfway = !skeleton.isRemoved() && stars.getCount() == 1;
+			com.huntlike.path.WildfirePath.feed(player, skeleton, stars);
+			var found = player.level().getEntitiesOfClass(com.huntlike.path.BlazingWitherSkeleton.class, player.getBoundingBox().inflate(10));
+			if (found.size() != 1) {
+				return false;
+			}
+			var blazing = found.get(0);
+			mob[0] = blazing.getUUID();
+			return halfway && skeleton.isRemoved() && stars.isEmpty() && blazing.getMaxHealth() == 80.0F
+					&& blazing.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 12.0
+					&& Math.abs(blazing.getScale() - 1.3F) < 0.01F;
+		});
+		context.waitTicks(10);
+		context.takeScreenshot("97c-blazing-wither-skeleton");
+		assertServer(singleplayer, "it opens with a wither skull; slaying it drops a Wither Skeleton Skull and a Blazing Heart ★★ (goal 5)",
+				server -> {
+					ServerPlayer player = player(server);
+					var blazing = (com.huntlike.path.BlazingWitherSkeleton) player.level().getEntity(mob[0]);
+					boolean skull = blazing.skullsShot >= 1;
+					blazing.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+					var items = player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(12));
+					boolean head = items.stream().anyMatch(e -> e.getItem().is(net.minecraft.world.item.Items.WITHER_SKELETON_SKULL));
+					boolean star2 = items.stream().anyMatch(e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2));
+					HuntLike.LOGGER.info("[test] Blazing Wither Skeleton: skull shot {} head {} star2 {} goals {}", skull, head, star2,
+							QuestManager.data(player).wildfireGoals);
+					player.setHealth(player.getMaxHealth());
+					player.removeEffect(net.minecraft.world.effect.MobEffects.WITHER);
+					return skull && head && star2 && QuestManager.data(player).wildfireGoals == 5;
+				});
+		java.util.function.BiConsumer<Integer, Integer> send = (buff, value) -> context.runOnClient(client ->
+				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+						new com.huntlike.network.HuntPayloads.Action("wildfire_buff", Integer.toString(buff), value)));
+		for (int i = 0; i < 5; i++) {
+			send.accept(i, 1);
+			context.waitTicks(3);
+		}
+		context.waitTicks(5);
+		check(singleplayer, "5 Wildfire points buy all 5 buffs", data -> data.wildfireBuffs == 31
+				&& com.huntlike.path.WildfirePath.free(data) == 0);
+		send.accept(4, -1);
+		context.waitTicks(8);
+		check(singleplayer, "a buff can be given back for its point", data -> data.wildfireBuffs == 15
+				&& com.huntlike.path.WildfirePath.free(data) == 1);
+		assertServer(singleplayer, "Fire Resistance: 25% less fire damage; Warm Heart: hearts eaten in half the time", server -> {
+			ServerPlayer player = player(server);
+			float fire = com.huntlike.path.WildfirePath.adjust(player, player.level().damageSources().inFire(), 8.0F);
+			int duration = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART).getUseDuration(player);
+			return Math.abs(fire - 6.0F) < 1.0E-4F && duration == 48;
+		});
+		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("97d-paths-wildfire");
+		context.setScreen(() -> null);
+		context.waitTicks(3);
 	}
 
 	/** The Soul Nexus: points from first boss kills, the three corners, the cap, taking points back, and their effects. */

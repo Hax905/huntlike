@@ -39,6 +39,11 @@ public abstract class MinecraftMixin {
 			cir.setReturnValue(client.player != null && hunted.equals(client.player.getUUID()));
 			return;
 		}
+		// The Blazing mobs: a white outline for now, until their own sprites are ready.
+		if (entity instanceof com.huntlike.path.BlazingPiglin || entity instanceof com.huntlike.path.BlazingWitherSkeleton) {
+			cir.setReturnValue(true);
+			return;
+		}
 		Long until = ClientHuntState.highlights.get(entity.getId());
 		if (until != null) {
 			if (entity.level().getGameTime() < until) {

@@ -88,6 +88,9 @@ public final class ModCreativeTab {
 		register(BLOCKS, ModBlocks.ALPHA_ALTAR, output -> {
 			output.accept(ModBlocks.ALPHA_ALTAR);
 			output.accept(ModBlocks.SOUL_NEXUS);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2);
 			output.accept(ModItems.A_PHONE);
 			output.accept(ModBlocks.SOUL_MONOLITH);
 			output.accept(ModBlocks.UPGRADED_SOUL_MONOLITH);

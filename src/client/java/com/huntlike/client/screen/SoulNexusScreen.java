@@ -26,8 +26,8 @@ public class SoulNexusScreen extends Screen {
 	private static final int W = 300;
 	private static final int H = 212;
 	private static final int RADIUS = 58;
-	private static final int CORNER_W = 34;
-	private static final int CORNER_H = 34;
+	private static final int CORNER_W = 32;
+	private static final int CORNER_H = 28;
 	private static final int CYAN = 0xFF55FFFF;
 	private static final int DIM = 0xFF3A6A78;
 	private static final int WHITE = 0xFFFFFFFF;
@@ -86,7 +86,8 @@ public class SoulNexusScreen extends Screen {
 		left = (this.width - W) / 2;
 		top = (this.height - H) / 2;
 		cx = left + W / 2;
-		cy = top + 114;
+		// The triangle's height (soul included) is centered in the window's content area.
+		cy = top + 126;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/window"), left, top, W, H);
 		Component title = Component.literal("Soul Nexus").withStyle(style -> style.withBold(true)).withColor(0x404040);
 		g.text(this.font, title, cx - this.font.width(title) / 2, top + 7, 0xFF404040, false);
@@ -124,12 +125,12 @@ public class SoulNexusScreen extends Screen {
 			Component symbol = Component.literal(SYMBOLS[i]).withColor(COLORS[i] & 0xFFFFFF);
 			var pose = g.pose();
 			pose.pushMatrix();
-			pose.translate(b[0] + b[2] / 2.0F, sy + 1);
-			pose.scale(2.0F, 2.0F);
+			pose.translate(b[0] + b[2] / 2.0F, sy);
+			pose.scale(1.5F, 1.5F);
 			g.text(this.font, symbol, -this.font.width(symbol) / 2, 0, WHITE, true);
 			pose.popMatrix();
 			g.centeredText(this.font, Component.literal(points + "/" + SoulNexus.CAP).withColor(points >= SoulNexus.CAP ? 0xFFAA00 : 0xFFFFFF),
-					b[0] + b[2] / 2, b[1] + 22, WHITE);
+					b[0] + b[2] / 2, b[1] + 18, WHITE);
 			if (hover) {
 				g.setTooltipForNextFrame(this.font, List.of(Component.literal(NAMES[i]).withColor(COLORS[i] & 0xFFFFFF),
 						Component.literal(points + "/" + SoulNexus.CAP).withColor(0xFFFFFF),
@@ -147,7 +148,7 @@ public class SoulNexusScreen extends Screen {
 		String count = Integer.toString(free);
 		int counterW = 12 + this.font.width(count);
 		int counterX = cx - counterW / 2;
-		int counterY = top + 192;
+		int counterY = top + 195;
 		drawOrb(g, counterX + 4, counterY + 4, 4, 0xFF55FFFF);
 		drawOrb(g, counterX + 4, counterY + 4, 2, 0xFFCCFFFF);
 		g.text(this.font, Component.literal(count).withColor(free > 0 ? 0x55FFFF : 0xAAAAAA), counterX + 12, counterY, WHITE, false);
@@ -213,6 +214,12 @@ public class SoulNexusScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && overSoul(event.x(), event.y())) {
+			this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+					net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			this.minecraft.gui.setScreen(new PathsScreen(this));
+			return true;
+		}
 		boolean add = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;
 		boolean take = event.button() == InputConstants.MOUSE_BUTTON_LEFT;
 		if (add || take) {

@@ -120,6 +120,7 @@ public final class GearEffects {
 				amount *= 1.0F - set.animalReduction();
 			}
 		}
+		amount = com.huntlike.path.WildfirePath.adjust(target, source, amount);
 		return com.huntlike.nexus.SoulNexus.adjust(target, source, amount);
 	}
 

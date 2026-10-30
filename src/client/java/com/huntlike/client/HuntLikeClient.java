@@ -50,6 +50,14 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(ModEntities.TOWERNAAR_UNDEAD, TowernaarUndeadRenderer::new);
 		EntityRendererRegistry.register(ModEntities.THROWN_END_STONE, ThrownItemRenderer::new);
 		com.huntlike.client.item.TexturedShieldRenderer.initialize();
+		// The Blazing mobs use the vanilla piglin and wither skeleton looks until their own sprites are ready.
+		EntityRendererRegistry.register(com.huntlike.path.ModPaths.BLAZING_PIGLIN, context -> new net.minecraft.client.renderer.entity.PiglinRenderer(
+				context, net.minecraft.client.model.geom.ModelLayers.PIGLIN, net.minecraft.client.model.geom.ModelLayers.PIGLIN_BABY,
+				net.minecraft.client.model.geom.ModelLayers.PIGLIN_ARMOR, net.minecraft.client.model.geom.ModelLayers.PIGLIN_BABY_ARMOR));
+		EntityRendererRegistry.register(com.huntlike.path.ModPaths.BLAZING_WITHER_SKELETON,
+				net.minecraft.client.renderer.entity.WitherSkeletonRenderer::new);
+		com.huntlike.path.WildfirePath.clientWarmHeart = () -> com.huntlike.path.WildfirePath.has(ClientHuntState.data,
+				com.huntlike.path.WildfirePath.Buff.WARM_HEART);
 		com.huntlike.client.entity.horns.Horns.registerLayers();
 		EntityRendererRegistry.register(com.huntlike.interlude.ModInterlude.POM, context -> new net.minecraft.client.renderer.entity.UndeadHorseRenderer(
 				context, net.minecraft.client.resources.model.EquipmentClientInfo.LayerType.ZOMBIE_HORSE_SADDLE,

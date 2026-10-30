@@ -185,6 +185,13 @@ public final class QuestManager {
 					com.huntlike.nexus.SoulNexus.change(player, data, action.hunt(), action.value());
 				}
 			}
+			case "wildfire_buff" -> {
+				try {
+					com.huntlike.path.WildfirePath.change(player, data, Integer.parseInt(action.hunt()), action.value());
+				} catch (NumberFormatException e) {
+					return;
+				}
+			}
 			case "hint_seen" -> {
 				data.hintSeen = true;
 				save(player, data);

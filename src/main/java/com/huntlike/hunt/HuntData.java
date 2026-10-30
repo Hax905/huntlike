@@ -55,6 +55,10 @@ public final class HuntData {
 	public int nexusHealth;
 	public int nexusDefense;
 	public int nexusDamage;
+	/** Path of the Wildfire: goals reached (0 = undiscovered), blazes slain on the Slay goal, buffs bought (bits). */
+	public int wildfireGoals;
+	public int wildfireBlazes;
+	public int wildfireBuffs;
 	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
 	public int dailyCharges = DAILY_CHARGES;
 	public long dailyDay = -1;
@@ -119,6 +123,9 @@ public final class HuntData {
 		tag.putInt("nexusHealth", nexusHealth);
 		tag.putInt("nexusDefense", nexusDefense);
 		tag.putInt("nexusDamage", nexusDamage);
+		tag.putInt("wildfireGoals", wildfireGoals);
+		tag.putInt("wildfireBlazes", wildfireBlazes);
+		tag.putInt("wildfireBuffs", wildfireBuffs);
 		tag.putInt("dailyCharges", dailyCharges);
 		tag.putLong("dailyDay", dailyDay);
 		CompoundTag hunts = new CompoundTag();
@@ -177,6 +184,9 @@ public final class HuntData {
 		data.nexusHealth = tag.getIntOr("nexusHealth", 0);
 		data.nexusDefense = tag.getIntOr("nexusDefense", 0);
 		data.nexusDamage = tag.getIntOr("nexusDamage", 0);
+		data.wildfireGoals = tag.getIntOr("wildfireGoals", 0);
+		data.wildfireBlazes = tag.getIntOr("wildfireBlazes", 0);
+		data.wildfireBuffs = tag.getIntOr("wildfireBuffs", 0);
 		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
 		data.dailyDay = tag.getLongOr("dailyDay", -1L);
 		CompoundTag hunts = tag.getCompoundOrEmpty("hunts");

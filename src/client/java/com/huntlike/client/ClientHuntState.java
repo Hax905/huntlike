@@ -25,7 +25,9 @@ public final class ClientHuntState {
 	public static int[] bossEntityIds = new int[0];
 	/** Spiritual Catalyst highlight: entity id and the client tick it ends at. */
 	/** Entities highlighted by the Spiritual Catalyst or Compass: id -> game time the glow ends. */
-	public static final java.util.Map<Integer, Long> highlights = new java.util.HashMap<>();
+	public static final java.util.Map<Integer, Long> highlights = new java.util.concurrent.ConcurrentHashMap<>();
+	/** The outline color of spiritual animals: light blue. */
+	public static final int SPIRIT_COLOR = 0x55FFFF;
 	public static List<String> huntable = new ArrayList<>();
 
 	public static void update(CompoundTag tag) {

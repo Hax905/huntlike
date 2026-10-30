@@ -3,6 +3,7 @@
 	"package": "com.huntlike.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"EntityMixin",
 		"MinecraftMixin"
 	],
 	"injectors": {

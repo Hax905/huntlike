@@ -281,6 +281,11 @@ public final class SpiritLure {
 		if (entity instanceof Mob glowing) {
 			glowing.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20 * 5, 0, false, false));
 		}
+		// Spiritual animals: the hunter sees them outlined in light blue.
+		if (hunt == HuntDefs.ANIMAL) {
+			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
+					new com.huntlike.network.HuntPayloads.Highlight(entity.getId(), 20 * 5));
+		}
 		SPAWNS_SINCE_KILL.merge(id, 1, Integer::sum);
 		entity.addTag(BossController.OWNER_PREFIX + id);
 		level.sendParticles(new DustParticleOptions(hunt.color(), 1.5F), entity.getX(), entity.getY() + 0.5, entity.getZ(),

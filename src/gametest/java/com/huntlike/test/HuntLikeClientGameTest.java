@@ -3201,6 +3201,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		assertServer(singleplayer, "after 3 minutes a Blazing Piglin turns into ashes, with no drops", server -> {
 			ServerPlayer player = player(server);
+			for (var item : player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(24))) {
+				item.discard();
+			}
 			var piglin = EntityTypes.PIGLIN.create(player.level(), EntitySpawnReason.COMMAND);
 			piglin.snapTo(player.getX() + 3, player.getY(), player.getZ() + 3, 0.0F, 0.0F);
 			player.level().addFreshEntity(piglin);

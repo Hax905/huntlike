@@ -1623,7 +1623,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					net.minecraft.world.level.ClipContext.Fluid.NONE, player));
 			var point = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? end : hit.getLocation();
 			var cow = EntityTypes.COW.create(player.level(), EntitySpawnReason.COMMAND);
-			cow.snapTo(point.x + 6.0, point.y, point.z, 0.0F, 0.0F);
+			cow.snapTo(point.x + 3.5, point.y, point.z, 0.0F, 0.0F);
 			player.level().addFreshEntity(cow);
 			var wolf = EntityTypes.WOLF.create(player.level(), EntitySpawnReason.COMMAND);
 			wolf.snapTo(point.x - 4.0, point.y, point.z, 0.0F, 0.0F);
@@ -1632,9 +1632,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			wolf.setInSittingPose(true);
 			player.level().addFreshEntity(wolf);
 			var cubert = com.huntlike.entity.ModEntities.CUBERT.create(player.level(), EntitySpawnReason.COMMAND);
-			cubert.snapTo(point.x, point.y, point.z - 5.0, 0.0F, 0.0F);
+			cubert.snapTo(point.x, point.y, point.z - 3.5, 0.0F, 0.0F);
 			player.level().addFreshEntity(cubert);
-			var bone = new net.minecraft.world.entity.item.ItemEntity(player.level(), point.x, point.y + 0.2, point.z + 5.0,
+			var bone = new net.minecraft.world.entity.item.ItemEntity(player.level(), point.x - 2.0, point.y + 0.2, point.z + 2.5,
 					new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BONE));
 			bone.setPickUpDelay(200);
 			player.level().addFreshEntity(bone);

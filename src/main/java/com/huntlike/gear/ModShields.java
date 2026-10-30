@@ -302,7 +302,11 @@ public final class ModShields {
 					attract(entity, field.point);
 					double dx = entity.getX() - field.point.x;
 					double dz = entity.getZ() - field.point.z;
-					allThere &= Math.sqrt(dx * dx + dz * dz) <= WAND_GATHERED;
+					// Creatures decide the bonus; items and orbs just come along. Big creatures (a boss) count once their
+					// body covers the spot.
+					if (entity instanceof LivingEntity) {
+						allThere &= Math.sqrt(dx * dx + dz * dz) <= Math.max(WAND_GATHERED, entity.getBbWidth() / 2.0);
+					}
 				}
 			}
 			// Everything caught is at the spot: the hold lasts a third longer (once).

@@ -17,7 +17,7 @@ import com.huntlike.gear.HideBoots;
 import com.huntlike.gear.ModGear;
 import com.huntlike.gear.ModKoro;
 
-/** The HuntLike tabs in the creative inventory: Drops, Gear and Blocks, in that order. */
+/** The HuntLike tabs in the creative inventory: Drops, Gear, Blocks and Paths, in that order. */
 public final class ModCreativeTab {
 	private ModCreativeTab() {
 	}
@@ -28,6 +28,8 @@ public final class ModCreativeTab {
 	public static final ResourceKey<CreativeModeTab> GEAR = key("gear");
 	/** Every block the mod adds. */
 	public static final ResourceKey<CreativeModeTab> BLOCKS = key("blocks");
+	/** Every drop and item from the Paths (Soul Nexus questlines). */
+	public static final ResourceKey<CreativeModeTab> PATHS = key("paths");
 
 	private static ResourceKey<CreativeModeTab> key(String id) {
 		return ResourceKey.create(BuiltInRegistries.CREATIVE_MODE_TAB.key(), HuntLike.id(id));
@@ -88,13 +90,16 @@ public final class ModCreativeTab {
 		register(BLOCKS, ModBlocks.ALPHA_ALTAR, output -> {
 			output.accept(ModBlocks.ALPHA_ALTAR);
 			output.accept(ModBlocks.SOUL_NEXUS);
-			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART);
-			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR);
-			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2);
 			output.accept(ModItems.A_PHONE);
 			output.accept(ModBlocks.SOUL_MONOLITH);
 			output.accept(ModBlocks.UPGRADED_SOUL_MONOLITH);
 			output.accept(ModBlocks.ANIMAL_TROPHY);
+		});
+		register(PATHS, com.huntlike.path.ModPaths.BLAZING_HEART, output -> {
+			// Path of the Wildfire
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2);
 		});
 	}
 }

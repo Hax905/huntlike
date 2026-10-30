@@ -44,6 +44,20 @@ public class BlazingPiglin extends Piglin {
 		BlazingMob.huntFeeder(this, level);
 	}
 
+	/** Its own target (a piglin's usually lives in its brain, which this one doesn't use). */
+	private net.minecraft.world.entity.LivingEntity huntTarget;
+
+	@Override
+	public void setTarget(net.minecraft.world.entity.LivingEntity target) {
+		super.setTarget(target);
+		this.huntTarget = target;
+	}
+
+	@Override
+	public net.minecraft.world.entity.LivingEntity getTarget() {
+		return huntTarget != null && huntTarget.isAlive() ? huntTarget : null;
+	}
+
 	@Override
 	protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
 		super.dropCustomDeathLoot(level, source, killedByPlayer);

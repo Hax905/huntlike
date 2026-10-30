@@ -3115,6 +3115,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					}
 					var blazing = found.get(0);
 					mob[0] = blazing.getUUID();
+					HuntLike.LOGGER.info("[test] Blazing Piglin: removed {} stack {} health {} damage {} scale {} target {}", piglin.isRemoved(),
+							stack.getCount(), blazing.getMaxHealth(),
+							blazing.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE), blazing.getScale(),
+							blazing.getTarget());
 					return piglin.isRemoved() && stack.isEmpty() && blazing.getMaxHealth() == 60.0F
 							&& blazing.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 10.0
 							&& Math.abs(blazing.getScale() - 1.2F) < 0.01F && blazing.getTarget() == player;

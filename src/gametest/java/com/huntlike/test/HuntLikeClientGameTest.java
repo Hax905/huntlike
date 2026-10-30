@@ -2691,6 +2691,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] after regrowing: {}", petInfo(server));
 			var pieces = petPieces(server);
 			var state = com.huntlike.pet.PetManager.latest(player(server));
+			HuntLike.LOGGER.info("[test] regrown pet health {} status {} storage {}", pieces.isEmpty() ? -1 : pieces.get(0).getHealth(),
+					state.status, state.storage.isEmpty() ? "-" : state.storage.get(0));
 			return pieces.size() == 1 && pieces.get(0).getSize() == 4 && pieces.get(0).getHealth() == 60.0F
 					&& state.status == com.huntlike.pet.PetState.WHOLE && state.storage.get(0).is(net.minecraft.world.item.Items.DIAMOND);
 		});

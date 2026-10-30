@@ -137,7 +137,7 @@ public class PathsScreen extends Screen {
 
 	private static net.minecraft.client.renderer.texture.TextureAtlasSprite block(String name) {
 		return net.minecraft.client.Minecraft.getInstance().getAtlasManager().get(new net.minecraft.client.resources.model.sprite.SpriteId(
-				net.minecraft.data.AtlasIds.BLOCKS, net.minecraft.resources.Identifier.withDefaultNamespace("block/" + name)));
+				net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS, net.minecraft.resources.Identifier.withDefaultNamespace("block/" + name)));
 	}
 
 	private static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",

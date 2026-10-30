@@ -3,14 +3,14 @@
   "category": "misc",
   "key": {
     "X": "huntlike:soul_stone",
-    "A": "minecraft:amethyst_shard",
+    "S": "minecraft:soul_sand",
     "B": "minecraft:book",
-    "O": "minecraft:obsidian"
+    "D": "minecraft:deepslate"
   },
   "pattern": [
     " X ",
-    "ABA",
-    "OOO"
+    "SBS",
+    "DDD"
   ],
   "result": {
     "count": 1,

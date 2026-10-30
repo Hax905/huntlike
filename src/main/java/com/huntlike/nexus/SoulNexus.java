@@ -17,8 +17,8 @@ import com.huntlike.interlude.InterludeDefs;
 
 /**
  * The Soul Nexus: 1 point for every boss tier (and Interlude stage) beaten for the first time, spent on three corners
- * of the soul, each capped at 10. Health: 2 points = +1 max health. Defense: 1 point = 0.5% less damage taken (Soul
- * Strike still lands in full). Damage: 1 point = +1% damage dealt. Points move freely between corners.
+ * of the soul, each capped at 10. Health: 2 points = +1 max health. Defense: 1 point = 0.25% less damage taken (Soul
+ * Strike still lands in full). Damage: 1 point = +0.5% damage dealt. Points move freely between corners.
  */
 public final class SoulNexus {
 	public static final int CAP = 10;
@@ -94,14 +94,14 @@ public final class SoulNexus {
 		return data.nexusHealth / 2;
 	}
 
-	/** Damage-taken multiplier from the Defense corner: 0.5% less per point. */
+	/** Damage-taken multiplier from the Defense corner: 0.25% less per point. */
 	public static float defenseFactor(HuntData data) {
-		return 1.0F - 0.005F * data.nexusDefense;
+		return 1.0F - 0.0025F * data.nexusDefense;
 	}
 
-	/** Damage-dealt multiplier from the Damage corner: 1% more per point. */
+	/** Damage-dealt multiplier from the Damage corner: 0.5% more per point. */
 	public static float damageFactor(HuntData data) {
-		return 1.0F + 0.01F * data.nexusDamage;
+		return 1.0F + 0.005F * data.nexusDamage;
 	}
 
 	/** Keeps the Health corner's max health modifier on the player. */

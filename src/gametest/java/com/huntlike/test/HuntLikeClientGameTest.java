@@ -3087,24 +3087,24 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("96b-soul-nexus-spent");
 		check(singleplayer, "Health 10 (capped), Defense 3 (all that's left), Damage refused",
 				data -> data.nexusHealth == 10 && data.nexusDefense == 3 && data.nexusDamage == 0);
-		assertServer(singleplayer, "Health 10 gives +5 max health; Defense 3 means 1.5% less damage", server -> {
+		assertServer(singleplayer, "Health 10 gives +5 max health; Defense 3 means 0.75% less damage", server -> {
 			ServerPlayer player = player(server);
 			var modifier = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH)
 					.getModifier(HuntLike.id("soul_nexus_health"));
 			HuntData data = QuestManager.data(player);
 			return modifier != null && modifier.amount() == 5.0
-					&& Math.abs(com.huntlike.nexus.SoulNexus.defenseFactor(data) - 0.985F) < 1.0E-4F;
+					&& Math.abs(com.huntlike.nexus.SoulNexus.defenseFactor(data) - 0.9925F) < 1.0E-4F;
 		});
 		send.accept("health", -10);
 		context.waitTicks(5);
 		send.accept("damage", 10);
 		context.waitTicks(10);
 		check(singleplayer, "points taken back from Health go to Damage", data -> data.nexusHealth == 0 && data.nexusDamage == 10);
-		assertServer(singleplayer, "no Health points: the max health bonus is gone; Damage 10 is +10%", server -> {
+		assertServer(singleplayer, "no Health points: the max health bonus is gone; Damage 10 is +5%", server -> {
 			ServerPlayer player = player(server);
 			var modifier = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH)
 					.getModifier(HuntLike.id("soul_nexus_health"));
-			return modifier == null && Math.abs(com.huntlike.nexus.SoulNexus.damageFactor(QuestManager.data(player)) - 1.1F) < 1.0E-4F;
+			return modifier == null && Math.abs(com.huntlike.nexus.SoulNexus.damageFactor(QuestManager.data(player)) - 1.05F) < 1.0E-4F;
 		});
 		context.takeScreenshot("96c-soul-nexus-damage");
 		context.setScreen(() -> null);

@@ -146,16 +146,16 @@ public class SoulNexusScreen extends Screen {
 	private static String effect(int i, int points) {
 		return switch (i) {
 			case 0 -> "+" + points / 2 + " max health";
-			case 1 -> "-" + trim(points * 0.5) + "% damage taken";
-			default -> "+" + points + "% damage";
+			case 1 -> "-" + trim(points * 0.25) + "% damage taken";
+			default -> "+" + trim(points * 0.5) + "% damage";
 		};
 	}
 
 	private static String describe(int i) {
 		return switch (i) {
 			case 0 -> "2 points: +1 max health";
-			case 1 -> "1 point: 0.5% less damage taken (not Soul Strike)";
-			default -> "1 point: 1% more damage dealt";
+			case 1 -> "1 point: 0.25% less damage taken (not Soul Strike)";
+			default -> "1 point: 0.5% more damage dealt";
 		};
 	}
 

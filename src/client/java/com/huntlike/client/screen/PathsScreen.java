@@ -155,8 +155,8 @@ public class PathsScreen extends Screen {
 	private static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",
 			"chiseled_nether_bricks"};
 
-	private static final net.minecraft.resources.Identifier END_PORTAL = net.minecraft.resources.Identifier.withDefaultNamespace(
-			"textures/entity/end_portal.png");
+	private static final net.minecraft.resources.Identifier END_PORTAL =
+			net.minecraft.client.renderer.blockentity.AbstractEndPortalRenderer.END_PORTAL_LOCATION;
 
 	/** The Paths map's floor: the end portal's starfield, darkened, drifting slowly and moving with the map. */
 	private void drawPortal(GuiGraphicsExtractor g) {

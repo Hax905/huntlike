@@ -41,6 +41,9 @@ public class BlazingPiglin extends Piglin {
 	/** No piglin brain (bartering, fleeing, zombifying): it only hunts its feeder. */
 	@Override
 	protected void customServerAiStep(ServerLevel level) {
+		if (BlazingMob.burnOut(this, level, "Blazing Piglin")) {
+			return;
+		}
 		BlazingMob.huntFeeder(this, level);
 	}
 

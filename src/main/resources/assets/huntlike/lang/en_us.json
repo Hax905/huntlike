@@ -212,5 +212,8 @@
   "item.huntlike.blazing_heart_star2": "Blazing Heart ★★",
   "entity.huntlike.blazing_piglin": "Blazing Piglin",
   "entity.huntlike.blazing_wither_skeleton": "Blazing Wither Skeleton",
-  "itemGroup.huntlike.paths": "HuntLike - Paths"
+  "itemGroup.huntlike.paths": "HuntLike - Paths",
+  "item.huntlike.blazing_heart_star3": "Blazing Heart ★★★",
+  "entity.huntlike.demonling": "Demonling",
+  "entity.huntlike.imp": "Imp"
 }

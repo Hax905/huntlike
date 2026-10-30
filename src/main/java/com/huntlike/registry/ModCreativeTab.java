@@ -100,6 +100,7 @@ public final class ModCreativeTab {
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART);
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR);
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3);
 		});
 	}
 }

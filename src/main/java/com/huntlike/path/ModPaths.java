@@ -33,11 +33,16 @@ public final class ModPaths {
 			.rarity(Rarity.RARE).stacksTo(16).fireResistant()
 			.food(new FoodProperties(20, 0.6F, true), Consumables.defaultFood().consumeSeconds(BlazingHeartItem.EAT_TICKS / 20.0F).build())
 			.component(DataComponents.LORE, new ItemLore(Lore.wrapGray(HEART_LORE))));
-	/** Quest items (not edible): from the Blazing Piglin, and from the Blazing Wither Skeleton. */
+	/** Quest items (not edible): from the Blazing Piglin, the Blazing Wither Skeleton and the Demonling. */
 	public static final Item BLAZING_HEART_STAR = ModItems.register("blazing_heart_star", Item::new, new Item.Properties()
 			.rarity(Rarity.EPIC).stacksTo(16).fireResistant().component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
 			.component(DataComponents.LORE, new ItemLore(questLore())));
 	public static final Item BLAZING_HEART_STAR2 = ModItems.register("blazing_heart_star2", Item::new, new Item.Properties()
+			.rarity(Rarity.EPIC).stacksTo(16).fireResistant().component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+			.component(DataComponents.LORE, new ItemLore(questLore())));
+
+	/** From the Demonling: used on a spawner, it spawns Imps. */
+	public static final Item BLAZING_HEART_STAR3 = ModItems.register("blazing_heart_star3", Item::new, new Item.Properties()
 			.rarity(Rarity.EPIC).stacksTo(16).fireResistant().component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
 			.component(DataComponents.LORE, new ItemLore(questLore())));
 
@@ -54,6 +59,11 @@ public final class ModPaths {
 			EntityType.Builder.<BlazingWitherSkeleton>of(BlazingWitherSkeleton::new, MobCategory.MONSTER).sized(0.7F, 2.4F).eyeHeight(2.1F)
 					.fireImmune().clientTrackingRange(8));
 
+	public static final EntityType<Demonling> DEMONLING = entity("demonling",
+			EntityType.Builder.<Demonling>of(Demonling::new, MobCategory.MONSTER).sized(0.6F, 1.8F).fireImmune().clientTrackingRange(8));
+	public static final EntityType<Imp> IMP = entity("imp",
+			EntityType.Builder.<Imp>of(Imp::new, MobCategory.MONSTER).sized(0.6F, 1.8F).fireImmune().clientTrackingRange(8));
+
 	private static <T extends net.minecraft.world.entity.Entity> EntityType<T> entity(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -62,6 +72,8 @@ public final class ModPaths {
 	public static void initialize() {
 		FabricDefaultAttributeRegistry.register(BLAZING_PIGLIN, BlazingPiglin.createAttributes());
 		FabricDefaultAttributeRegistry.register(BLAZING_WITHER_SKELETON, BlazingWitherSkeleton.createAttributes());
+		FabricDefaultAttributeRegistry.register(DEMONLING, Demonling.createAttributes());
+		FabricDefaultAttributeRegistry.register(IMP, Imp.createAttributes());
 		WildfirePath.initialize();
 	}
 }

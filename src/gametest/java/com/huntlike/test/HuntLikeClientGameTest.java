@@ -3174,6 +3174,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		java.util.function.BiConsumer<Integer, Integer> send = (buff, value) -> context.runOnClient(client ->
 				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
 						new com.huntlike.network.HuntPayloads.Action("wildfire_buff", Integer.toString(buff), value)));
+		send.accept(2, 1);
+		context.waitTicks(5);
+		check(singleplayer, "Nether Strength can't be taken before Burning Blows", data -> data.wildfireBuffs == 0);
 		for (int i = 0; i < 5; i++) {
 			send.accept(i, 1);
 			context.waitTicks(3);
@@ -3185,11 +3188,85 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(8);
 		check(singleplayer, "a buff can be given back for its point", data -> data.wildfireBuffs == 15
 				&& com.huntlike.path.WildfirePath.free(data) == 1);
+		send.accept(0, -1);
+		context.waitTicks(5);
+		check(singleplayer, "Fire Resistance can't be given back while the buffs after it are taken", data -> data.wildfireBuffs == 15);
 		assertServer(singleplayer, "Fire Resistance: 25% less fire damage; Warm Heart: hearts eaten in half the time", server -> {
 			ServerPlayer player = player(server);
 			float fire = com.huntlike.path.WildfirePath.adjust(player, player.level().damageSources().inFire(), 8.0F);
 			int duration = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART).getUseDuration(player);
 			return Math.abs(fire - 6.0F) < 1.0E-4F && duration == 48;
+		});
+		assertServer(singleplayer, "after 3 minutes a Blazing Piglin turns into ashes, with no drops", server -> {
+			ServerPlayer player = player(server);
+			var piglin = EntityTypes.PIGLIN.create(player.level(), EntitySpawnReason.COMMAND);
+			piglin.snapTo(player.getX() + 3, player.getY(), player.getZ() + 3, 0.0F, 0.0F);
+			player.level().addFreshEntity(piglin);
+			com.huntlike.path.WildfirePath.feed(player, piglin, new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART));
+			var blazing = player.level().getEntitiesOfClass(com.huntlike.path.BlazingPiglin.class, player.getBoundingBox().inflate(10)).get(0);
+			com.huntlike.path.BlazingMob.setBorn(blazing, player.level().getGameTime() - com.huntlike.path.BlazingMob.LIFETIME - 1);
+			mob[0] = blazing.getUUID();
+			return true;
+		});
+		context.waitTicks(10);
+		assertServer(singleplayer, "...gone, and no Blazing Heart \u2605 dropped", server -> {
+			ServerPlayer player = player(server);
+			boolean star = !player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+					player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR)).isEmpty();
+			return player.level().getEntity(mob[0]) == null && !star;
+		});
+		assertServer(singleplayer, "a Blazing Heart \u2605\u2605 turns a blaze into a Demonling (100 health, 15 damage); it drops a Blazing Heart \u2605\u2605\u2605",
+				server -> {
+					ServerPlayer player = player(server);
+					for (var item : player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(16))) {
+						item.discard();
+					}
+					var blaze = EntityTypes.BLAZE.create(player.level(), EntitySpawnReason.COMMAND);
+					blaze.snapTo(player.getX(), player.getY() + 1, player.getZ() + 5, 180.0F, 0.0F);
+					player.level().addFreshEntity(blaze);
+					com.huntlike.path.WildfirePath.feed(player, blaze,
+							new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2));
+					var found = player.level().getEntitiesOfClass(com.huntlike.path.Demonling.class, player.getBoundingBox().inflate(10));
+					if (found.size() != 1 || !blaze.isRemoved()) {
+						return false;
+					}
+					var demon = found.get(0);
+					boolean stats = demon.getMaxHealth() == 100.0F
+							&& demon.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 15.0;
+					demon.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
+					boolean star3 = !player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+							player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3)).isEmpty();
+					return stats && star3;
+				});
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var demon = EntityTypes.BLAZE.create(player.level(), EntitySpawnReason.COMMAND);
+			var demonling = new com.huntlike.path.Demonling(com.huntlike.path.ModPaths.DEMONLING, player.level());
+			demonling.snapTo(player.getX(), player.getY() + 0.5, player.getZ() + 3, 180.0F, 0.0F);
+			demonling.setNoAi(true);
+			player.level().addFreshEntity(demonling);
+			mob[0] = demonling.getUUID();
+		});
+		context.getInput().lookAt(new net.minecraft.core.BlockPos(0, -58, 3));
+		context.waitTicks(10);
+		context.takeScreenshot("97e-demonling");
+		assertServer(singleplayer, "a Blazing Heart \u2605\u2605\u2605 makes a spawner spawn Imps (40 health, 12 damage)", server -> {
+			ServerPlayer player = player(server);
+			var demon = player.level().getEntity(mob[0]);
+			if (demon != null) {
+				demon.discard();
+			}
+			var pos = player.blockPosition().offset(4, 0, -4);
+			player.level().setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.SPAWNER.defaultBlockState());
+			var star3 = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3);
+			boolean upgraded = com.huntlike.path.WildfirePath.upgradeSpawner(player, pos, star3);
+			String saved = player.level().getBlockEntity(pos).saveWithoutMetadata(player.level().registryAccess()).toString();
+			var imp = com.huntlike.path.ModPaths.IMP.create(player.level(), EntitySpawnReason.COMMAND);
+			HuntLike.LOGGER.info("[test] spawner upgraded {} imp in data {} imp health {} damage {}", upgraded, saved.contains("huntlike:imp"),
+					imp.getMaxHealth(), imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
+			player.level().setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+			return upgraded && star3.isEmpty() && saved.contains("huntlike:imp") && imp.getMaxHealth() == 40.0F
+					&& imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 12.0;
 		});
 		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
 		context.waitTicks(5);

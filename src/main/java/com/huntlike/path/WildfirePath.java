@@ -60,20 +60,28 @@ public final class WildfirePath {
 	public static final int BASE_CHANCE = 2;
 	public static final int BONUS_GOALS = 3;
 
-	/** The Path's buffs (draft). */
+	/**
+	 * The Path's buffs (draft), as a tree: Fire Resistance first; then Burning Blows and Warm Heart; then Nether Strength
+	 * (after Burning Blows) and Hot Heart (after Warm Heart). The tier is the numeral shown in its square.
+	 */
 	public enum Buff {
-		FIRE_RESISTANCE("Fire Resistance", "Take 25% less fire and lava damage."),
-		BURNING_BLOWS("Burning Blows", "In the Nether, your melee hits set targets on fire for 2 s."),
-		NETHER_STRENGTH("Nether Strength", "Deal 5% more damage in the Nether."),
-		WARM_HEART("Warm Heart", "Eat Blazing Hearts 50% faster; the fire beam lasts 1 s longer."),
-		HOT_HEART("Hot Heart", "The Blazing Heart's fire beam deals 50% more damage.");
+		FIRE_RESISTANCE("Fire Resistance", "Take 25% less fire and lava damage.", null, 1),
+		BURNING_BLOWS("Burning Blows", "In the Nether, your melee hits set targets on fire for 2 s.", FIRE_RESISTANCE, 2),
+		NETHER_STRENGTH("Nether Strength", "Deal 5% more damage in the Nether.", BURNING_BLOWS, 3),
+		WARM_HEART("Warm Heart", "Eat Blazing Hearts 50% faster; the fire beam lasts 1 s longer.", FIRE_RESISTANCE, 2),
+		HOT_HEART("Hot Heart", "The Blazing Heart's fire beam deals 50% more damage.", WARM_HEART, 3);
 
 		public final String title;
 		public final String description;
+		/** The buff it needs first, or null. */
+		public final Buff parent;
+		public final int tier;
 
-		Buff(String title, String description) {
+		Buff(String title, String description, Buff parent, int tier) {
 			this.title = title;
 			this.description = description;
+			this.parent = parent;
+			this.tier = tier;
 		}
 
 		public int bit() {
@@ -104,6 +112,21 @@ public final class WildfirePath {
 
 	public static boolean has(HuntData data, Buff buff) {
 		return (data.wildfireBuffs & buff.bit()) != 0;
+	}
+
+	/** Whether a buff that needs this one is taken (then this one can't be given back). */
+	public static boolean hasChild(HuntData data, Buff buff) {
+		for (Buff other : Buff.values()) {
+			if (other.parent == buff && has(data, other)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Most points the Path can give (one per goal). */
+	public static int maxPoints() {
+		return GOALS.size();
 	}
 
 	public static int points(HuntData data) {
@@ -147,9 +170,9 @@ public final class WildfirePath {
 		}
 		Buff b = Buff.values()[buff];
 		boolean owned = has(data, b);
-		if (delta > 0 && !owned && free(data) > 0) {
+		if (delta > 0 && !owned && free(data) > 0 && (b.parent == null || has(data, b.parent))) {
 			data.wildfireBuffs |= b.bit();
-		} else if (delta < 0 && owned) {
+		} else if (delta < 0 && owned && !hasChild(data, b)) {
 			data.wildfireBuffs &= ~b.bit();
 		} else {
 			QuestManager.playSound(player, SoundEvents.VILLAGER_NO, 1.0F);
@@ -166,6 +189,11 @@ public final class WildfirePath {
 	public static float adjust(LivingEntity target, DamageSource source, float amount) {
 		if (source.getDirectEntity() instanceof WitherSkull && source.getEntity() instanceof BlazingWitherSkeleton) {
 			amount = BlazingWitherSkeleton.SKULL_DAMAGE;
+		}
+		// Imps' fireballs hit twice as hard as a blaze's.
+		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball
+				&& source.getEntity() instanceof Imp) {
+			amount *= 2.0F;
 		}
 		if (source.getEntity() instanceof ServerPlayer attacker && attacker != target && attacker.level().dimension() == Level.NETHER) {
 			HuntData data = QuestManager.data(attacker);
@@ -269,7 +297,10 @@ public final class WildfirePath {
 		}
 	}
 
-	/** Feeding hearts: a Blazing Heart turns a piglin into a Blazing Piglin; two Blazing Hearts ★ make a Blazing Wither Skeleton. */
+	/**
+	 * Feeding hearts: a Blazing Heart turns a piglin into a Blazing Piglin; two Blazing Hearts ★ make a Blazing Wither
+	 * Skeleton; a Blazing Heart ★★ turns a blaze into a Demonling.
+	 */
 	public static InteractionResult feed(ServerPlayer player, Mob target, ItemStack stack) {
 		ServerLevel level = player.level();
 		if (target.getType() == EntityTypes.PIGLIN && !target.isBaby() && stack.is(ModPaths.BLAZING_HEART)) {
@@ -289,6 +320,11 @@ public final class WildfirePath {
 			transform(player, target, new BlazingWitherSkeleton(ModPaths.BLAZING_WITHER_SKELETON, level));
 			return InteractionResult.SUCCESS;
 		}
+		if (target.getType() == EntityTypes.BLAZE && stack.is(ModPaths.BLAZING_HEART_STAR2)) {
+			stack.consume(1, player);
+			transform(player, target, new Demonling(ModPaths.DEMONLING, level));
+			return InteractionResult.SUCCESS;
+		}
 		return InteractionResult.PASS;
 	}
 
@@ -299,6 +335,7 @@ public final class WildfirePath {
 		to.snapTo(from.getX(), from.getY(), from.getZ(), from.getYRot(), from.getXRot());
 		to.setYHeadRot(from.getYHeadRot());
 		BlazingMob.setFeeder(to, player.getUUID());
+		BlazingMob.setBorn(to, level.getGameTime());
 		from.discard();
 		level.addFreshEntity(to);
 		to.setTarget(player);
@@ -312,20 +349,52 @@ public final class WildfirePath {
 			return InteractionResult.PASS;
 		}
 		ItemStack stack = player.getItemInHand(hand);
-		if (!stack.is(ModPaths.BLAZING_HEART) && !stack.is(ModPaths.BLAZING_HEART_STAR)) {
+		if (!stack.is(ModPaths.BLAZING_HEART) && !stack.is(ModPaths.BLAZING_HEART_STAR) && !stack.is(ModPaths.BLAZING_HEART_STAR2)) {
 			return InteractionResult.PASS;
 		}
 		if (player instanceof ServerPlayer serverPlayer) {
 			return feed(serverPlayer, mob, stack);
 		}
 		boolean feedable = mob.getType() == EntityTypes.PIGLIN && stack.is(ModPaths.BLAZING_HEART)
-				|| mob.getType() == EntityTypes.WITHER_SKELETON && stack.is(ModPaths.BLAZING_HEART_STAR);
+				|| mob.getType() == EntityTypes.WITHER_SKELETON && stack.is(ModPaths.BLAZING_HEART_STAR)
+				|| mob.getType() == EntityTypes.BLAZE && stack.is(ModPaths.BLAZING_HEART_STAR2);
 		return feedable ? InteractionResult.SUCCESS : InteractionResult.PASS;
+	}
+
+	/** A Blazing Heart ★★★ on a spawner: it spawns Imps from now on. */
+	public static boolean upgradeSpawner(ServerPlayer player, net.minecraft.core.BlockPos pos, ItemStack stack) {
+		ServerLevel level = player.level();
+		if (!(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SpawnerBlockEntity spawner)
+				|| !stack.is(ModPaths.BLAZING_HEART_STAR3)) {
+			return false;
+		}
+		spawner.setEntityId(ModPaths.IMP, level.getRandom());
+		spawner.setChanged();
+		level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+		stack.consume(1, player);
+		level.sendParticles(ParticleTypes.LAVA, pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 20, 0.4, 0.4, 0.4, 0.0);
+		level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 40, 0.5, 0.5, 0.5, 0.03);
+		level.playSound(null, pos, SoundEvents.BLAZE_SHOOT, SoundSource.BLOCKS, 1.5F, 0.5F);
+		player.sendSystemMessage(Messages.c("The spawner burns hotter... Imps will come out of it now.", COLOR));
+		return true;
+	}
+
+	private static InteractionResult onUseBlock(Player player, Level level, InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+		ItemStack stack = player.getItemInHand(hand);
+		if (player.isSpectator() || !stack.is(ModPaths.BLAZING_HEART_STAR3)
+				|| !(level.getBlockEntity(hit.getBlockPos()) instanceof net.minecraft.world.level.block.entity.SpawnerBlockEntity)) {
+			return InteractionResult.PASS;
+		}
+		if (player instanceof ServerPlayer serverPlayer) {
+			upgradeSpawner(serverPlayer, hit.getBlockPos(), stack);
+		}
+		return InteractionResult.SUCCESS;
 	}
 
 	public static void initialize() {
 		ServerLivingEntityEvents.AFTER_DEATH.register(WildfirePath::onDeath);
 		UseEntityCallback.EVENT.register(WildfirePath::onUseEntity);
+		net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register(WildfirePath::onUseBlock);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			tickBeams(server);
 			if (server.getTickCount() % 20 != 0) {

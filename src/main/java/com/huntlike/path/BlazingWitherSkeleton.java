@@ -51,6 +51,9 @@ public class BlazingWitherSkeleton extends WitherSkeleton {
 	@Override
 	protected void customServerAiStep(ServerLevel level) {
 		super.customServerAiStep(level);
+		if (BlazingMob.burnOut(this, level, "Blazing Wither Skeleton")) {
+			return;
+		}
 		BlazingMob.huntFeeder(this, level);
 		LivingEntity target = this.getTarget();
 		if (target == null) {

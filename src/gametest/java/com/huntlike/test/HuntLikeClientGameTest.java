@@ -3275,6 +3275,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					&& imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 12.0;
 		});
 		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
+		// Cursor in a corner, so no tooltip covers the Path.
+		context.getInput().setCursorPos(2, 2);
 		context.waitTicks(5);
 		context.takeScreenshot("97d-paths-wildfire");
 		context.setScreen(() -> null);

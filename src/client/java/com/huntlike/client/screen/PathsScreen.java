@@ -27,10 +27,10 @@ import com.huntlike.path.WildfirePath.Buff;
  * give it back.
  */
 public class PathsScreen extends Screen {
-	private static final int W = 320;
-	private static final int H = 212;
+	private static final int W = 360;
+	private static final int H = 226;
 	private static final int NODE = 20;
-	private static final int GAP = 46;
+	private static final int GAP = 64;
 	private static final int BUFF = 20;
 	private static final int WHITE = 0xFFFFFFFF;
 
@@ -79,7 +79,8 @@ public class PathsScreen extends Screen {
 	}
 
 	private int originY() {
-		return (int) (top + 72 + panY);
+		// The Path's goals sit 40 px above the map's middle, so the whole Path (title to buff tree) is centered.
+		return (int) ((mapY0() + mapY1()) / 2 - 40 + panY);
 	}
 
 	private int[] node(int i) {
@@ -95,8 +96,8 @@ public class PathsScreen extends Screen {
 			case BURNING_BLOWS, NETHER_STRENGTH -> -1;
 			default -> 1;
 		};
-		int x = originX() + GAP * 2 - (BUFF + 30) + column * (BUFF + 30) - BUFF / 2;
-		int y = originY() + 62 + row * (BUFF + 10) - BUFF / 2;
+		int x = originX() + GAP * 2 - (BUFF + 40) + column * (BUFF + 40) - BUFF / 2;
+		int y = originY() + 80 + row * (BUFF + 16) - BUFF / 2;
 		return new int[] {x, y, BUFF, BUFF};
 	}
 
@@ -135,7 +136,7 @@ public class PathsScreen extends Screen {
 		List<Component> tooltip = null;
 		if (!WildfirePath.discovered(data)) {
 			Component none = Component.literal("No Paths discovered yet...").withStyle(style -> style.withItalic(true)).withColor(0x808080);
-			g.text(this.font, none, left + W / 2 - this.font.width(none) / 2, top + H / 2, WHITE, false);
+			g.text(this.font, none, left + W / 2 - this.font.width(none) / 2, (mapY0() + mapY1()) / 2 - 4, WHITE, false);
 		} else {
 			tooltip = drawWildfire(g, data, mouseX, mouseY);
 		}
@@ -176,8 +177,8 @@ public class PathsScreen extends Screen {
 	private int[] wildfireArea() {
 		int left = node(0)[0] - 14;
 		int right = node(WildfirePath.GOALS.size() - 1)[0] + NODE + 14;
-		int top = originY() - 46;
-		int bottom = buff(Buff.WARM_HEART.ordinal())[1] + BUFF + 12;
+		int top = originY() - 56;
+		int bottom = buff(Buff.WARM_HEART.ordinal())[1] + BUFF + 10;
 		return new int[] {left, top, right, bottom};
 	}
 
@@ -225,12 +226,12 @@ public class PathsScreen extends Screen {
 		List<Component> tooltip = null;
 		Component name = Component.literal(WildfirePath.NAME).withColor(WildfirePath.COLOR);
 		int cx = originX() + GAP * 2;
-		g.text(this.font, name, cx - this.font.width(name) / 2, originY() - 40, WHITE, true);
+		g.text(this.font, name, cx - this.font.width(name) / 2, originY() - 47, WHITE, true);
 		// The points: [free / most].
 		String count = WildfirePath.free(data) + "/" + WildfirePath.maxPoints();
 		int pw = this.font.width(count) + 10;
 		int px = cx - pw / 2;
-		int py = originY() - 27;
+		int py = originY() - 32;
 		var lava = block("lava_still");
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, px - 2, py - 2, pw + 4, 15);
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, block("obsidian"), px, py, pw, 11);
@@ -253,7 +254,7 @@ public class PathsScreen extends Screen {
 			// The numeral shows once the goal before it is reached.
 			if (i <= reached) {
 				Component mark = Component.literal(ROMAN[i]).withStyle(style -> style.withBold(true)).withColor(0xFFFFFF);
-				g.text(this.font, mark, b[0] + NODE / 2 - this.font.width(mark) / 2 + 1, b[1] + NODE / 2 - 4, WHITE, true);
+				g.text(this.font, mark, b[0] + (NODE - this.font.width(mark)) / 2, b[1] + (NODE - 7) / 2, WHITE, true);
 			}
 			if (inside(b, mouseX, mouseY)) {
 				tooltip = goalTooltip(data, i);
@@ -273,7 +274,7 @@ public class PathsScreen extends Screen {
 			square(g, b[0], b[1], BUFF, owned);
 			var pose = g.pose();
 			pose.pushMatrix();
-			pose.translate(b[0] + BUFF / 2.0F, b[1] + BUFF / 2.0F - 3.0F);
+			pose.translate(b[0] + BUFF / 2.0F, b[1] + BUFF / 2.0F - 2.5F);
 			pose.scale(0.75F, 0.75F);
 			Component numeral = Component.literal(ROMAN[buff.tier - 1]).withColor(0xFFFFFF);
 			g.text(this.font, numeral, -this.font.width(numeral) / 2, 0, WHITE, true);

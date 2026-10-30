@@ -230,8 +230,9 @@ public final class WildfirePath {
 			if ((int) beam[0] % BEAM_HIT_TICKS != 0) {
 				continue;
 			}
-			for (Entity entity : level.getEntities(player, new AABB(eye, end).inflate(1.0),
-					e -> e instanceof LivingEntity living && living.isAlive() && e.getBoundingBox().inflate(0.4).clip(eye, end).isPresent())) {
+			Vec3 tip = end;
+			for (Entity entity : level.getEntities(player, new AABB(eye, tip).inflate(1.0),
+					e -> e instanceof LivingEntity living && living.isAlive() && e.getBoundingBox().inflate(0.4).clip(eye, tip).isPresent())) {
 				LivingEntity living = (LivingEntity) entity;
 				living.hurtServer(level, level.damageSources().playerAttack(player), beam[1]);
 				living.igniteForSeconds(3);

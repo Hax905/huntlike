@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
@@ -24,9 +23,9 @@ import com.huntlike.nexus.SoulNexus;
  * corner to add a point, left-click to take one back; Shift does 10. The cyan shape inside shows where the points are.
  */
 public class SoulNexusScreen extends Screen {
-	private static final int W = 260;
-	private static final int H = 252;
-	private static final int RADIUS = 72;
+	private static final int W = 300;
+	private static final int H = 230;
+	private static final int RADIUS = 58;
 	private static final int CORNER_W = 78;
 	private static final int CORNER_H = 34;
 	private static final int CYAN = 0xFF55FFFF;
@@ -75,7 +74,7 @@ public class SoulNexusScreen extends Screen {
 	}
 
 	private boolean overSoul(double x, double y) {
-		return Math.abs(x - cx) <= 14 && Math.abs(y - cy) <= 14;
+		return Math.hypot(x - cx, y - cy) <= 12;
 	}
 
 	@Override
@@ -85,7 +84,7 @@ public class SoulNexusScreen extends Screen {
 		left = (this.width - W) / 2;
 		top = (this.height - H) / 2;
 		cx = left + W / 2;
-		cy = top + 130;
+		cy = top + 114;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/window"), left, top, W, H);
 		g.text(this.font, "Soul Nexus", left + 10, top + 7, 0xFF404040, false);
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/content"), left + 6, top + 18, W - 12, H - 24);
@@ -94,7 +93,7 @@ public class SoulNexusScreen extends Screen {
 		int earned = SoulNexus.earned(data);
 		g.centeredText(this.font, Component.literal("Soul Points: ").withColor(0xFFFFFF)
 				.append(Component.literal(free + " free").withColor(free > 0 ? 0x55FFFF : 0xAAAAAA))
-				.append(Component.literal(" / " + earned + " earned").withColor(0xAAAAAA)), cx, top + 210, WHITE);
+				.append(Component.literal(" / " + earned + " earned").withColor(0xAAAAAA)), cx, top + 188, WHITE);
 
 		// The triangle, then the cyan shape of the points spent (each corner's share of the cap).
 		for (int i = 0; i < 3; i++) {
@@ -109,15 +108,13 @@ public class SoulNexusScreen extends Screen {
 			line(g, shape[i], shape[(i + 1) % 3], CYAN, 2);
 		}
 
-		// The soul: the soul-fire particle, animated and scaled up.
-		int frame = (int) (System.currentTimeMillis() / 100 % 11);
-		var pose = g.pose();
-		pose.pushMatrix();
-		pose.translate(cx - 16, cy - 16);
-		pose.scale(2.0F, 2.0F);
-		g.blit(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("textures/particle/soul_" + frame + ".png"), 0, 0, 0.0F, 0.0F,
-				16, 16, 16, 16);
-		pose.popMatrix();
+		// The soul: a glowing orb that slowly pulses.
+		double pulse = 0.5 + 0.5 * Math.sin(System.currentTimeMillis() / 400.0);
+		drawOrb(g, cx, cy, 11 + (int) Math.round(pulse * 2), 0x2255FFFF);
+		drawOrb(g, cx, cy, 9, 0x6655FFFF);
+		drawOrb(g, cx, cy, 7, 0xFF55FFFF);
+		drawOrb(g, cx, cy, 4, 0xFFCCFFFF);
+		drawOrb(g, cx - 2, cy - 2, 1, 0xFFFFFFFF);
 
 		for (int i = 0; i < 3; i++) {
 			int[] b = box(i);
@@ -141,9 +138,9 @@ public class SoulNexusScreen extends Screen {
 					Component.literal("The Paths will open from here.").withColor(0xAAAAAA)), java.util.Optional.empty(), mouseX, mouseY);
 		}
 		g.centeredText(this.font, Component.literal("1 point for every boss tier beaten for the first time").withColor(0x808080), cx,
-				top + 223, WHITE);
+				top + 200, WHITE);
 		g.centeredText(this.font, Component.literal("Right-click: add · Left-click: take back · Shift: x10").withColor(0x808080), cx,
-				top + 235, WHITE);
+				top + 212, WHITE);
 	}
 
 	private static String effect(int i, int points) {
@@ -164,6 +161,14 @@ public class SoulNexusScreen extends Screen {
 
 	private static String trim(double value) {
 		return value == Math.floor(value) ? Integer.toString((int) value) : Double.toString(value);
+	}
+
+	/** A filled circle of the given radius, row by row. */
+	private static void drawOrb(GuiGraphicsExtractor g, int x, int y, int r, int color) {
+		for (int dy = -r; dy <= r; dy++) {
+			int dx = (int) Math.floor(Math.sqrt(r * r - dy * dy + 0.5));
+			g.fill(x - dx, y + dy, x + dx + 1, y + dy + 1, color);
+		}
 	}
 
 	/** A line of small squares from a to b. */

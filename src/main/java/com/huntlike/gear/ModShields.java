@@ -16,6 +16,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -63,7 +64,8 @@ public final class ModShields {
 	public static final Item MAGNETIC_WAND = ModItems.register("magnetic_wand", MagneticWandItem::new, new Item.Properties().stacksTo(1)
 			.component(DataComponents.UNBREAKABLE, Unit.INSTANCE).rarity(Rarity.EPIC)
 			.component(DataComponents.LORE, new ItemLore(lore("A magical wand that uses the magnetic moment of holmium to pull things "
-					+ "together.", "Right-click to pull creatures to where you look. 10 s cooldown."))));
+					+ "together.", "Right-click to pull creatures and dropped items to where you look. Creatures are slowed for 3 s once "
+						+ "released. 10 s cooldown."))));
 	public static final Item MAGNETIC_WAND_PRD = ModItems.register("magnetic_wand_prd", PrdItem::new, new Item.Properties().stacksTo(1)
 			.rarity(Rarity.EPIC).component(DataComponents.LORE, new ItemLore(lore("Displays the product requirements for a magnetic "
 					+ "wand as well as the template to create it. In small print a text says \"Thank you adventurer.\"...",
@@ -184,6 +186,8 @@ public final class ModShields {
 	public static final int WAND_GATHERED_BONUS = WAND_HOLD_TICKS / 3;
 	/** Within this far (flat) of the spot counts as gathered. */
 	public static final double WAND_GATHERED = 1.0;
+	/** Slowness I after release: 3 seconds. */
+	public static final int WAND_SLOW_TICKS = 60;
 	private static final int WAND_OUTER = 0xA040FF;
 	private static final int WAND_INNER = 0x8A8A8A;
 
@@ -211,8 +215,9 @@ public final class ModShields {
 	}
 
 	/**
-	 * Catches every creature within 8 blocks of the spot you look at (up to 20 blocks away), then for 1.5 seconds draws them
-	 * to that spot and holds them there. Returns how many it caught.
+	 * Catches every creature (bosses and their split pieces included), dropped item and experience orb within 8 blocks of the
+	 * spot you look at (up to 20 blocks away), then for 1.5 seconds draws them to that spot and holds them there. Creatures
+	 * get Slowness I for 3 seconds when the hold ends. Returns how many things it caught.
 	 */
 	public static int pull(ServerPlayer player) {
 		ServerLevel level = player.level();
@@ -227,6 +232,12 @@ public final class ModShields {
 						&& !(e instanceof TamableAnimal pet && pet.isOwnedBy(player)) && e.position().distanceTo(point) <= WAND_RADIUS)) {
 			caught.add(entity.getUUID());
 			attract(entity, point);
+		}
+		for (Entity loose : level.getEntitiesOfClass(Entity.class, new AABB(point, point).inflate(WAND_RADIUS),
+				e -> e.isAlive() && (e instanceof net.minecraft.world.entity.item.ItemEntity || e instanceof net.minecraft.world.entity.ExperienceOrb)
+						&& e.position().distanceTo(point) <= WAND_RADIUS)) {
+			caught.add(loose.getUUID());
+			attract(loose, point);
 		}
 		if (!caught.isEmpty()) {
 			FIELDS.add(new Field(level, point, caught));
@@ -250,7 +261,7 @@ public final class ModShields {
 	 * One tick of the field on a creature: a firm pull toward the spot that eases off as it gets close, and once there it
 	 * stays put (no launching, no overshooting). Its pathfinding is stopped so it can't walk away.
 	 */
-	private static void attract(LivingEntity entity, Vec3 point) {
+	private static void attract(Entity entity, Vec3 point) {
 		Vec3 to = point.subtract(entity.position());
 		double flat = Math.sqrt(to.x * to.x + to.z * to.z);
 		Vec3 motion = entity.getDeltaMovement();
@@ -274,13 +285,20 @@ public final class ModShields {
 		for (java.util.Iterator<Field> it = FIELDS.iterator(); it.hasNext();) {
 			Field field = it.next();
 			if (--field.ticksLeft < 0) {
+				// Released: every creature still caught is slowed for a moment.
+				for (java.util.UUID id : field.caught) {
+					if (field.level.getEntity(id) instanceof LivingEntity entity && entity.isAlive()) {
+						entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS,
+								WAND_SLOW_TICKS, 0));
+					}
+				}
 				it.remove();
 				continue;
 			}
 			field.age++;
 			boolean allThere = !field.caught.isEmpty();
 			for (java.util.UUID id : field.caught) {
-				if (field.level.getEntity(id) instanceof LivingEntity entity && entity.isAlive() && entity.level() == field.level) {
+				if (field.level.getEntity(id) instanceof Entity entity && entity.isAlive() && entity.level() == field.level) {
 					attract(entity, field.point);
 					double dx = entity.getX() - field.point.x;
 					double dz = entity.getZ() - field.point.z;

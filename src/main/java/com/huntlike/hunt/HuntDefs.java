@@ -109,15 +109,15 @@ public final class HuntDefs {
 
 	public static final Hunt ANIMAL = new Hunt("animal", "Animal", LIME, net.minecraft.world.BossEvent.BossBarColor.GREEN,
 			List.of(
-					new Tier(1, "Sylviornis", "The Giant Galliforme", ModEntities.SYLVIORNIS, 1.5F, 50, 1, 1, 0.25F, 2, 2, 5, 0,
+					new Tier(1, "Sylviornis", "The Giant Galliforme", ModEntities.SYLVIORNIS, 1.5F, 70, 1, 1, 0.25F, 2, 2, 5, 0,
 							List.of(EGG_BLASTER), "lore.huntlike.animal.1"),
-					new Tier(2, "Hylochoerus", "The Aberrant Souleater", ModEntities.HYLOCHOERUS, 1.25F, 80, 1, 2, 0.5F, 4, 4, 20, 2,
+					new Tier(2, "Hylochoerus", "The Aberrant Souleater", ModEntities.HYLOCHOERUS, 1.25F, 95, 1, 2, 0.5F, 4, 4, 20, 2,
 							List.of(EGG_BLASTER, SOUL_STRIKE), "lore.huntlike.animal.2"),
-					new Tier(3, "Ovis Ammon", "The Horned Creation", ModEntities.OVIS_AMMON, 1.25F, 120, 2, 3, 1.0F, 6, 8, 75, 4,
+					new Tier(3, "Ovis Ammon", "The Horned Creation", ModEntities.OVIS_AMMON, 1.25F, 145, 2, 3, 1.0F, 6, 8, 75, 4,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE), "lore.huntlike.animal.3"),
-					new Tier(4, "Aurochs", "The Animal Mother", ModEntities.AUROCHS, 1.25F, 170, 2, 4, 2.0F, 8, 16, 250, 6,
+					new Tier(4, "Aurochs", "The Animal Mother", ModEntities.AUROCHS, 1.25F, 265, 2, 4, 2.0F, 8, 16, 250, 6,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL), "lore.huntlike.animal.4"),
-					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", ModEntities.EPICYON_HAYDENI, 2.0F, 240, 3, 5, 2.0F, 10, 32, 800, 8,
+					new Tier(5, "Epicyon Haydeni", "The Bone Crusher", ModEntities.EPICYON_HAYDENI, 2.0F, 300, 3, 5, 2.0F, 10, 32, 800, 8,
 							List.of(EGG_BLASTER, SOUL_STRIKE, ANIMALIA_LUNGE, HERD_CALL, APEX_INSTINCT),
 							"lore.huntlike.animal.5")),
 			List.of(
@@ -191,11 +191,11 @@ public final class HuntDefs {
 	}
 
 	public static final ClusterSpec[] CLUSTER_SPECS = {
-			new ClusterSpec(40, 5, new int[] {2}, new int[] {12}, new int[] {3}),
-			new ClusterSpec(60, 5, new int[] {3}, new int[] {15}, new int[] {3}),
-			new ClusterSpec(80, 5, new int[] {4}, new int[] {18}, new int[] {3}),
-			new ClusterSpec(100, 6, new int[] {4, 2}, new int[] {20, 8}, new int[] {3, 2}),
-			new ClusterSpec(120, 6, new int[] {4, 4}, new int[] {24, 8}, new int[] {3, 2})};
+			new ClusterSpec(48, 5, new int[] {2}, new int[] {14}, new int[] {3}),
+			new ClusterSpec(64, 5, new int[] {3}, new int[] {16}, new int[] {3}),
+			new ClusterSpec(94, 5, new int[] {4}, new int[] {21}, new int[] {3}),
+			new ClusterSpec(120, 6, new int[] {4, 2}, new int[] {24, 9}, new int[] {3, 2}),
+			new ClusterSpec(165, 6, new int[] {4, 4}, new int[] {33, 11}, new int[] {3, 2})};
 
 	public static ClusterSpec clusterSpec(Tier tier) {
 		return CLUSTER_SPECS[tier.number() - 1];

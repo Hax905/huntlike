@@ -290,7 +290,8 @@ public final class BossAbilities {
 	private static void herdCall(Mob boss, ServerPlayer owner, Tier tier, State state, ServerLevel level) {
 		boolean wolves = tier.number() >= 5;
 		EntityType<? extends Mob> type = wolves ? ModEntities.CANIS_LUPUS : ModEntities.BOS_TAURUS;
-		int count = wolves ? 6 : 5;
+		// Herd Call: 3 cows (Tier IV) or 4 wolves (Tier V).
+		int count = wolves ? 4 : 3;
 		float health = wolves ? 20.0F : 15.0F;
 		for (int i = 0; i < count; i++) {
 			Mob mob = type.create(level, EntitySpawnReason.MOB_SUMMONED);

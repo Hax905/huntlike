@@ -7,8 +7,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -16,15 +14,12 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ItemCombinerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.huntlike.interlude.ModInterlude;
 
 /**
- * The Growing Slime Ball on an anvil: an enchanted book with exactly one enchantment on the left, the Slimeball on the
- * right, and the book comes out one level higher (up to the vanilla maximum) for 10 levels. A Horseshoe on Pom's
+ * The Growing Slime Ball on an anvil: an enchanted book or an armor piece on the left, the Slimeball on the right, and
+ * every enchantment below its maximum goes up one level, for 5 levels per enchantment raised (see GrowingSlimeBall). A Horseshoe on Pom's
  * Skeletal Remains adds a star (up to 5) for 5 levels.
  */
 @Mixin(AnvilMenu.class)
@@ -52,26 +47,15 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 			return;
 		}
 		ci.cancel();
-		ItemEnchantments stored = book.get(DataComponents.STORED_ENCHANTMENTS);
-		if (!book.is(Items.ENCHANTED_BOOK) || stored == null || stored.size() != 1) {
+		ItemStack result = com.huntlike.interlude.GrowingSlimeBall.grow(book);
+		if (result.isEmpty()) {
 			this.resultSlots.setItem(0, ItemStack.EMPTY);
 			this.cost.set(0);
 			return;
 		}
-		Holder<Enchantment> enchantment = stored.keySet().iterator().next();
-		int level = stored.getLevel(enchantment);
-		if (level >= enchantment.value().getMaxLevel()) {
-			this.resultSlots.setItem(0, ItemStack.EMPTY);
-			this.cost.set(0);
-			return;
-		}
-		ItemStack result = book.copyWithCount(1);
-		ItemEnchantments.Mutable grown = new ItemEnchantments.Mutable(stored);
-		grown.set(enchantment, level + 1);
-		result.set(DataComponents.STORED_ENCHANTMENTS, grown.toImmutable());
 		this.resultSlots.setItem(0, result);
 		this.repairItemCountCost = 1;
-		this.cost.set(10);
+		this.cost.set(com.huntlike.interlude.GrowingSlimeBall.cost(book));
 		this.broadcastChanges();
 	}
 

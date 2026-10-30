@@ -38,22 +38,19 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_LOG, 32)));
 			context.waitTicks(10);
 
-			// JEI: every tier and Interlude side has a drops page, every trade fits its grid; screenshot both pages.
-			var jeiDrops = com.huntlike.client.jei.HuntLikeJeiPlugin.drops();
+			// JEI: no drop pages (players find drops by hunting); every trade fits its grid; screenshot trades and the
+			// Growing Slime Ball's anvil uses.
 			var jeiTrades = com.huntlike.client.jei.HuntLikeJeiPlugin.trades();
-			if (jeiDrops.size() != 16 || jeiDrops.stream().anyMatch(e -> e.slots().isEmpty() || e.slots().size() > 9)) {
-				throw new AssertionError("JEI drops pages wrong: " + jeiDrops.size());
-			}
 			if (jeiTrades.size() < 20 || jeiTrades.stream().anyMatch(e -> e.cost().size() > 15 || e.result().size() > 4)) {
 				throw new AssertionError("JEI trades don't fit: " + jeiTrades.stream()
 						.map(e -> e.title() + " " + e.cost().size() + "/" + e.result().size()).toList());
 			}
 			if (context.computeOnClient(client -> com.huntlike.client.jei.HuntLikeJeiPlugin.showForTest(0))) {
 				context.waitTicks(10);
-				context.takeScreenshot("00a-jei-drops");
+				context.takeScreenshot("00a-jei-trades");
 				context.runOnClient(client -> com.huntlike.client.jei.HuntLikeJeiPlugin.showForTest(1));
 				context.waitTicks(10);
-				context.takeScreenshot("00b-jei-trades");
+				context.takeScreenshot("00b-jei-growing-slime-ball");
 				context.setScreen(() -> null);
 				context.waitTicks(3);
 			} else {
@@ -293,8 +290,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.takeScreenshot("14a-drops-concoction");
 		context.setScreen(() -> null);
 
-		// 240 -> below 180: Herd Call clamps at 180 and calls 6 wolves.
-		hitBoss(singleplayer, 70.0F);
+		// 300 -> below 225: Herd Call clamps at 225 and calls 4 wolves.
+		hitBoss(singleplayer, 90.0F);
 		context.waitTicks(8);
 		context.takeScreenshot("14b-herd-call-warning");
 		context.waitTicks(25);
@@ -303,7 +300,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
 			int herd = player.level().getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(64), com.huntlike.hunt.BossAbilities::isHerd).size();
 			HuntLike.LOGGER.info("[test] after herd call: boss health {} herd {}", boss.getHealth(), herd);
-			if (herd != 6 || boss.getHealth() < 175) {
+			if (herd != 4 || boss.getHealth() < 220) {
 				throw new AssertionError("Herd Call failed");
 			}
 			float before = boss.getHealth();
@@ -340,9 +337,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(10);
 
-		// Below 120: Soul Strike for 18 true damage.
+		// Below 150: Soul Strike for 18 true damage.
 		float healthBefore = singleplayer.getServer().computeOnServer(server -> player(server).getHealth());
-		hitBoss(singleplayer, 65.0F);
+		hitBoss(singleplayer, 85.0F);
 		context.waitTicks(6);
 		context.takeScreenshot("15b-soul-strike-warning");
 		context.waitTicks(25);
@@ -352,15 +349,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			throw new AssertionError("Soul Strike did not land");
 		}
 
-		// Below 96: Apex Instinct heals to 108.
-		hitBossDownTo(singleplayer, 90.0F);
+		// Below 120: Apex Instinct heals to 135.
+		hitBossDownTo(singleplayer, 112.0F);
 		context.waitTicks(15);
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
 			Mob boss = BossController.findBoss(player, QuestManager.data(player).quest);
 			boolean enraged = boss instanceof com.huntlike.entity.animal.EpicyonHaydeni epicyon && epicyon.isEnraged();
 			HuntLike.LOGGER.info("[test] Apex Instinct: boss health {} enraged {}", boss.getHealth(), enraged);
-			if (boss.getHealth() < 107.0F) {
+			if (boss.getHealth() < 134.0F) {
 				throw new AssertionError("Apex Instinct did not heal");
 			}
 			if (!enraged) {
@@ -1604,8 +1601,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.waitTicks(3);
 
 		// The Magnetic Wand pulls mobs to where you look and holds them there for 1.5 s, but not your pets.
-		final Object[] wand = new Object[5];
-		assertServer(singleplayer, "Magnetic Wand bought; it catches a cow but not a tamed wolf", server -> {
+		final Object[] wand = new Object[7];
+		assertServer(singleplayer, "Magnetic Wand bought; it catches a cow, a boss and a dropped item but not a tamed wolf", server -> {
 			ServerPlayer player = player(server);
 			for (var e : player.level().getEntitiesOfClass(net.minecraft.world.entity.Mob.class, player.getBoundingBox().inflate(40))) {
 				e.discard();
@@ -1631,6 +1628,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			wolf.setOrderedToSit(true);
 			wolf.setInSittingPose(true);
 			player.level().addFreshEntity(wolf);
+			var cubert = com.huntlike.entity.ModEntities.CUBERT.create(player.level(), EntitySpawnReason.COMMAND);
+			cubert.snapTo(point.x, point.y, point.z - 5.0, 0.0F, 0.0F);
+			player.level().addFreshEntity(cubert);
+			var bone = new net.minecraft.world.entity.item.ItemEntity(player.level(), point.x, point.y + 0.2, point.z + 5.0,
+					new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BONE));
+			bone.setPickUpDelay(200);
+			player.level().addFreshEntity(bone);
+			wand[5] = cubert.getUUID();
+			wand[6] = bone.getUUID();
 			int pulled = com.huntlike.gear.ModShields.pull(player);
 			wand[0] = point;
 			wand[1] = cow.getUUID();
@@ -1638,7 +1644,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			wand[3] = wolf.position();
 			wand[4] = player.level().getGameTime();
 			HuntLike.LOGGER.info("[test] Magnetic Wand bought {} aim {} caught {}", bought, point, pulled);
-			return bought && pulled == 1;
+			return bought && pulled == 3;
 		});
 		// Count server ticks (CI servers can lag behind the client).
 		waitServerTicks(context, singleplayer, (long) wand[4], 15);
@@ -1647,9 +1653,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			var cow = level.getEntity((java.util.UUID) wand[1]);
 			var point = (net.minecraft.world.phys.Vec3) wand[0];
 			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
-			HuntLike.LOGGER.info("[test] Magnetic Wand at 15 ticks: cow {} blocks from the spot, {} above it", flat,
-					cow == null ? 0 : cow.getY() - point.y);
-			return flat < 1.5 && cow.getY() - point.y < 2.0;
+			var cubert = level.getEntity((java.util.UUID) wand[5]);
+			var bone = level.getEntity((java.util.UUID) wand[6]);
+			double cubertFlat = cubert == null ? 99 : Math.hypot(cubert.getX() - point.x, cubert.getZ() - point.z);
+			double boneFlat = bone == null ? 99 : Math.hypot(bone.getX() - point.x, bone.getZ() - point.z);
+			HuntLike.LOGGER.info("[test] Magnetic Wand at 15 ticks: cow {} blocks from the spot, {} above it; boss {}, item {}", flat,
+					cow == null ? 0 : cow.getY() - point.y, cubertFlat, boneFlat);
+			return flat < 1.5 && cow.getY() - point.y < 2.0 && cubertFlat < 2.0 && boneFlat < 1.5;
 		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 27);
 		assertServer(singleplayer, "it is still held there at 1.35 s; the tamed wolf never moved toward it", server -> {
@@ -1666,9 +1676,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		assertServer(singleplayer, "the cow reached the spot, so the hold lasts 33% longer: still on at 1.75 s",
 				server -> com.huntlike.gear.ModShields.activeFields() > 0);
 		waitServerTicks(context, singleplayer, (long) wand[4], 45);
-		assertServer(singleplayer, "...and over by 2.25 s", server -> com.huntlike.gear.ModShields.activeFields() == 0);
+		assertServer(singleplayer, "...and over by 2.25 s; the released cow has Slowness I", server -> {
+			var cow = player(server).level().getEntity((java.util.UUID) wand[1]);
+			return com.huntlike.gear.ModShields.activeFields() == 0 && cow instanceof net.minecraft.world.entity.LivingEntity living
+					&& living.hasEffect(net.minecraft.world.effect.MobEffects.SLOWNESS);
+		});
 		singleplayer.getServer().runOnServer(server -> {
-			for (int k = 1; k <= 2; k++) {
+			for (int k : new int[] {1, 2, 5, 6}) {
 				var entity = player(server).level().getEntity((java.util.UUID) wand[k]);
 				if (entity != null) {
 					entity.discard();
@@ -1942,30 +1956,50 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		}
 		check(singleplayer, "Stage III won", data -> data.progress("slime_rider").bossKills[2] >= 1);
 
-		// The Growing Slime Ball on an anvil: Sharpness II -> III for 10 levels; refused at the maximum.
-		assertServer(singleplayer, "Growing Slime Ball raises a single-enchantment book by one level", server -> {
+		// The Growing Slime Ball on an anvil: every enchantment below its maximum goes up one, 5 levels each; books and
+		// armor only.
+		assertServer(singleplayer, "Growing Slime Ball raises every enchantment of a book or armor piece by one level", server -> {
 			ServerPlayer player = player(server);
 			var registry = player.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
 			var sharpness = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
-			var book = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ENCHANTED_BOOK);
-			var enchants = new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
-					net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
-			enchants.set(sharpness, 2);
-			book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchants.toImmutable());
+			var unbreaking = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.UNBREAKING);
+			var protection = registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.PROTECTION);
+			var stored = net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS;
+			var applied = net.minecraft.core.component.DataComponents.ENCHANTMENTS;
 			var menu = new net.minecraft.world.inventory.AnvilMenu(0, player.getInventory());
-			menu.getSlot(0).set(book);
 			menu.getSlot(1).set(new net.minecraft.world.item.ItemStack(com.huntlike.interlude.ModInterlude.GROWING_SLIME_BALL));
+			java.util.function.BiFunction<net.minecraft.world.item.Item, Object[], net.minecraft.world.item.ItemStack> make = (item, pairs) -> {
+				var stack = new net.minecraft.world.item.ItemStack(item);
+				var enchants = new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
+						net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+				for (int i = 0; i < pairs.length; i += 2) {
+					enchants.set((net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment>) pairs[i], (Integer) pairs[i + 1]);
+				}
+				stack.set(item == net.minecraft.world.item.Items.ENCHANTED_BOOK ? stored : applied, enchants.toImmutable());
+				return stack;
+			};
+			// Book: Sharpness II + Unbreaking I -> III + II, 10 levels.
+			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.ENCHANTED_BOOK, new Object[] {sharpness, 2, unbreaking, 1}));
 			menu.createResult();
-			var result = menu.getSlot(2).getItem();
-			var stored = result.get(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS);
-			int level = stored == null ? -1 : stored.getLevel(sharpness);
-			enchants.set(sharpness, 5);
-			book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchants.toImmutable());
-			menu.getSlot(0).set(book);
+			var book = menu.getSlot(2).getItem().get(stored);
+			int bookCost = menu.getCost();
+			boolean bookOk = book != null && book.getLevel(sharpness) == 3 && book.getLevel(unbreaking) == 2 && bookCost == 10;
+			// Chestplate: Protection III + Unbreaking III (max) -> Protection IV only, 5 levels.
+			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE, new Object[] {protection, 3, unbreaking, 3}));
 			menu.createResult();
-			boolean refused = menu.getSlot(2).getItem().isEmpty();
-			HuntLike.LOGGER.info("[test] Growing Slime Ball: Sharpness II -> {} cost {}; at V refused {}", level, 10, refused);
-			return level == 3 && refused;
+			var chest = menu.getSlot(2).getItem().get(applied);
+			int chestCost = menu.getCost();
+			boolean chestOk = chest != null && chest.getLevel(protection) == 4 && chest.getLevel(unbreaking) == 3 && chestCost == 5;
+			// Refused: a maxed book, and a sword.
+			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.ENCHANTED_BOOK, new Object[] {sharpness, 5}));
+			menu.createResult();
+			boolean maxedRefused = menu.getSlot(2).getItem().isEmpty();
+			menu.getSlot(0).set(make.apply(net.minecraft.world.item.Items.DIAMOND_SWORD, new Object[] {sharpness, 2}));
+			menu.createResult();
+			boolean swordRefused = menu.getSlot(2).getItem().isEmpty();
+			HuntLike.LOGGER.info("[test] Growing Slime Ball: book {} cost {}; chestplate {} cost {}; maxed refused {}; sword refused {}",
+					book, bookCost, chest, chestCost, maxedRefused, swordRefused);
+			return bookOk && chestOk && maxedRefused && swordRefused;
 		});
 
 		// Pom's Skeletal Remains: a saddled skeleton horse with the player on it; again, and it's gone.

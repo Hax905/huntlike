@@ -9,9 +9,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
@@ -37,6 +34,8 @@ public class SoulNexusScreen extends Screen {
 	private static final int GRAY = 0xFFAAAAAA;
 	private static final String[] CORNERS = {SoulNexus.HEALTH, SoulNexus.DEFENSE, SoulNexus.DAMAGE};
 	private static final String[] NAMES = {"Health", "Defense", "Damage"};
+	/** Heart, shield and crossed swords. */
+	private static final String[] SYMBOLS = {"\u2764", "\u26E8", "\u2694"};
 	private static final int[] COLORS = {0xFFFF5555, 0xFF55AAFF, 0xFFFFAA00};
 
 	private int left;
@@ -120,14 +119,15 @@ public class SoulNexusScreen extends Screen {
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id(hover ? "menu/panel" : "menu/panel_dark"), b[0], b[1], b[2], b[3]);
 			int points = SoulNexus.get(data, CORNERS[i]);
 			// The symbol: a heart, a shield or a sword; then the points.
-			int sx = b[0] + (b[2] - 16) / 2;
 			int sy = b[1] + 3;
-			if (i == 0) {
-				g.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("hud/heart/container"), sx + 1, sy + 1, 14, 14);
-				g.blitSprite(RenderPipelines.GUI_TEXTURED, Identifier.withDefaultNamespace("hud/heart/full"), sx + 1, sy + 1, 14, 14);
-			} else {
-				g.item(new ItemStack(i == 1 ? Items.SHIELD : Items.IRON_SWORD), sx, sy);
-			}
+			// The symbol, drawn as a text character at double size: a heart, a shield or crossed swords.
+			Component symbol = Component.literal(SYMBOLS[i]).withColor(COLORS[i] & 0xFFFFFF);
+			var pose = g.pose();
+			pose.pushMatrix();
+			pose.translate(b[0] + b[2] / 2.0F, sy + 1);
+			pose.scale(2.0F, 2.0F);
+			g.text(this.font, symbol, -this.font.width(symbol) / 2, 0, WHITE, true);
+			pose.popMatrix();
 			g.centeredText(this.font, Component.literal(points + "/" + SoulNexus.CAP).withColor(points >= SoulNexus.CAP ? 0xFFAA00 : 0xFFFFFF),
 					b[0] + b[2] / 2, b[1] + 22, WHITE);
 			if (hover) {
@@ -138,7 +138,9 @@ public class SoulNexusScreen extends Screen {
 		}
 		if (overSoul(mouseX, mouseY)) {
 			g.setTooltipForNextFrame(this.font, List.of(Component.literal("Your soul").withColor(0x55FFFF),
-					Component.literal("The Paths will open from here.").withColor(0xAAAAAA)), java.util.Optional.empty(), mouseX, mouseY);
+					Component.literal("Your ").withColor(0xAAAAAA)
+					.append(Component.literal("Paths").withStyle(style -> style.withItalic(true)))
+					.append(Component.literal(" will open from here..."))), java.util.Optional.empty(), mouseX, mouseY);
 		}
 		// The Soul Point counter: free points, with a small soul beside them.
 		int free = SoulNexus.free(data);

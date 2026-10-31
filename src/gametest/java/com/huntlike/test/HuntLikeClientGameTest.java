@@ -2774,6 +2774,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 
 		singleplayer.getServer().runOnServer(server -> {
 			var pet = petPieces(server).get(0);
+			// From full health (it may have bumped itself landing).
+			pet.setHealth(pet.getMaxHealth());
 			pet.hurtServer(player(server).level(), player(server).level().damageSources().generic(), 10.0F);
 		});
 		petInteract(singleplayer, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SLIME_BALL), 1);

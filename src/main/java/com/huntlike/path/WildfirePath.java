@@ -57,13 +57,13 @@ public final class WildfirePath {
 			"Fill Canavar's Chalice with 100 kills of fleshy mobs");
 	/** The hint each goal shows while it's the next one. */
 	public static final List<String> HINTS = List.of(
-			"Deep inside the Nether, fortresses of dark colors let the burning souls habit. Some of the souls keep their pounding hearts in their demonic bodies.",
+			"Deep inside the Nether, fortresses of dark colors let the burning souls inhabit. Some of the souls keep their pounding hearts in their demonic bodies.",
 			"Taste the beating remnants of a burning soul and feel the pain within their sorrow.",
 			"One flame lights a torch but many can light a forest in a screaming wildfire.",
 			"Let the body of a greedy soul burn in the hue that shines within the metal it desires.",
 			"Charred souls corroded by anger, withering bodies of what was once a warrior. Let them burn in the color their soul so burned for anger.",
 			"Inside the cruel cages that trap suffering fiery souls can be brought a sign of life and redemption, the organ of burning blood that must burn more before perishing. May life continue by giving the organ to the cage and letting the most powerful sorrowing souls take over, trialing whoever dared to wake them.",
-			"Fill of not rage or fire the ornament that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.");
+			"Fill the ornament with not rage neither fire that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.");
 	public static final int BLAZES = 50;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;

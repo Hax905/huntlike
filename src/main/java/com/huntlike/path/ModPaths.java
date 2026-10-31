@@ -27,7 +27,7 @@ public final class ModPaths {
 	private ModPaths() {
 	}
 
-	private static final String HEART_LORE = "The heart pulses with force and heat. It feels warm...";
+	private static final String HEART_LORE = "The heart pulses with force and heat. It feels warm... It is attracted to beings consumed by their sins.";
 
 	public static final Item BLAZING_HEART = ModItems.register("blazing_heart", BlazingHeartItem::new, new Item.Properties()
 			.rarity(Rarity.RARE).stacksTo(16).fireResistant()

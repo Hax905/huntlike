@@ -1731,8 +1731,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			double boneFlat = bone == null ? 99 : Math.hypot(bone.getX() - point.x, bone.getZ() - point.z);
 			HuntLike.LOGGER.info("[test] Magnetic Wand at 15 ticks: cow {} blocks from the spot, {} above it; boss {}, item {}", flat,
 					cow == null ? 0 : cow.getY() - point.y, cubertFlat, boneFlat);
-			// Close to the spot (a cow may still be hopping a ledge at this moment), and not launched.
-			return flat < 2.0 && cow.getY() - point.y < 2.0 && cubertFlat < 2.0 && boneFlat < 1.5;
+			// Close to the spot (the boss sits on it, so the cow is pressed against its body), and not launched.
+			return flat < 3.0 && cow.getY() - point.y < 2.0 && cubertFlat < 2.0 && boneFlat < 1.5;
 		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 27);
 		assertServer(singleplayer, "it is still held there at 1.35 s; the tamed wolf never moved toward it", server -> {
@@ -1743,7 +1743,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
 			double wolfMoved = wolf == null ? 0 : wolf.position().distanceTo((net.minecraft.world.phys.Vec3) wand[3]);
 			HuntLike.LOGGER.info("[test] Magnetic Wand at 27 ticks: cow {} blocks from the spot; wolf moved {}", flat, wolfMoved);
-			return flat < 1.5 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
+			return flat < 3.0 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
 		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 35);
 		assertServer(singleplayer, "the cow reached the spot, so the hold lasts 33% longer: still on at 1.75 s", server -> {

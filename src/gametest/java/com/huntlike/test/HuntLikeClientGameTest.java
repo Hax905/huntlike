@@ -3484,8 +3484,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			// Mob damage scales with difficulty: 6 is on Normal.
 			var difficulty = server.getWorldData().getDifficulty();
 			server.setDifficulty(net.minecraft.world.Difficulty.NORMAL, true);
+			player.invulnerableTime = 0;
+			player.removeAllEffects();
 			var dir = player.getEyePosition().subtract(sorrow.position().add(0.0, 1.6, 0.0)).normalize();
 			sorrow.ray(player.level(), dir, true);
+			HuntLike.LOGGER.info("[test] sorrow ray: difficulty {} mode {} invulnerable {}", server.getWorldData().getDifficulty(),
+					player.gameMode(), player.getAbilities().invulnerable);
 			float after = player.getHealth();
 			server.setDifficulty(difficulty, true);
 			boolean burning = player.isOnFire();

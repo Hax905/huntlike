@@ -52,6 +52,38 @@ public final class ModPaths {
 		return lines;
 	}
 
+	/** The Chalice's blood (0-100). */
+	public static final net.minecraft.core.component.DataComponentType<Integer> BLOOD = Registry.register(
+			BuiltInRegistries.DATA_COMPONENT_TYPE, HuntLike.id("blood"),
+			net.minecraft.core.component.DataComponentType.<Integer>builder().persistent(com.mojang.serialization.Codec.INT)
+					.networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
+
+	public static final net.minecraft.world.level.block.Block BLAZING_SPAWNER = block("blazing_spawner", BlazingSpawnerBlock::new,
+			net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.NETHER)
+					.strength(-1.0F, 3600000.0F).noLootTable().noOcclusion().sound(net.minecraft.world.level.block.SoundType.SPAWNER)
+					.lightLevel(state -> 12));
+	public static final net.minecraft.world.level.block.Block CHALICE = block("chalice", ChaliceBlock::new,
+			net.minecraft.world.level.block.state.BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.GOLD)
+					.strength(1.5F, 6.0F).requiresCorrectToolForDrops().noOcclusion().sound(net.minecraft.world.level.block.SoundType.METAL));
+	public static final Item BLAZING_SPAWNER_ITEM = ModItems.register("blazing_spawner",
+			p -> new net.minecraft.world.item.BlockItem(BLAZING_SPAWNER, p), new Item.Properties().rarity(Rarity.EPIC).useBlockDescriptionPrefix());
+	public static final Item CHALICE_ITEM = ModItems.register("chalice", p -> new ChaliceItem(CHALICE, p), new Item.Properties()
+			.rarity(Rarity.EPIC).stacksTo(1).useBlockDescriptionPrefix()
+			.component(DataComponents.LORE, new ItemLore(Lore.wrapGray("Hold it in your off-hand. It thirsts for the blood of the living."))));
+	public static final Item FULL_CHALICE = ModItems.register("full_chalice", FullChaliceItem::new, new Item.Properties()
+			.rarity(Rarity.EPIC).stacksTo(1).component(DataComponents.LORE, new ItemLore(Lore.wrapGray("Something stirs in the blood..."))));
+
+	public static final net.minecraft.world.level.block.entity.BlockEntityType<BlazingSpawnerBlockEntity> BLAZING_SPAWNER_ENTITY =
+			Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, HuntLike.id("blazing_spawner"),
+					new net.minecraft.world.level.block.entity.BlockEntityType<>(BlazingSpawnerBlockEntity::new, java.util.Set.of(BLAZING_SPAWNER)));
+
+	private static net.minecraft.world.level.block.Block block(String name,
+			java.util.function.Function<net.minecraft.world.level.block.state.BlockBehaviour.Properties, net.minecraft.world.level.block.Block> factory,
+			net.minecraft.world.level.block.state.BlockBehaviour.Properties properties) {
+		ResourceKey<net.minecraft.world.level.block.Block> key = ResourceKey.create(Registries.BLOCK, HuntLike.id(name));
+		return Registry.register(BuiltInRegistries.BLOCK, key, factory.apply(properties.setId(key)));
+	}
+
 	public static final EntityType<BlazingPiglin> BLAZING_PIGLIN = entity("blazing_piglin",
 			EntityType.Builder.<BlazingPiglin>of(BlazingPiglin::new, MobCategory.MONSTER).sized(0.6F, 1.95F).eyeHeight(1.79F).fireImmune()
 					.clientTrackingRange(8));

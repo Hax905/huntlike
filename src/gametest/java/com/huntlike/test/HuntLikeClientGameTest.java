@@ -3138,15 +3138,14 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR)).isEmpty();
 			return star && QuestManager.data(player).wildfireGoals == 4;
 		});
-		assertServer(singleplayer, "two Blazing Hearts ★ make a Blazing Wither Skeleton (80 health, 12 damage, 30% bigger)", server -> {
+		assertServer(singleplayer, "a Blazing Heart ★ makes a Blazing Wither Skeleton (80 health, 12 damage, 30% bigger)", server -> {
 			ServerPlayer player = player(server);
 			player.setHealth(player.getMaxHealth());
 			var skeleton = EntityTypes.WITHER_SKELETON.create(player.level(), EntitySpawnReason.COMMAND);
 			skeleton.snapTo(player.getX(), player.getY(), player.getZ() + 5, 180.0F, 0.0F);
 			player.level().addFreshEntity(skeleton);
-			var stars = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR, 2);
-			com.huntlike.path.WildfirePath.feed(player, skeleton, stars);
-			boolean halfway = !skeleton.isRemoved() && stars.getCount() == 1;
+			var stars = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR, 1);
+			boolean halfway = true;
 			com.huntlike.path.WildfirePath.feed(player, skeleton, stars);
 			var found = player.level().getEntitiesOfClass(com.huntlike.path.BlazingWitherSkeleton.class, player.getBoundingBox().inflate(10));
 			if (found.size() != 1) {
@@ -3257,29 +3256,105 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		context.getInput().lookAt(new net.minecraft.core.BlockPos(0, -58, 3));
 		context.waitTicks(10);
 		context.takeScreenshot("97e-demonling");
-		assertServer(singleplayer, "a Blazing Heart \u2605\u2605\u2605 makes a spawner spawn Imps (40 health, 12 damage)", server -> {
+		var spawnerPos = new net.minecraft.core.BlockPos[1];
+		assertServer(singleplayer, "a Blazing Heart \u2605\u2605\u2605 turns only a blaze spawner into a Blazing Spawner; Imps have 40 health, 12 damage", server -> {
 			ServerPlayer player = player(server);
 			var demon = player.level().getEntity(mob[0]);
 			if (demon != null) {
 				demon.discard();
 			}
-			var pos = player.blockPosition().offset(4, 0, -4);
-			player.level().setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.SPAWNER.defaultBlockState());
-			var star3 = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3);
-			boolean upgraded = com.huntlike.path.WildfirePath.upgradeSpawner(player, pos, star3);
-			String saved = player.level().getBlockEntity(pos).saveWithoutMetadata(player.level().registryAccess()).toString();
-			var imp = com.huntlike.path.ModPaths.IMP.create(player.level(), EntitySpawnReason.COMMAND);
-			HuntLike.LOGGER.info("[test] spawner upgraded {} imp in data {} imp health {} damage {}", upgraded, saved.contains("huntlike:imp"),
-					imp.getMaxHealth(), imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
-			player.level().setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-			return upgraded && star3.isEmpty() && saved.contains("huntlike:imp") && imp.getMaxHealth() == 40.0F
+			var pos = player.blockPosition().offset(0, 0, 4);
+			spawnerPos[0] = pos;
+			var level = player.level();
+			level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.SPAWNER.defaultBlockState());
+			var star3 = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3, 2);
+			((net.minecraft.world.level.block.entity.SpawnerBlockEntity) level.getBlockEntity(pos)).setEntityId(EntityTypes.ZOMBIE, level.getRandom());
+			boolean zombie = com.huntlike.path.WildfirePath.upgradeSpawner(player, pos, star3);
+			((net.minecraft.world.level.block.entity.SpawnerBlockEntity) level.getBlockEntity(pos)).setEntityId(EntityTypes.BLAZE, level.getRandom());
+			boolean blaze = com.huntlike.path.WildfirePath.upgradeSpawner(player, pos, star3);
+			var imp = com.huntlike.path.ModPaths.IMP.create(level, EntitySpawnReason.COMMAND);
+			HuntLike.LOGGER.info("[test] zombie spawner {} blaze spawner {} block {} hearts {} imp health {} damage {}", zombie, blaze,
+					level.getBlockState(pos), star3.getCount(), imp.getMaxHealth(),
+					imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
+			return !zombie && blaze && star3.getCount() == 1 && level.getBlockState(pos).is(com.huntlike.path.ModPaths.BLAZING_SPAWNER)
+					&& imp.getMaxHealth() == 40.0F
 					&& imp.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) == 12.0;
 		});
+		singleplayer.getServer().runOnServer(server -> player(server).setGameMode(net.minecraft.world.level.GameType.CREATIVE));
+		// The first round (1 Imp) comes out after the delay.
+		context.waitTicks(com.huntlike.path.BlazingSpawnerBlockEntity.ROUND_DELAY + 15);
+		context.getInput().lookAt(spawnerPos[0].above());
+		context.waitTicks(5);
+		context.takeScreenshot("97f-blazing-spawner-imp");
+		int[] seen = new int[1];
+		for (int i = 0; i < 40; i++) {
+			boolean done = singleplayer.getServer().computeOnServer(server -> {
+				ServerPlayer player = player(server);
+				var level = player.level();
+				if (level.getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE)) {
+					return true;
+				}
+				if (level.getBlockEntity(spawnerPos[0]) instanceof com.huntlike.path.BlazingSpawnerBlockEntity spawner) {
+					for (java.util.UUID id : java.util.List.copyOf(spawner.imps())) {
+						if (level.getEntity(id) instanceof net.minecraft.world.entity.LivingEntity imp) {
+							seen[0]++;
+							imp.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+						}
+					}
+				}
+				return false;
+			});
+			if (done) {
+				break;
+			}
+			context.waitTicks(20);
+		}
+		assertServer(singleplayer, "3 rounds of Imps (1, 2, 3) burn the spawner out into a Chalice and reach goal 6", server -> {
+			ServerPlayer player = player(server);
+			HuntData data = QuestManager.data(player);
+			HuntLike.LOGGER.info("[test] imps killed {} block {} goals {}", seen[0], player.level().getBlockState(spawnerPos[0]), data.wildfireGoals);
+			return seen[0] == 6 && player.level().getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE) && data.wildfireGoals == 6;
+		});
+		context.getInput().lookAt(spawnerPos[0]);
+		context.waitTicks(10);
+		context.takeScreenshot("97g-chalice");
+		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (not from skeletons) and becomes a Full Chalice at 100", server -> {
+			ServerPlayer player = player(server);
+			var level = player.level();
+			level.setBlockAndUpdate(spawnerPos[0], net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+			var chalice = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.CHALICE_ITEM);
+			chalice.set(com.huntlike.path.ModPaths.BLOOD, 98);
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, chalice);
+			var skeleton = EntityTypes.SKELETON.create(level, EntitySpawnReason.COMMAND);
+			skeleton.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(skeleton);
+			skeleton.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			int afterSkeleton = com.huntlike.path.ChaliceItem.blood(player.getOffhandItem());
+			var cow = EntityTypes.COW.create(level, EntitySpawnReason.COMMAND);
+			cow.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(cow);
+			cow.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			int afterCow = com.huntlike.path.ChaliceItem.blood(player.getOffhandItem());
+			var pig = EntityTypes.PIG.create(level, EntitySpawnReason.COMMAND);
+			pig.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(pig);
+			pig.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			boolean full = player.getOffhandItem().is(com.huntlike.path.ModPaths.FULL_CHALICE);
+			HuntLike.LOGGER.info("[test] blood after skeleton {} after cow {} full {}", afterSkeleton, afterCow, full);
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(8)).forEach(e -> e.discard());
+			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+			return afterSkeleton == 98 && afterCow == 99 && full;
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("97h-full-chalice");
 		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
 		// Cursor in a corner, so no tooltip covers the Path.
 		context.getInput().setCursorPos(2, 2);
 		context.waitTicks(5);
 		context.takeScreenshot("97d-paths-wildfire");
+		context.setScreen(() -> new com.huntlike.client.screen.PathSelectScreen(null));
+		context.waitTicks(5);
+		context.takeScreenshot("97i-path-select");
 		context.setScreen(() -> null);
 		context.waitTicks(3);
 	}

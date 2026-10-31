@@ -15,7 +15,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * An Imp, from a spawner given a Blazing Heart ★★★: a blaze with twice its health (40) and damage (12 contact, fireballs x2),
- * shooting twice as often. (Blaze look until its own sprite is ready.)
+ * shooting twice as often. A small, very dark red blaze with three rods and a horn.
  */
 public class Imp extends Blaze {
 	public Imp(EntityType<? extends Blaze> type, Level level) {
@@ -24,7 +24,7 @@ public class Imp extends Blaze {
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
-		return Blaze.createAttributes().add(Attributes.MAX_HEALTH, 40.0).add(Attributes.ATTACK_DAMAGE, 12.0);
+		return Blaze.createAttributes().add(Attributes.MAX_HEALTH, 40.0).add(Attributes.ATTACK_DAMAGE, 12.0).add(Attributes.SCALE, 0.6);
 	}
 
 	@Override

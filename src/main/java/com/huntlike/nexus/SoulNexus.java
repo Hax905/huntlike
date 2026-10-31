@@ -79,7 +79,7 @@ public final class SoulNexus {
 		int now = get(data, corner);
 		int target = delta > 0 ? Math.min(CAP, now + Math.min(delta, free(data))) : Math.max(0, now + delta);
 		if (target == now) {
-			QuestManager.playSound(player, SoundEvents.VILLAGER_NO, 1.0F);
+			QuestManager.playSound(player, SoundEvents.CHAIN_BREAK, 1.0F);
 			return;
 		}
 		set(data, corner, target);

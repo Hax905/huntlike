@@ -101,6 +101,9 @@ public final class ModCreativeTab {
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR);
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR2);
 			output.accept(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3);
+			output.accept(com.huntlike.path.ModPaths.BLAZING_SPAWNER_ITEM);
+			output.accept(com.huntlike.path.ModPaths.CHALICE_ITEM);
+			output.accept(com.huntlike.path.ModPaths.FULL_CHALICE);
 		});
 	}
 }

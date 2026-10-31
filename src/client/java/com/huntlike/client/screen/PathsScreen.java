@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.mojang.blaze3d.platform.InputConstants;
-
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
@@ -22,16 +21,16 @@ import com.huntlike.path.WildfirePath;
 import com.huntlike.path.WildfirePath.Buff;
 
 /**
- * The Paths, opened from the soul in the Soul Nexus: a dark map you drag around. Each Path is a chain of goals (reached
- * ones lit, the next one pulsing, later ones hidden) with its buffs below. Right-click a buff to take it, left-click to
- * give it back.
+ * One Path (for now the Path of the Wildfire), opened from the Path selection: a Progress panel on the left (scroll it) with
+ * the goals reached and the hint for the next one, and a Skill panel on the right (drag it) with the buff tree. Later goals
+ * and locked buffs stay hidden. Attack (left-click) takes a buff, use (right-click) gives it back.
  */
 public class PathsScreen extends Screen {
 	private static final int W = 360;
 	private static final int H = 226;
 	private static final int NODE = 20;
-	private static final int GAP = 64;
 	private static final int BUFF = 20;
+	private static final int PROGRESS_W = 122;
 	private static final int WHITE = 0xFFFFFFFF;
 
 	private final Screen parent;
@@ -40,10 +39,11 @@ public class PathsScreen extends Screen {
 	private double panX;
 	private double panY;
 	private boolean dragging;
-	private double dragged;
+	private double scroll;
+	private int progressHeight;
 
 	public PathsScreen(Screen parent) {
-		super(Component.literal("Paths"));
+		super(Component.literal(WildfirePath.NAME));
 		this.parent = parent;
 	}
 
@@ -56,6 +56,8 @@ public class PathsScreen extends Screen {
 	public void onClose() {
 		this.minecraft.gui.setScreen(parent);
 	}
+
+	// ---------------------------------------------------------------- layout
 
 	private int mapX0() {
 		return left + 10;
@@ -73,41 +75,41 @@ public class PathsScreen extends Screen {
 		return top + H - 10;
 	}
 
-	/** Where the Path's first goal sits, before panning. */
-	private int originX() {
-		return (int) (left + W / 2 - GAP * 2 + panX);
+	/** The Progress panel: left, top, right, bottom (inside its lava frame). */
+	private int[] progressPanel() {
+		return new int[] {mapX0() + 8, mapY0() + 6, mapX0() + 8 + PROGRESS_W, mapY1() - 6};
 	}
 
-	private int originY() {
-		// The Path's goals sit 40 px above the map's middle, so the whole Path (title to buff tree) is centered.
-		return (int) ((mapY0() + mapY1()) / 2 - 40 + panY);
+	/** The Skill panel: left, top, right, bottom (inside its lava frame). */
+	private int[] skillPanel() {
+		int[] p = progressPanel();
+		return new int[] {p[2] + 8, p[1], mapX1() - 8, p[3]};
 	}
 
-	private int[] node(int i) {
-		return new int[] {originX() + i * GAP - NODE / 2, originY() - NODE / 2, NODE, NODE};
-	}
-
-	/** The buff tree: Fire Resistance on the left, Burning Blows and Warm Heart next, Nether Strength and Hot Heart last. */
-	private int[] buff(int i) {
-		Buff buff = Buff.values()[i];
-		int column = buff.tier - 1;
-		int row = switch (buff) {
-			case FIRE_RESISTANCE -> 0;
-			case BURNING_BLOWS, NETHER_STRENGTH -> -1;
-			default -> 1;
-		};
-		int x = originX() + GAP * 2 - (BUFF + 40) + column * (BUFF + 40) - BUFF / 2;
-		int y = originY() + 80 + row * (BUFF + 16) - BUFF / 2;
-		return new int[] {x, y, BUFF, BUFF};
-	}
-
-	private boolean inMap(double x, double y) {
-		return x >= mapX0() && x < mapX1() && y >= mapY0() && y < mapY1();
+	private static boolean in(int[] r, double x, double y) {
+		return x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
 	}
 
 	private static boolean inside(int[] box, double x, double y) {
 		return x >= box[0] && x < box[0] + box[2] && y >= box[1] && y < box[1] + box[3];
 	}
+
+	/** A buff's square: Fire Resistance on the left, Burning Blows and Warm Heart next, Nether Strength and Hot Heart last. */
+	private int[] buff(int i) {
+		Buff buff = Buff.values()[i];
+		int[] s = skillPanel();
+		int cx = (s[0] + s[2]) / 2 + (int) panX;
+		int cy = (s[1] + s[3]) / 2 + 14 + (int) panY;
+		int column = buff.tier - 2;
+		int row = switch (buff) {
+			case FIRE_RESISTANCE -> 0;
+			case BURNING_BLOWS, NETHER_STRENGTH -> -1;
+			default -> 1;
+		};
+		return new int[] {cx + column * (BUFF + 36) - BUFF / 2, cy + row * (BUFF + 20) - BUFF / 2, BUFF, BUFF};
+	}
+
+	// ---------------------------------------------------------------- drawing
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
@@ -116,161 +118,133 @@ public class PathsScreen extends Screen {
 		left = (this.width - W) / 2;
 		top = (this.height - H) / 2;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/window"), left, top, W, H);
-		Component title = Component.literal("Paths").withStyle(style -> style.withBold(true)).withColor(0x404040);
+		Component title = Component.literal(WildfirePath.NAME).withStyle(style -> style.withBold(true)).withColor(0x404040);
 		g.text(this.font, title, left + W / 2 - this.font.width(title) / 2, top + 7, 0xFF404040, false);
-		g.fill(mapX0(), mapY0(), mapX1(), mapY1(), 0xFF0C0A12);
-		g.enableScissor(mapX0(), mapY0(), mapX1(), mapY1());
-		drawPortal(g);
-		if (WildfirePath.discovered(data)) {
-			// The Path of the Wildfire's own ground: nether bricks in a lava frame.
-			int[] r = wildfireArea();
-			g.enableScissor(r[0], r[1], r[2], r[3]);
-			drawBricks(g);
-			g.disableScissor();
-			var lava = block("lava_still");
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1] - 2, r[2] - r[0] + 4, 2);
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[3], r[2] - r[0] + 4, 2);
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1], 2, r[3] - r[1]);
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[2], r[1], 2, r[3] - r[1]);
-		}
+		drawStarfield(g, mapX0(), mapY0(), mapX1(), mapY1(), 0, 0);
 		List<Component> tooltip = null;
-		if (!WildfirePath.discovered(data)) {
-			Component none = Component.literal("No Paths discovered yet...").withStyle(style -> style.withItalic(true)).withColor(0x808080);
-			g.text(this.font, none, left + W / 2 - this.font.width(none) / 2, (mapY0() + mapY1()) / 2 - 4, WHITE, false);
-		} else {
-			tooltip = drawWildfire(g, data, mouseX, mouseY);
-		}
+
+		int[] p = progressPanel();
+		lavaFrame(g, p);
+		g.enableScissor(p[0], p[1], p[2], p[3]);
+		drawFloor(g, p, SOUL_FLOOR, 0, (int) -scroll, 0x55000000);
+		List<Component> t = drawProgress(g, data, p, mouseX, mouseY);
 		g.disableScissor();
-		if (tooltip != null && inMap(mouseX, mouseY)) {
+		if (t != null && in(p, mouseX, mouseY)) {
+			tooltip = t;
+		}
+
+		int[] s = skillPanel();
+		lavaFrame(g, s);
+		g.enableScissor(s[0], s[1], s[2], s[3]);
+		drawFloor(g, s, BRICKS, (int) panX, (int) panY, 0x66000000);
+		t = drawSkills(g, data, s, mouseX, mouseY);
+		g.disableScissor();
+		if (t != null && in(s, mouseX, mouseY)) {
+			tooltip = t;
+		}
+		if (tooltip != null) {
 			g.setTooltipForNextFrame(this.font, tooltip, Optional.empty(), mouseX, mouseY);
 		}
 	}
 
-	// ---------------------------------------------------------------- textures
-
-	private static net.minecraft.client.renderer.texture.TextureAtlasSprite block(String name) {
-		return net.minecraft.client.Minecraft.getInstance().getAtlasManager().get(new net.minecraft.client.resources.model.sprite.SpriteId(
-				net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS, net.minecraft.resources.Identifier.withDefaultNamespace("block/" + name)));
-	}
-
-	private static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",
-			"chiseled_nether_bricks"};
-
-	private static final net.minecraft.resources.Identifier END_PORTAL =
-			net.minecraft.client.renderer.blockentity.AbstractEndPortalRenderer.END_PORTAL_LOCATION;
-
-	/** The Paths map's floor: the end portal's starfield, darkened, drifting slowly and moving with the map. */
-	private void drawPortal(GuiGraphicsExtractor g) {
-		int size = 256;
-		double drift = System.currentTimeMillis() / 200.0 % size;
-		int ox = (int) Math.floor(panX * 0.5 + drift);
-		int oy = (int) Math.floor(panY * 0.5);
-		for (int y = mapY0() + Math.floorMod(oy, size) - size; y < mapY1(); y += size) {
-			for (int x = mapX0() + Math.floorMod(ox, size) - size; x < mapX1(); x += size) {
-				g.blit(RenderPipelines.GUI_TEXTURED, END_PORTAL, x, y, 0.0F, 0.0F, size, size, size, size);
-			}
-		}
-		g.fill(mapX0(), mapY0(), mapX1(), mapY1(), 0x99000000);
-	}
-
-	/** The area the Path of the Wildfire covers on the map: left, top, right, bottom. */
-	private int[] wildfireArea() {
-		int left = node(0)[0] - 14;
-		int right = node(WildfirePath.GOALS.size() - 1)[0] + NODE + 14;
-		int top = originY() - 56;
-		int bottom = buff(Buff.WARM_HEART.ordinal())[1] + BUFF + 10;
-		return new int[] {left, top, right, bottom};
-	}
-
-	/** The Path of the Wildfire's floor: a random mix of nether bricks that moves with the map. */
-	private void drawBricks(GuiGraphicsExtractor g) {
-		int ox = (int) Math.floor(panX);
-		int oy = (int) Math.floor(panY);
-		int startX = mapX0() + Math.floorMod(ox, 16) - 16;
-		int startY = mapY0() + Math.floorMod(oy, 16) - 16;
-		for (int y = startY; y < mapY1(); y += 16) {
-			for (int x = startX; x < mapX1(); x += 16) {
-				int tx = Math.floorDiv(x - mapX0() - ox, 16);
-				int ty = Math.floorDiv(y - mapY0() - oy, 16);
-				long h = (tx * 73856093L) ^ (ty * 19349663L);
-				h ^= h >>> 13;
-				String name = BRICKS[(int) Math.floorMod(h * 0x9E3779B97F4A7C15L >>> 40, (long) BRICKS.length)];
-				g.blitSprite(RenderPipelines.GUI_TEXTURED, block(name), x, y, 16, 16);
-			}
-		}
-		g.fill(mapX0(), mapY0(), mapX1(), mapY1(), 0x66000000);
-	}
-
-	/** A square: a lava frame (animated) around obsidian, or crying obsidian while locked. */
-	private static void square(GuiGraphicsExtractor g, int x, int y, int size, boolean unlocked) {
-		var lava = block("lava_still");
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, x - 2, y - 2, size + 4, 2);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, x - 2, y + size, size + 4, 2);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, x - 2, y, 2, size);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, x + size, y, 2, size);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, block(unlocked ? "obsidian" : "crying_obsidian"), x, y, size, size);
-	}
-
-	/** A lava line between two points (straight, or bent at the middle). */
-	private static void lavaLine(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1) {
-		var lava = block("lava_still");
-		int mid = (x0 + x1) / 2;
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, Math.min(x0, mid), y0 - 1, Math.abs(mid - x0) + 2, 2);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, mid - 1, Math.min(y0, y1) - 1, 2, Math.abs(y1 - y0) + 2);
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, Math.min(mid, x1), y1 - 1, Math.abs(x1 - mid) + 2, 2);
-	}
-
-	private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
-
-	private List<Component> drawWildfire(GuiGraphicsExtractor g, HuntData data, int mouseX, int mouseY) {
+	/** The goals reached (their names) and the next one (its hint); nothing after it. */
+	private List<Component> drawProgress(GuiGraphicsExtractor g, HuntData data, int[] p, int mouseX, int mouseY) {
 		List<Component> tooltip = null;
-		Component name = Component.literal(WildfirePath.NAME).withColor(WildfirePath.COLOR);
-		int cx = originX() + GAP * 2;
-		g.text(this.font, name, cx - this.font.width(name) / 2, originY() - 47, WHITE, true);
-		// The points: [free / most].
+		int reached = data.wildfireGoals;
+		int shown = Math.min(WildfirePath.GOALS.size(), reached + 1);
+		int textX = p[0] + 6 + NODE + 8;
+		int textW = p[2] - textX - 4;
+		int y = p[1] + 8 - (int) scroll;
+		int[] previous = null;
+		for (int i = 0; i < shown; i++) {
+			boolean done = i < reached;
+			String text = done ? WildfirePath.GOALS.get(i) : WildfirePath.HINTS.get(i);
+			List<FormattedCharSequence> lines = this.font.split(done ? Component.literal(text).withColor(0xFFFFFF)
+					: Component.literal(text).withStyle(style -> style.withItalic(true)).withColor(0xC8B8A8), textW);
+			if (!done && i == 2) {
+				lines = new ArrayList<>(lines);
+				lines.addAll(this.font.split(Component.literal("Blazes: " + Math.min(WildfirePath.BLAZES, data.wildfireBlazes) + "/"
+						+ WildfirePath.BLAZES).withColor(0xFFCC66), textW));
+			}
+			int[] box = {p[0] + 6, y, NODE, NODE};
+			if (previous != null) {
+				lavaRun(g, previous[0] + NODE / 2, previous[1] + NODE + 2, box[1] - 2, true);
+			}
+			square(g, box[0], box[1], NODE, done);
+			numeral(g, box, i, true);
+			int ty = y + Math.max(0, (NODE - lines.size() * 9) / 2);
+			for (FormattedCharSequence line : lines) {
+				g.text(this.font, line, textX, ty, WHITE, true);
+				ty += 9;
+			}
+			if (inside(box, mouseX, mouseY)) {
+				List<Component> tip = new ArrayList<>();
+				tip.add(Component.literal(done ? WildfirePath.GOALS.get(i) : "Next goal").withColor(WildfirePath.COLOR));
+				tip.add(Component.literal("+1 Wildfire point").withColor(0xFFCC66));
+				if (i < WildfirePath.BONUS_GOALS) {
+					tip.add(Component.literal("Blazing Heart drop chance +1%").withColor(0xFFCC66));
+				}
+				tooltip = tip;
+			}
+			previous = box;
+			y += Math.max(NODE, lines.size() * 9) + 14;
+		}
+		progressHeight = y + (int) scroll - p[1];
+		return tooltip;
+	}
+
+	/** The points counter and the buff tree. A buff whose parent isn't taken stays a nameless crying obsidian square. */
+	private List<Component> drawSkills(GuiGraphicsExtractor g, HuntData data, int[] s, int mouseX, int mouseY) {
+		List<Component> tooltip = null;
+		// The points: [to spend / most], centered at the top of the panel.
 		String count = WildfirePath.free(data) + "/" + WildfirePath.maxPoints();
 		int pw = this.font.width(count) + 10;
-		int px = cx - pw / 2;
-		int py = originY() - 32;
-		var lava = block("lava_still");
-		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, px - 2, py - 2, pw + 4, 15);
+		int px = (s[0] + s[2]) / 2 - pw / 2 + (int) panX;
+		int py = s[1] + 10 + (int) panY;
+		lavaFrame(g, new int[] {px, py, px + pw, py + 11});
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, block("obsidian"), px, py, pw, 11);
 		g.text(this.font, Component.literal(count).withColor(0xFFA040), px + 5, py + 2, WHITE, true);
 		if (mouseX >= px - 2 && mouseX < px + pw + 2 && mouseY >= py - 2 && mouseY < py + 13) {
-			tooltip = List.of(Component.literal("Wildfire points: " + WildfirePath.free(data) + " to spend, "
-					+ WildfirePath.points(data) + " of " + WildfirePath.maxPoints() + " earned").withColor(0xFFFFFF),
-					Component.literal("Gain a ").withColor(0xFFFFFF).append(Component.literal("Wildfire point").withColor(WildfirePath.COLOR))
-							.append(Component.literal(" for every goal on this Path!").withColor(0xFFFFFF)));
+			tooltip = List.of(Component.literal("Gain a ").withColor(0xFFFFFF).append(Component.literal("Wildfire point").withColor(WildfirePath.COLOR))
+					.append(Component.literal(" for every goal on this Path!").withColor(0xFFFFFF)));
 		}
-		int goals = WildfirePath.GOALS.size();
-		int reached = data.wildfireGoals;
-		for (int i = 0; i < goals - 1; i++) {
-			int[] a = node(i);
-			lavaLine(g, a[0] + NODE + 2, originY(), a[0] + GAP - 2, originY());
-		}
-		for (int i = 0; i < goals; i++) {
-			int[] b = node(i);
-			square(g, b[0], b[1], NODE, i < reached);
-			// The numeral shows once the goal before it is reached.
-			if (i <= reached) {
-				Component mark = Component.literal(ROMAN[i]).withStyle(style -> style.withBold(true)).withColor(0xFFFFFF);
-				g.text(this.font, mark, b[0] + (NODE - this.font.width(mark)) / 2, b[1] + (NODE - 7) / 2, WHITE, true);
+		// Connectors: one clean run per parent (out, down or up to each child's row, in).
+		for (Buff parentBuff : Buff.values()) {
+			List<int[]> children = new ArrayList<>();
+			for (Buff child : Buff.values()) {
+				if (child.parent == parentBuff) {
+					children.add(buff(child.ordinal()));
+				}
 			}
-			if (inside(b, mouseX, mouseY)) {
-				tooltip = goalTooltip(data, i);
+			if (children.isEmpty()) {
+				continue;
 			}
-		}
-		// The buff tree: lines first, then the squares.
-		for (Buff buff : Buff.values()) {
-			if (buff.parent != null) {
-				int[] a = buff(buff.parent.ordinal());
-				int[] b = buff(buff.ordinal());
-				lavaLine(g, a[0] + BUFF + 2, a[1] + BUFF / 2, b[0] - 2, b[1] + BUFF / 2);
+			int[] a = buff(parentBuff.ordinal());
+			int ay = a[1] + BUFF / 2;
+			int startX = a[0] + BUFF + 2;
+			int endX = children.get(0)[0] - 2;
+			int mid = (startX + endX) / 2;
+			boolean straight = children.size() == 1 && children.get(0)[1] + BUFF / 2 == ay;
+			if (straight) {
+				lavaRun(g, ay, startX, endX, false);
+				continue;
+			}
+			int minY = ay;
+			int maxY = ay;
+			for (int[] c : children) {
+				minY = Math.min(minY, c[1] + BUFF / 2);
+				maxY = Math.max(maxY, c[1] + BUFF / 2);
+			}
+			lavaRun(g, ay, startX, mid + 1, false);
+			lavaRun(g, mid, minY - 1, maxY + 1, true);
+			for (int[] c : children) {
+				lavaRun(g, c[1] + BUFF / 2, mid - 1, c[0] - 2, false);
 			}
 		}
 		for (Buff buff : Buff.values()) {
 			int[] b = buff(buff.ordinal());
 			boolean owned = WildfirePath.has(data, buff);
+			boolean known = buff.parent == null || WildfirePath.has(data, buff.parent);
 			square(g, b[0], b[1], BUFF, owned);
 			var pose = g.pose();
 			pose.pushMatrix();
@@ -281,17 +255,16 @@ public class PathsScreen extends Screen {
 			pose.popMatrix();
 			if (inside(b, mouseX, mouseY)) {
 				List<Component> lines = new ArrayList<>();
-				lines.add(Component.literal(buff.title).withColor(WildfirePath.COLOR));
-				lines.add(Component.literal(buff.description).withColor(0xAAAAAA));
-				if (owned) {
-					lines.add(Component.literal("Taken").withColor(0x55FF55));
-					if (WildfirePath.hasChild(data, buff)) {
-						lines.add(Component.literal("Give back the buffs after it first").withColor(0xAAAAAA));
-					}
-				} else if (buff.parent != null && !WildfirePath.has(data, buff.parent)) {
-					lines.add(Component.literal("Needs " + buff.parent.title).withColor(0xFF5555));
+				if (!known) {
+					lines.add(Component.literal("???").withColor(0x808080));
 				} else {
-					lines.add(Component.literal("Cost: 1 Wildfire point").withColor(WildfirePath.free(data) > 0 ? 0xFFCC66 : 0xFF5555));
+					lines.add(Component.literal(buff.title).withColor(WildfirePath.COLOR));
+					lines.add(Component.literal(buff.description).withColor(0xAAAAAA));
+					if (owned) {
+						lines.add(Component.literal("Taken").withColor(0x55FF55));
+					} else {
+						lines.add(Component.literal("Cost: 1 Wildfire point").withColor(WildfirePath.free(data) > 0 ? 0xFFCC66 : 0xFF5555));
+					}
 				}
 				tooltip = lines;
 			}
@@ -299,45 +272,110 @@ public class PathsScreen extends Screen {
 		return tooltip;
 	}
 
-	private static List<Component> goalTooltip(HuntData data, int i) {
-		int reached = data.wildfireGoals;
-		List<Component> lines = new ArrayList<>();
-		if (i > reached) {
-			lines.add(Component.literal("???").withColor(0x808080));
-			lines.add(Component.literal("Reach the goals before it first.").withColor(0x808080));
-			return lines;
-		}
-		lines.add(Component.literal(WildfirePath.GOALS.get(i)).withColor(WildfirePath.COLOR));
-		if (i < reached) {
-			lines.add(Component.literal("Done").withColor(0x55FF55));
-		} else if (i == 2) {
-			lines.add(Component.literal("Blazes: " + Math.min(WildfirePath.BLAZES, data.wildfireBlazes) + "/" + WildfirePath.BLAZES).withColor(0xFFFFFF));
-		} else {
-			lines.add(Component.literal("Next goal").withColor(0xFFAA00));
-		}
-		lines.add(Component.literal("+1 Wildfire point").withColor(0xFFCC66));
-		if (i < WildfirePath.BONUS_GOALS) {
-			lines.add(Component.literal("Blazing Heart drop chance +1%").withColor(0xFFCC66));
-		}
-		return lines;
+	private void numeral(GuiGraphicsExtractor g, int[] box, int i, boolean bold) {
+		Component mark = Component.literal(ROMAN[i]).withStyle(style -> style.withBold(bold)).withColor(0xFFFFFF);
+		g.text(this.font, mark, box[0] + (box[2] - this.font.width(mark)) / 2, box[1] + (box[3] - 7) / 2, WHITE, true);
 	}
+
+	// ---------------------------------------------------------------- textures
+
+	static net.minecraft.client.renderer.texture.TextureAtlasSprite block(String name) {
+		return net.minecraft.client.Minecraft.getInstance().getAtlasManager().get(new net.minecraft.client.resources.model.sprite.SpriteId(
+				net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS, net.minecraft.resources.Identifier.withDefaultNamespace("block/" + name)));
+	}
+
+	static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",
+			"chiseled_nether_bricks"};
+	/** Mostly soul sand, some soul soil, a little bone. */
+	static final String[] SOUL_FLOOR = {"soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_soil", "soul_soil",
+			"bone_block_side"};
+	static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+
+	private static final net.minecraft.resources.Identifier END_PORTAL =
+			net.minecraft.client.renderer.blockentity.AbstractEndPortalRenderer.END_PORTAL_LOCATION;
+
+	/** The darkened end portal starfield, drifting slowly (used by the Paths and the Soul Nexus). */
+	public static void drawStarfield(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1, double panX, double panY) {
+		g.fill(x0, y0, x1, y1, 0xFF0C0A12);
+		g.enableScissor(x0, y0, x1, y1);
+		int size = 256;
+		double drift = System.currentTimeMillis() / 200.0 % size;
+		int ox = (int) Math.floor(panX * 0.5 + drift);
+		int oy = (int) Math.floor(panY * 0.5);
+		for (int y = y0 + Math.floorMod(oy, size) - size; y < y1; y += size) {
+			for (int x = x0 + Math.floorMod(ox, size) - size; x < x1; x += size) {
+				g.blit(RenderPipelines.GUI_TEXTURED, END_PORTAL, x, y, 0.0F, 0.0F, size, size, size, size);
+			}
+		}
+		g.fill(x0, y0, x1, y1, 0x99000000);
+		g.disableScissor();
+	}
+
+	/** A random mix of blocks filling a panel, moving with (ox, oy). */
+	static void drawFloor(GuiGraphicsExtractor g, int[] r, String[] blocks, int ox, int oy, int shade) {
+		int startX = r[0] + Math.floorMod(ox, 16) - 16;
+		int startY = r[1] + Math.floorMod(oy, 16) - 16;
+		for (int y = startY; y < r[3]; y += 16) {
+			for (int x = startX; x < r[2]; x += 16) {
+				int tx = Math.floorDiv(x - r[0] - ox, 16);
+				int ty = Math.floorDiv(y - r[1] - oy, 16);
+				long h = (tx * 73856093L) ^ (ty * 19349663L);
+				h ^= h >>> 13;
+				String name = blocks[(int) Math.floorMod(h * 0x9E3779B97F4A7C15L >>> 40, (long) blocks.length)];
+				g.blitSprite(RenderPipelines.GUI_TEXTURED, block(name), x, y, 16, 16);
+			}
+		}
+		g.fill(r[0], r[1], r[2], r[3], shade);
+	}
+
+	/** A 2-pixel lava frame around a rectangle (left, top, right, bottom). */
+	static void lavaFrame(GuiGraphicsExtractor g, int[] r) {
+		var lava = block("lava_still");
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1] - 2, r[2] - r[0] + 4, 2);
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[3], r[2] - r[0] + 4, 2);
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[0] - 2, r[1], 2, r[3] - r[1]);
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, r[2], r[1], 2, r[3] - r[1]);
+	}
+
+	/** A square: a lava frame (animated) around obsidian, or crying obsidian while not reached or taken. */
+	static void square(GuiGraphicsExtractor g, int x, int y, int size, boolean unlocked) {
+		lavaFrame(g, new int[] {x, y, x + size, y + size});
+		g.blitSprite(RenderPipelines.GUI_TEXTURED, block(unlocked ? "obsidian" : "crying_obsidian"), x, y, size, size);
+	}
+
+	/**
+	 * A 2-pixel lava run: horizontal at height `at` from `from` to `to` (x), or vertical at x `at` from `from` to `to` (y).
+	 * Runs are exact, so joints meet without stubs.
+	 */
+	static void lavaRun(GuiGraphicsExtractor g, int at, int from, int to, boolean vertical) {
+		int a = Math.min(from, to);
+		int b = Math.max(from, to);
+		if (b <= a) {
+			return;
+		}
+		var lava = block("lava_still");
+		if (vertical) {
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, at - 1, a, 2, b - a);
+		} else {
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, lava, a, at - 1, b - a, 2);
+		}
+	}
+
+	// ---------------------------------------------------------------- input
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		HuntData data = ClientHuntState.data;
-		if (WildfirePath.discovered(data) && inMap(event.x(), event.y())) {
-			boolean add = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;
-			boolean take = event.button() == InputConstants.MOUSE_BUTTON_LEFT;
+		boolean attack = this.minecraft.options.keyAttack.matchesMouse(event);
+		boolean use = this.minecraft.options.keyUse.matchesMouse(event);
+		if (in(skillPanel(), event.x(), event.y())) {
 			for (Buff buff : Buff.values()) {
-				if ((add || take) && inside(buff(buff.ordinal()), event.x(), event.y())) {
-					ClientPlayNetworking.send(new HuntPayloads.Action("wildfire_buff", Integer.toString(buff.ordinal()), add ? 1 : -1));
+				if ((attack || use) && inside(buff(buff.ordinal()), event.x(), event.y())) {
+					ClientPlayNetworking.send(new HuntPayloads.Action("wildfire_buff", Integer.toString(buff.ordinal()), attack ? 1 : -1));
 					return true;
 				}
 			}
-		}
-		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && inMap(event.x(), event.y())) {
 			dragging = true;
-			dragged = 0;
 			return true;
 		}
 		return super.mouseClicked(event, doubleClick);
@@ -346,9 +384,8 @@ public class PathsScreen extends Screen {
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
 		if (dragging) {
-			panX = Math.max(-220, Math.min(220, panX + dx));
-			panY = Math.max(-120, Math.min(120, panY + dy));
-			dragged += Math.abs(dx) + Math.abs(dy);
+			panX = Math.max(-140, Math.min(140, panX + dx));
+			panY = Math.max(-90, Math.min(90, panY + dy));
 			return true;
 		}
 		return super.mouseDragged(event, dx, dy);
@@ -358,5 +395,16 @@ public class PathsScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		dragging = false;
 		return super.mouseReleased(event);
+	}
+
+	@Override
+	public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
+		int[] p = progressPanel();
+		if (in(p, x, y)) {
+			int max = Math.max(0, progressHeight - (p[3] - p[1]) + 6);
+			scroll = Math.max(0, Math.min(max, scroll - scrollY * 12));
+			return true;
+		}
+		return super.mouseScrolled(x, y, scrollX, scrollY);
 	}
 }

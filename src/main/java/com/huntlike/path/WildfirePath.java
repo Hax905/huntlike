@@ -23,7 +23,6 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.hurtingprojectile.WitherSkull;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -54,7 +53,15 @@ public final class WildfirePath {
 	public static final String NAME = "Path of the Wildfire";
 	public static final int COLOR = 0xFF8A2A;
 	public static final List<String> GOALS = List.of("Find a Blazing Heart", "Consume a Blazing Heart", "Slay 100 blazes",
-			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton");
+			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton", "Survive the Blazing Spawner");
+	/** The hint each goal shows while it's the next one (drafts, to be rewritten). */
+	public static final List<String> HINTS = List.of(
+			"Deep in the fortresses of the Nether, the fire spirits guard a pulse that should not beat. Let them fall, and listen.",
+			"A heart this warm was never meant to be held. Some things are only understood once they are inside you.",
+			"One flame is a spark; a hundred are a wildfire. Put the fire spirits out until their ashes cover the fortress floor.",
+			"The gold-hungry wanderers of the wastes crave warmth above all else. Feed one what burns, and face what it becomes.",
+			"Black bones still walk the fortress halls. A heart that has burned once could make them remember the flame.",
+			"Bring the heart that burned three times back to the cage where the fire spirits are born, and endure what crawls out.");
 	public static final int BLAZES = 100;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;
@@ -175,7 +182,7 @@ public final class WildfirePath {
 		} else if (delta < 0 && owned && !hasChild(data, b)) {
 			data.wildfireBuffs &= ~b.bit();
 		} else {
-			QuestManager.playSound(player, SoundEvents.VILLAGER_NO, 1.0F);
+			QuestManager.playSound(player, SoundEvents.CHAIN_BREAK, 1.0F);
 			return;
 		}
 		player.setAttached(QuestManager.DATA, data);
@@ -187,13 +194,13 @@ public final class WildfirePath {
 
 	/** Fire Resistance, Burning Blows and Nether Strength; the Blazing Wither Skeleton's skulls deal 12. */
 	public static float adjust(LivingEntity target, DamageSource source, float amount) {
-		if (source.getDirectEntity() instanceof WitherSkull && source.getEntity() instanceof BlazingWitherSkeleton) {
-			amount = BlazingWitherSkeleton.SKULL_DAMAGE;
-		}
-		// Imps' fireballs hit twice as hard as a blaze's.
-		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball
-				&& source.getEntity() instanceof Imp) {
-			amount *= 2.0F;
+		// Imps' fireballs hit twice as hard as a blaze's; the Demonling's 50% harder.
+		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball) {
+			if (source.getEntity() instanceof Imp) {
+				amount *= 2.0F;
+			} else if (source.getEntity() instanceof Demonling) {
+				amount *= 1.5F;
+			}
 		}
 		if (source.getEntity() instanceof ServerPlayer attacker && attacker != target && attacker.level().dimension() == Level.NETHER) {
 			HuntData data = QuestManager.data(attacker);
@@ -274,6 +281,7 @@ public final class WildfirePath {
 		if (!(source.getEntity() instanceof ServerPlayer player) || !(entity.level() instanceof ServerLevel level)) {
 			return;
 		}
+		collectBlood(player, entity);
 		HuntData data = QuestManager.data(player);
 		if (entity.getType() == EntityTypes.BLAZE) {
 			var looting = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.LOOTING);
@@ -298,7 +306,7 @@ public final class WildfirePath {
 	}
 
 	/**
-	 * Feeding hearts: a Blazing Heart turns a piglin into a Blazing Piglin; two Blazing Hearts ★ make a Blazing Wither
+	 * Feeding hearts: a Blazing Heart turns a piglin into a Blazing Piglin; a Blazing Heart ★ makes a Blazing Wither
 	 * Skeleton; a Blazing Heart ★★ turns a blaze into a Demonling.
 	 */
 	public static InteractionResult feed(ServerPlayer player, Mob target, ItemStack stack) {
@@ -310,13 +318,6 @@ public final class WildfirePath {
 		}
 		if (target.getType() == EntityTypes.WITHER_SKELETON && stack.is(ModPaths.BLAZING_HEART_STAR)) {
 			stack.consume(1, player);
-			if (!target.entityTags().contains(HALF_FED)) {
-				target.addTag(HALF_FED);
-				level.sendParticles(ParticleTypes.FLAME, target.getX(), target.getY() + 1.2, target.getZ(), 15, 0.3, 0.6, 0.3, 0.02);
-				level.playSound(null, target.blockPosition(), SoundEvents.BLAZE_AMBIENT, SoundSource.HOSTILE, 1.0F, 0.6F);
-				player.sendSystemMessage(Messages.c("The wither skeleton burns... it wants one more.", COLOR));
-				return InteractionResult.SUCCESS;
-			}
 			transform(player, target, new BlazingWitherSkeleton(ModPaths.BLAZING_WITHER_SKELETON, level));
 			return InteractionResult.SUCCESS;
 		}
@@ -328,7 +329,6 @@ public final class WildfirePath {
 		return InteractionResult.PASS;
 	}
 
-	public static final String HALF_FED = "huntlike_blazing_half";
 
 	private static void transform(ServerPlayer player, Mob from, Mob to) {
 		ServerLevel level = player.level();
@@ -361,22 +361,51 @@ public final class WildfirePath {
 		return feedable ? InteractionResult.SUCCESS : InteractionResult.PASS;
 	}
 
-	/** A Blazing Heart ★★★ on a spawner: it spawns Imps from now on. */
+	/** A Blazing Heart ★★★ on a blaze spawner (only those: it sends the player to a fortress): the Blazing Spawner's three rounds. */
 	public static boolean upgradeSpawner(ServerPlayer player, net.minecraft.core.BlockPos pos, ItemStack stack) {
 		ServerLevel level = player.level();
 		if (!(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.SpawnerBlockEntity spawner)
-				|| !stack.is(ModPaths.BLAZING_HEART_STAR3)) {
+				|| !stack.is(ModPaths.BLAZING_HEART_STAR3)
+				|| !spawner.saveWithoutMetadata(level.registryAccess()).toString().contains("minecraft:blaze")) {
 			return false;
 		}
-		spawner.setEntityId(ModPaths.IMP, level.getRandom());
-		spawner.setChanged();
-		level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+		level.setBlockAndUpdate(pos, ModPaths.BLAZING_SPAWNER.defaultBlockState());
+		if (level.getBlockEntity(pos) instanceof BlazingSpawnerBlockEntity blazing) {
+			blazing.setOwner(player.getUUID());
+		}
 		stack.consume(1, player);
 		level.sendParticles(ParticleTypes.LAVA, pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 20, 0.4, 0.4, 0.4, 0.0);
 		level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 40, 0.5, 0.5, 0.5, 0.03);
 		level.playSound(null, pos, SoundEvents.BLAZE_SHOOT, SoundSource.BLOCKS, 1.5F, 0.5F);
-		player.sendSystemMessage(Messages.c("The spawner burns hotter... Imps will come out of it now.", COLOR));
+		player.sendSystemMessage(Messages.c("The spawner burns hotter... something is coming out of it.", COLOR));
 		return true;
+	}
+
+	/** Creatures with flesh: animals (hoglins and striders too), zombies of every kind, piglins, villagers and illagers. */
+	public static boolean hasFlesh(LivingEntity entity) {
+		return entity instanceof net.minecraft.world.entity.animal.Animal || entity instanceof net.minecraft.world.entity.monster.zombie.Zombie
+				|| entity instanceof net.minecraft.world.entity.monster.Zoglin
+				|| entity instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin
+				|| entity instanceof net.minecraft.world.entity.npc.villager.AbstractVillager
+				|| entity instanceof net.minecraft.world.entity.raid.Raider;
+	}
+
+	/** A fleshy kill with the Chalice in the off-hand: one drop of blood; at 100 it becomes the Full Chalice. */
+	private static void collectBlood(ServerPlayer player, LivingEntity victim) {
+		ItemStack chalice = player.getOffhandItem();
+		if (!chalice.is(ModPaths.CHALICE_ITEM) || !hasFlesh(victim)) {
+			return;
+		}
+		int blood = Math.min(ChaliceItem.MAX_BLOOD, ChaliceItem.blood(chalice) + 1);
+		if (blood >= ChaliceItem.MAX_BLOOD) {
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new ItemStack(ModPaths.FULL_CHALICE));
+			player.sendSystemMessage(Messages.c("The chalice is full.", 0xAA0000));
+			player.level().playSound(null, player.blockPosition(), SoundEvents.BOTTLE_FILL, SoundSource.PLAYERS, 1.0F, 0.5F);
+			return;
+		}
+		chalice.set(ModPaths.BLOOD, blood);
+		player.level().sendParticles(new net.minecraft.core.particles.DustParticleOptions(0x6A0000, 1.0F), victim.getX(),
+				victim.getY() + victim.getBbHeight() / 2, victim.getZ(), 8, 0.2, 0.3, 0.2, 0.0);
 	}
 
 	private static InteractionResult onUseBlock(Player player, Level level, InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
@@ -386,7 +415,7 @@ public final class WildfirePath {
 			return InteractionResult.PASS;
 		}
 		if (player instanceof ServerPlayer serverPlayer) {
-			upgradeSpawner(serverPlayer, hit.getBlockPos(), stack);
+			return upgradeSpawner(serverPlayer, hit.getBlockPos(), stack) ? InteractionResult.SUCCESS : InteractionResult.PASS;
 		}
 		return InteractionResult.SUCCESS;
 	}

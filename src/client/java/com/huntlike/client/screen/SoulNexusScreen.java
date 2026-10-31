@@ -92,6 +92,8 @@ public class SoulNexusScreen extends Screen {
 		Component title = Component.literal("Soul Nexus").withStyle(style -> style.withBold(true)).withColor(0x404040);
 		g.text(this.font, title, cx - this.font.width(title) / 2, top + 7, 0xFF404040, false);
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, HuntLike.id("menu/content"), left + 6, top + 18, W - 12, H - 24);
+		// The same darkened, drifting end portal starfield as the Paths.
+		PathsScreen.drawStarfield(g, left + 8, top + 20, left + W - 8, top + H - 8, 0, 0);
 
 		// The triangle, then the cyan shape of the points spent (each corner's share of the cap).
 		for (int i = 0; i < 3; i++) {
@@ -148,9 +150,10 @@ public class SoulNexusScreen extends Screen {
 		String count = Integer.toString(free);
 		int counterW = 12 + this.font.width(count);
 		int counterX = cx - counterW / 2;
-		int counterY = top + 195;
-		drawOrb(g, counterX + 4, counterY + 4, 4, 0xFF55FFFF);
-		drawOrb(g, counterX + 4, counterY + 4, 2, 0xFFCCFFFF);
+		int counterY = top + 190;
+		// The small soul is centered on the number's height.
+		drawOrb(g, counterX + 4, counterY + 3, 4, 0xFF55FFFF);
+		drawOrb(g, counterX + 4, counterY + 3, 2, 0xFFCCFFFF);
 		g.text(this.font, Component.literal(count).withColor(free > 0 ? 0x55FFFF : 0xAAAAAA), counterX + 12, counterY, WHITE, false);
 		if (mouseX >= counterX - 2 && mouseX < counterX + counterW + 2 && mouseY >= counterY - 2 && mouseY < counterY + 10) {
 			g.setTooltipForNextFrame(this.font, List.of(Component.literal("Gain a ").withColor(0xFFFFFF)
@@ -217,7 +220,7 @@ public class SoulNexusScreen extends Screen {
 		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && overSoul(event.x(), event.y())) {
 			this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
 					net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
-			this.minecraft.gui.setScreen(new PathsScreen(this));
+			this.minecraft.gui.setScreen(new PathSelectScreen(this));
 			return true;
 		}
 		boolean add = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;

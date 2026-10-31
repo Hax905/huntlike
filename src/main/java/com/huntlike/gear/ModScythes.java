@@ -61,11 +61,11 @@ public final class ModScythes {
 					"A kama forged with iron converted into a cluster killing weapon."),
 			new Stats(2, "polished_khopesh", "Polished Khopesh", "Act I", 4, 1.6F, 3, 0, 1, Rarity.UNCOMMON,
 					"The weapon was modified to cut clusters with less effort."),
-			new Stats(3, "slimy_falx", "Slimy Falx", "Act II", 4, 1.6F, 4, 5, 2, Rarity.RARE,
+			new Stats(3, "slimy_falx", "Slimy Falx", "Act II", 4, 1.6F, 4, 5, 1, Rarity.RARE,
 					"A system similar to a cluster's biological immune system is growing inside the metal."),
-			new Stats(4, "slimysteel_glaive", "Slimysteel Glaive", "Act III", 4, 1.6F, 5, 15, 3, Rarity.RARE,
+			new Stats(4, "slimysteel_glaive", "Slimysteel Glaive", "Act III", 4, 1.6F, 5, 15, 2, Rarity.RARE,
 					"The weapon's blade can now change between two states, cold and hot."),
-			new Stats(5, "scythe_of_sublimation", "Scythe of Sublimation", "Apotheosis", 5, 1.6F, 5, 30, 3, Rarity.EPIC,
+			new Stats(5, "scythe_of_sublimation", "Scythe of Sublimation", "Apotheosis", 5, 1.6F, 5, 30, 2, Rarity.EPIC,
 					"The now slimy scythe changes states aggressively in no time."));
 
 	public static final Item SLICK_KAMA = scythe(STATS.get(0));

@@ -16,8 +16,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A wither skeleton fed two Blazing Hearts ★: 80 health, 12 contact damage, 30% bigger. Launches a wither skull (12
- * damage) as the fight starts and every 10 seconds after. Drops a Wither Skeleton Skull and a Blazing Heart ★★.
+ * A wither skeleton fed a Blazing Heart ★: 80 health, 12 contact damage, 30% bigger. Launches a wither skull (12
+ * damage, 5 s of Wither) as the fight starts and every 10 seconds after. Drops a Wither Skeleton Skull and a Blazing Heart ★★.
  */
 public class BlazingWitherSkeleton extends WitherSkeleton {
 	public static final float HEALTH = 80.0F;
@@ -73,7 +73,7 @@ public class BlazingWitherSkeleton extends WitherSkeleton {
 	private void launchSkull(ServerLevel level, LivingEntity target) {
 		Vec3 from = this.getEyePosition();
 		Vec3 dir = target.getEyePosition().subtract(from).normalize();
-		WitherSkull skull = new WitherSkull(level, this, dir);
+		WitherSkull skull = new BlazingSkull(level, this, dir);
 		skull.setPos(from.add(dir.scale(0.8)));
 		level.addFreshEntity(skull);
 		skullsShot++;

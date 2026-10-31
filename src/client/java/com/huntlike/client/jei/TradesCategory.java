@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import com.huntlike.HuntLike;
 import com.huntlike.registry.ModBlocks;
 
-/** Gear tab, Koro, Towernaar and PRD trades: what goes in, what comes out, and when it opens. */
+/** Gear tab, Koro, Towernaar and PRD trades: what goes in and what comes out (no unlock hints: they'd spoil the game). */
 public final class TradesCategory extends AbstractRecipeCategory<TradesCategory.Entry> {
 	public record Entry(String title, int color, List<ItemStack> cost, List<ItemStack> result, String note) {
 	}
@@ -26,7 +26,7 @@ public final class TradesCategory extends AbstractRecipeCategory<TradesCategory.
 	static final int COST_COLUMNS = 5;
 
 	public TradesCategory(IGuiHelper gui) {
-		super(TYPE, Component.literal("Hunt Trades"), gui.createDrawableItemLike(ModBlocks.ALPHA_ALTAR), WIDTH, 92);
+		super(TYPE, Component.literal("Hunt Trades"), gui.createDrawableItemLike(ModBlocks.ALPHA_ALTAR), WIDTH, 70);
 	}
 
 	@Override
@@ -46,6 +46,5 @@ public final class TradesCategory extends AbstractRecipeCategory<TradesCategory.
 		builder.addText(Component.literal(entry.title()), WIDTH, 10).setPosition(0, 0).setColor(0xFF000000 | entry.color())
 				.setShadow(true);
 		builder.addText(Component.literal("->"), 16, 10).setPosition(COST_COLUMNS * 18 + 8, 27).setColor(0xFF404040);
-		builder.addText(Component.literal(entry.note()), WIDTH, 20).setPosition(0, 71).setColor(0xFF555555);
 	}
 }

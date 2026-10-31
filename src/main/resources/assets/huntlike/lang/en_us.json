@@ -215,5 +215,8 @@
   "itemGroup.huntlike.paths": "HuntLike - Paths",
   "item.huntlike.blazing_heart_star3": "Blazing Heart ★★★",
   "entity.huntlike.demonling": "Demonling",
-  "entity.huntlike.imp": "Imp"
+  "entity.huntlike.imp": "Imp",
+  "block.huntlike.chalice": "Chalice",
+  "block.huntlike.blazing_spawner": "Blazing Spawner",
+  "item.huntlike.full_chalice": "Full Chalice"
 }

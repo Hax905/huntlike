@@ -52,17 +52,19 @@ public final class WildfirePath {
 
 	public static final String NAME = "Path of the Wildfire";
 	public static final int COLOR = 0xFF8A2A;
-	public static final List<String> GOALS = List.of("Find a Blazing Heart", "Consume a Blazing Heart", "Slay 100 blazes",
-			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton", "Survive the Blazing Spawner");
-	/** The hint each goal shows while it's the next one (drafts, to be rewritten). */
+	public static final List<String> GOALS = List.of("Find a Blazing Heart", "Consume a Blazing Heart", "Slay 50 blazes",
+			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton", "Survive the Blazing Spawner",
+			"Fill Canavar's Chalice with 100 kills of fleshy mobs");
+	/** The hint each goal shows while it's the next one. */
 	public static final List<String> HINTS = List.of(
-			"Deep in the fortresses of the Nether, the fire spirits guard a pulse that should not beat. Let them fall, and listen.",
-			"A heart this warm was never meant to be held. Some things are only understood once they are inside you.",
-			"One flame is a spark; a hundred are a wildfire. Put the fire spirits out until their ashes cover the fortress floor.",
-			"The gold-hungry wanderers of the wastes crave warmth above all else. Feed one what burns, and face what it becomes.",
-			"Black bones still walk the fortress halls. A heart that has burned once could make them remember the flame.",
-			"Bring the heart that burned three times back to the cage where the fire spirits are born, and endure what crawls out.");
-	public static final int BLAZES = 100;
+			"Deep inside the Nether, fortresses of dark colors let the burning souls habit. Some of the souls keep their pounding hearts in their demonic bodies.",
+			"Taste the beating remnants of a burning soul and feel the pain within their sorrow.",
+			"One flame lights a torch but many can light a forest in a screaming wildfire.",
+			"Let the body of a greedy soul burn in the hue that shines within the metal it desires.",
+			"Charred souls corroded by anger, withering bodies of what was once a warrior. Let them burn in the color their soul so burned for anger.",
+			"Inside the cruel cages that trap suffering fiery souls can be brought a sign of life and redemption, the organ of burning blood that must burn more before perishing. May life continue by giving the organ to the cage and letting the most powerful sorrowing souls take over, trialing whoever dared to wake them.",
+			"Fill of not rage or fire the ornament that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.");
+	public static final int BLAZES = 50;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;
 	public static final int BONUS_GOALS = 3;
@@ -400,6 +402,7 @@ public final class WildfirePath {
 		if (blood >= ChaliceItem.MAX_BLOOD) {
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new ItemStack(ModPaths.FULL_CHALICE));
 			player.sendSystemMessage(Messages.c("The chalice is full.", 0xAA0000));
+			reach(player, QuestManager.data(player), 6);
 			player.level().playSound(null, player.blockPosition(), SoundEvents.BOTTLE_FILL, SoundSource.PLAYERS, 1.0F, 0.5F);
 			return;
 		}

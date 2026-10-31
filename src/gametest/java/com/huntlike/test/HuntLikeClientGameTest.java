@@ -3095,7 +3095,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.clearFire();
 			player.setHealth(player.getMaxHealth());
 			HuntData data = QuestManager.data(player);
-			data.wildfireBlazes = 99;
+			data.wildfireBlazes = 49;
 			player.setAttached(QuestManager.DATA, data);
 			var blaze = EntityTypes.BLAZE.create(player.level(), EntitySpawnReason.COMMAND);
 			blaze.snapTo(player.getX() + 3, player.getY(), player.getZ(), 0.0F, 0.0F);
@@ -3328,7 +3328,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		// Let the smoke and ash settle.
 		context.waitTicks(60);
 		context.takeScreenshot("97g-chalice");
-		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (not from skeletons) and becomes a Full Chalice at 100", server -> {
+		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (not from skeletons) and becomes a Full Chalice at 100 (goal 7)", server -> {
 			ServerPlayer player = player(server);
 			var level = player.level();
 			level.setBlockAndUpdate(spawnerPos[0], net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
@@ -3356,7 +3356,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] blood after skeleton {} after cow {} full {}", afterSkeleton, afterCow, full);
 			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(8)).forEach(e -> e.discard());
 			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
-			return afterSkeleton == 98 && afterCow == 99 && full;
+			return afterSkeleton == 98 && afterCow == 99 && full && QuestManager.data(player).wildfireGoals == 7;
 		});
 		context.waitTicks(5);
 		context.takeScreenshot("97h-full-chalice");

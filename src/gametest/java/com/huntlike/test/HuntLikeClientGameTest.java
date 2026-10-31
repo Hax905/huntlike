@@ -1663,7 +1663,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			double boneFlat = bone == null ? 99 : Math.hypot(bone.getX() - point.x, bone.getZ() - point.z);
 			HuntLike.LOGGER.info("[test] Magnetic Wand at 15 ticks: cow {} blocks from the spot, {} above it; boss {}, item {}", flat,
 					cow == null ? 0 : cow.getY() - point.y, cubertFlat, boneFlat);
-			return flat < 1.5 && cow.getY() - point.y < 2.0 && cubertFlat < 2.0 && boneFlat < 1.5;
+			// Close to the spot (a cow may still be hopping a ledge at this moment), and not launched.
+			return flat < 2.0 && cow.getY() - point.y < 2.0 && cubertFlat < 2.0 && boneFlat < 1.5;
 		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 27);
 		assertServer(singleplayer, "it is still held there at 1.35 s; the tamed wolf never moved toward it", server -> {

@@ -3466,6 +3466,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			if (!(player.level().getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
 				return false;
 			}
+			// In the open (the test area's glass stops the ray).
+			player.teleportTo(300.5, player.getY(), 300.5);
+			sorrow.snapTo(300.5, player.getY() + 1.0, 308.5, 180.0F, 0.0F);
 			// Mob damage scales with difficulty: 6 is on Normal.
 			var difficulty = server.getWorldData().getDifficulty();
 			server.setDifficulty(net.minecraft.world.Difficulty.NORMAL, true);

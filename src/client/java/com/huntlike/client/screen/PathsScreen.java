@@ -288,7 +288,7 @@ public class PathsScreen extends Screen {
 			"chiseled_nether_bricks"};
 	/** Mostly soul sand, some soul soil, a little bone. */
 	static final String[] SOUL_FLOOR = {"soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand",
-			"soul_sand", "soul_soil", "soul_soil", "soul_soil", "bone_block_side"};
+			"soul_sand", "soul_soil", "soul_soil", "soul_soil", "bone_block_top"};
 	static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
 	private static final net.minecraft.resources.Identifier END_PORTAL =

@@ -3315,6 +3315,15 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			HuntLike.LOGGER.info("[test] imps killed {} block {} goals {}", seen[0], player.level().getBlockState(spawnerPos[0]), data.wildfireGoals);
 			return seen[0] == 6 && player.level().getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE) && data.wildfireGoals == 6;
 		});
+		java.util.UUID[] shown = new java.util.UUID[1];
+		singleplayer.getServer().runOnServer(server -> {
+			var level = player(server).level();
+			var imp = com.huntlike.path.ModPaths.IMP.create(level, EntitySpawnReason.COMMAND);
+			imp.snapTo(spawnerPos[0].getX() + 1.6, spawnerPos[0].getY(), spawnerPos[0].getZ() + 0.5, 150.0F, 0.0F);
+			imp.setNoAi(true);
+			level.addFreshEntity(imp);
+			shown[0] = imp.getUUID();
+		});
 		context.getInput().lookAt(spawnerPos[0]);
 		// Let the smoke and ash settle.
 		context.waitTicks(60);
@@ -3323,6 +3332,9 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			ServerPlayer player = player(server);
 			var level = player.level();
 			level.setBlockAndUpdate(spawnerPos[0], net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+			if (level.getEntity(shown[0]) != null) {
+				level.getEntity(shown[0]).discard();
+			}
 			var chalice = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.CHALICE_ITEM);
 			chalice.set(com.huntlike.path.ModPaths.BLOOD, 98);
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, chalice);

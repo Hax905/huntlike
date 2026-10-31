@@ -3469,6 +3469,14 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.waitTicks(1);
 		}
 		context.takeScreenshot("97k-spectral-sorrow-ray");
+		// Let any earlier hit's invulnerability wear off first.
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+			player.setHealth(player.getMaxHealth());
+			player.clearFire();
+		});
+		context.waitTicks(25);
 		assertServer(singleplayer, "the Spectral Sorrow's ray deals 6 damage and sets on fire", server -> {
 			ServerPlayer player = player(server);
 			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
@@ -3478,13 +3486,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			if (!(player.level().getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
 				return false;
 			}
-			// In the open (the test area's glass stops the ray).
-			player.teleportTo(300.5, player.getY(), 300.5);
-			sorrow.snapTo(300.5, player.getY() + 1.0, 308.5, 180.0F, 0.0F);
+			// In the open, above the test area (its glass stops the ray).
+			double homeX = player.getX(), homeY = player.getY(), homeZ = player.getZ();
+			player.teleportTo(homeX, homeY + 30.0, homeZ);
+			sorrow.snapTo(homeX, homeY + 31.0, homeZ + 8.0, 180.0F, 0.0F);
 			// Mob damage scales with difficulty: 6 is on Normal.
 			var difficulty = server.getWorldData().getDifficulty();
 			server.setDifficulty(net.minecraft.world.Difficulty.NORMAL, true);
-			player.invulnerableTime = 0;
 			player.removeAllEffects();
 			var dir = player.getEyePosition().subtract(sorrow.position().add(0.0, 1.6, 0.0)).normalize();
 			sorrow.ray(player.level(), dir, true);
@@ -3494,8 +3502,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			server.setDifficulty(difficulty, true);
 			boolean burning = player.isOnFire();
 			HuntLike.LOGGER.info("[test] sorrow ray health {} -> {} burning {}", before, after, burning);
+			player.teleportTo(homeX, homeY, homeZ);
+			player.resetFallDistance();
 			player.setHealth(player.getMaxHealth());
 			player.clearFire();
+			sorrow.snapTo(homeX + 0.5, homeY + 1.0, homeZ + 12.0, 180.0F, 0.0F);
 			return before - after >= 4.0F && burning;
 		});
 		assertServer(singleplayer, "defeating the Spectral Sorrow reaches goal 8 and drops a Blood Crystallization", server -> {

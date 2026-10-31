@@ -1216,7 +1216,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				net.minecraft.world.effect.MobEffects.RESISTANCE, 300, 4, false, false)));
 		context.waitTicks(250);
 		killAll(singleplayer, player -> com.huntlike.hunt.ClusterFight.bodies(player));
-		context.waitTicks(2);
+		// The split can take a few ticks when the CI server lags.
+		for (int i = 0; i < 20 && singleplayer.getServer().computeOnServer(server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size()) != 4; i++) {
+			context.waitTicks(1);
+		}
+		singleplayer.getServer().runOnServer(server -> HuntLike.LOGGER.info("[test] The Vile bodies after the split: {}",
+				com.huntlike.hunt.ClusterFight.bodies(player(server)).size()));
 		assertServer(singleplayer, "Mitosis: The Vile split into 4", server -> com.huntlike.hunt.ClusterFight.bodies(player(server)).size() == 4);
 		// Thermodynamic keeps going after the split: every piece switches its core.
 		final int[] magmaBefore = new int[1];

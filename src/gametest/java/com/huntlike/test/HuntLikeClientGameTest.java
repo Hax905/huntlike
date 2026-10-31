@@ -275,15 +275,21 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				double w = entity.getBbWidth();
 				double h = entity.getBbHeight();
 				double d = 2.5 + Math.max(w, h) * 1.3;
-				entity.snapTo(base[0], base[1], base[2] + d, 210.0F, 0.0F);
+				// Ghasts float: their tentacles hang below the hitbox.
+				double lift = entity instanceof net.minecraft.world.entity.monster.Ghast ? 3.0 : 0.0;
+				entity.snapTo(base[0], base[1] + lift, base[2] + d, 210.0F, 0.0F);
 				if (entity instanceof Mob mob) {
 					mob.setNoAi(true);
 					mob.setYHeadRot(210.0F);
 					mob.yBodyRot = 210.0F;
 				}
 				level.addFreshEntity(entity);
+				if (entity instanceof com.huntlike.rogue.RogueHunter hunter) {
+					// Hidden until hit.
+					hunter.hurtServer(level, level.damageSources().generic(), 0.5F);
+				}
 				id[0] = entity.getUUID();
-				pitch[0] = (float) Math.toDegrees(Math.atan2(1.62 - h / 2.0, d));
+				pitch[0] = (float) Math.toDegrees(Math.atan2(1.62 - lift - h / 2.0, d));
 			});
 			context.runOnClient(client -> {
 				client.player.setYRot(0.0F);

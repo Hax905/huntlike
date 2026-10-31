@@ -19,8 +19,8 @@ import com.huntlike.network.HuntPayloads;
 import com.huntlike.nexus.SoulNexus;
 
 /**
- * The Soul Nexus: your soul in the middle of a triangle with Health, Defense and Damage in the corners. Right-click a
- * corner to add a point, left-click to take one back; Shift does 10. The cyan shape inside shows where the points are.
+ * The Soul Nexus: your soul in the middle of a triangle with Health, Defense and Damage in the corners. Attack (left-click)
+ * on a corner adds a point, use (right-click) takes one back, like the Paths; Shift does 10. The cyan shape inside shows where the points are.
  */
 public class SoulNexusScreen extends Screen {
 	private static final int W = 300;
@@ -223,8 +223,9 @@ public class SoulNexusScreen extends Screen {
 			this.minecraft.gui.setScreen(new PathSelectScreen(this));
 			return true;
 		}
-		boolean add = event.button() == InputConstants.MOUSE_BUTTON_RIGHT;
-		boolean take = event.button() == InputConstants.MOUSE_BUTTON_LEFT;
+		// Same as the Paths: attack (left-click) adds, use (right-click) takes back.
+		boolean add = this.minecraft.options.keyAttack.matchesMouse(event);
+		boolean take = this.minecraft.options.keyUse.matchesMouse(event);
 		if (add || take) {
 			int amount = (event.modifiers() & InputConstants.MOD_SHIFT) != 0 ? 10 : 1;
 			for (int i = 0; i < 3; i++) {

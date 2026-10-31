@@ -54,7 +54,7 @@ public final class WildfirePath {
 	public static final int COLOR = 0xFF8A2A;
 	public static final List<String> GOALS = List.of("Find a Blazing Heart", "Consume a Blazing Heart", "Slay 50 blazes",
 			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton", "Survive the Blazing Spawner",
-			"Fill Canavar's Chalice with 100 kills of fleshy mobs");
+			"Fill Canavar's Chalice with 100 kills of fleshy mobs", "Defeat the Spectral Sorrow");
 	/** The hint each goal shows while it's the next one. */
 	public static final List<String> HINTS = List.of(
 			"Deep inside the Nether, fortresses of dark colors let the burning souls inhabit. Some of the souls keep their pounding hearts in their demonic bodies.",
@@ -63,7 +63,8 @@ public final class WildfirePath {
 			"Let the body of a greedy soul burn in the hue that shines within the metal it desires.",
 			"Charred souls corroded by anger, withering bodies of what was once a warrior. Let them burn in the color their soul so burned for anger.",
 			"Inside the cruel cages that trap suffering fiery souls can be brought a sign of life and redemption, the organ of burning blood that must burn more before perishing. May life continue by giving the organ to the cage and letting the most powerful sorrowing souls take over, trialing whoever dared to wake them.",
-			"Fill the ornament with not rage neither fire that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.");
+			"Fill the ornament with neither rage nor fire that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.",
+			"To what is dry and suffers in hell, that is thirsty for liquid and fell, feed with your effort. Forth will come what suffering can cause to something.");
 	public static final int BLAZES = 50;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;
@@ -304,6 +305,10 @@ public final class WildfirePath {
 			reach(player, data, 3);
 		} else if (entity instanceof BlazingWitherSkeleton) {
 			reach(player, data, 4);
+		} else if (entity instanceof SpectralSorrow) {
+			say(player, "Canavar: This was my daily routine...", 0);
+			say(player, "Canavar: You are strong indeed, young one...", 60);
+			reach(player, data, 7);
 		}
 	}
 
@@ -411,8 +416,64 @@ public final class WildfirePath {
 				victim.getY() + victim.getBbHeight() / 2, victim.getZ(), 8, 0.2, 0.3, 0.2, 0.0);
 	}
 
+	/** The Full Chalice poured on a dried ghast: the Spectral Sorrow rises; the chalice comes back empty. */
+	public static boolean feedDriedGhast(ServerPlayer player, net.minecraft.core.BlockPos pos, InteractionHand hand) {
+		ServerLevel level = player.level();
+		ItemStack stack = player.getItemInHand(hand);
+		if (!stack.is(ModPaths.FULL_CHALICE) || !level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.DRIED_GHAST)) {
+			return false;
+		}
+		level.removeBlock(pos, false);
+		SpectralSorrow sorrow = ModPaths.SPECTRAL_SORROW.create(level, EntitySpawnReason.TRIGGERED);
+		if (sorrow == null) {
+			return false;
+		}
+		sorrow.snapTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, player.getYRot() + 180.0F, 0.0F);
+		level.addFreshEntity(sorrow);
+		sorrow.setTarget(player);
+		player.setItemInHand(hand, new ItemStack(ModPaths.CHALICE_ITEM));
+		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(0x8A0303, 2.0F), pos.getX() + 0.5, pos.getY() + 1.5,
+				pos.getZ() + 0.5, 60, 1.2, 1.2, 1.2, 0.0);
+		level.sendParticles(ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 30, 1.0, 1.0, 1.0, 0.03);
+		level.playSound(null, pos, SoundEvents.GHAST_SCREAM, SoundSource.HOSTILE, 3.0F, 0.5F);
+		level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY, SoundSource.PLAYERS, 1.0F, 0.6F);
+		return true;
+	}
+
+	/** Chat lines sent later: player, game tick, text. */
+	private static final java.util.List<Object[]> LATER = new java.util.ArrayList<>();
+
+	private static void say(ServerPlayer player, String text, int delay) {
+		if (delay <= 0) {
+			player.sendSystemMessage(Messages.c(text, 0xAA0000));
+		} else {
+			LATER.add(new Object[] {player.getUUID(), player.level().getServer().getTickCount() + delay, text});
+		}
+	}
+
+	private static void tickLater(MinecraftServer server) {
+		for (Iterator<Object[]> it = LATER.iterator(); it.hasNext();) {
+			Object[] line = it.next();
+			if (server.getTickCount() < (int) line[1]) {
+				continue;
+			}
+			it.remove();
+			ServerPlayer player = server.getPlayerList().getPlayer((UUID) line[0]);
+			if (player != null) {
+				player.sendSystemMessage(Messages.c((String) line[2], 0xAA0000));
+			}
+		}
+	}
+
 	private static InteractionResult onUseBlock(Player player, Level level, InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
 		ItemStack stack = player.getItemInHand(hand);
+		if (!player.isSpectator() && stack.is(ModPaths.FULL_CHALICE)
+				&& level.getBlockState(hit.getBlockPos()).is(net.minecraft.world.level.block.Blocks.DRIED_GHAST)) {
+			if (player instanceof ServerPlayer serverPlayer) {
+				feedDriedGhast(serverPlayer, hit.getBlockPos(), hand);
+			}
+			return InteractionResult.SUCCESS;
+		}
 		if (player.isSpectator() || !stack.is(ModPaths.BLAZING_HEART_STAR3)
 				|| !(level.getBlockEntity(hit.getBlockPos()) instanceof net.minecraft.world.level.block.entity.SpawnerBlockEntity)) {
 			return InteractionResult.PASS;
@@ -429,6 +490,7 @@ public final class WildfirePath {
 		net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register(WildfirePath::onUseBlock);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			tickBeams(server);
+			tickLater(server);
 			if (server.getTickCount() % 20 != 0) {
 				return;
 			}

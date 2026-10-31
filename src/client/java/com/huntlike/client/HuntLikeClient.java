@@ -56,6 +56,7 @@ public class HuntLikeClient implements ClientModInitializer {
 				net.minecraft.client.model.geom.ModelLayers.PIGLIN_ARMOR, net.minecraft.client.model.geom.ModelLayers.PIGLIN_BABY_ARMOR));
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.DEMONLING, DemonlingRenderer::new);
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.IMP, ImpRenderer::new);
+		EntityRendererRegistry.register(com.huntlike.path.ModPaths.SPECTRAL_SORROW, SpectralSorrowRenderer::new);
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.BLAZING_WITHER_SKELETON,
 				net.minecraft.client.renderer.entity.WitherSkeletonRenderer::new);
 		com.huntlike.path.WildfirePath.clientWarmHeart = () -> com.huntlike.path.WildfirePath.has(ClientHuntState.data,

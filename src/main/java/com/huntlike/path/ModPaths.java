@@ -73,6 +73,10 @@ public final class ModPaths {
 	public static final Item FULL_CHALICE = ModItems.register("full_chalice", FullChaliceItem::new, new Item.Properties()
 			.rarity(Rarity.EPIC).stacksTo(1).component(DataComponents.LORE, new ItemLore(Lore.wrapGray("Something stirs in the blood..."))));
 
+	/** Dropped by the Spectral Sorrow. */
+	public static final Item BLOOD_CRYSTALLIZATION = ModItems.register("blood_crystallization", Item::new, new Item.Properties()
+			.rarity(Rarity.EPIC).stacksTo(16).fireResistant());
+
 	public static final net.minecraft.world.level.block.entity.BlockEntityType<BlazingSpawnerBlockEntity> BLAZING_SPAWNER_ENTITY =
 			Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, HuntLike.id("blazing_spawner"),
 					new net.minecraft.world.level.block.entity.BlockEntityType<>(BlazingSpawnerBlockEntity::new, java.util.Set.of(BLAZING_SPAWNER)));
@@ -96,6 +100,10 @@ public final class ModPaths {
 	public static final EntityType<Imp> IMP = entity("imp",
 			EntityType.Builder.<Imp>of(Imp::new, MobCategory.MONSTER).sized(0.6F, 1.8F).fireImmune().clientTrackingRange(8));
 
+	public static final EntityType<SpectralSorrow> SPECTRAL_SORROW = entity("spectral_sorrow",
+			EntityType.Builder.<SpectralSorrow>of(SpectralSorrow::new, MobCategory.MONSTER).sized(4.0F, 4.0F).eyeHeight(2.6F).fireImmune()
+					.clientTrackingRange(10));
+
 	private static <T extends net.minecraft.world.entity.Entity> EntityType<T> entity(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -106,6 +114,7 @@ public final class ModPaths {
 		FabricDefaultAttributeRegistry.register(BLAZING_WITHER_SKELETON, BlazingWitherSkeleton.createAttributes());
 		FabricDefaultAttributeRegistry.register(DEMONLING, Demonling.createAttributes());
 		FabricDefaultAttributeRegistry.register(IMP, Imp.createAttributes());
+		FabricDefaultAttributeRegistry.register(SPECTRAL_SORROW, SpectralSorrow.createAttributes());
 		WildfirePath.initialize();
 	}
 }

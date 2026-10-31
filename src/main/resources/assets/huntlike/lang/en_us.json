@@ -218,5 +218,7 @@
   "entity.huntlike.imp": "Imp",
   "block.huntlike.chalice": "Canavar's Chalice",
   "block.huntlike.blazing_spawner": "Blazing Spawner",
-  "item.huntlike.full_chalice": "Canavar's Full Chalice"
+  "item.huntlike.full_chalice": "Canavar's Full Chalice",
+  "item.huntlike.blood_crystallization": "Blood Crystallization",
+  "entity.huntlike.spectral_sorrow": "Spectral Sorrow"
 }

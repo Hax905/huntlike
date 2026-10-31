@@ -104,6 +104,7 @@ public final class ModCreativeTab {
 			output.accept(com.huntlike.path.ModPaths.BLAZING_SPAWNER_ITEM);
 			output.accept(com.huntlike.path.ModPaths.CHALICE_ITEM);
 			output.accept(com.huntlike.path.ModPaths.FULL_CHALICE);
+			output.accept(com.huntlike.path.ModPaths.BLOOD_CRYSTALLIZATION);
 		});
 	}
 }

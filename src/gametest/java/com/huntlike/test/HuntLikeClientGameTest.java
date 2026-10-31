@@ -3360,6 +3360,73 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(5);
 		context.takeScreenshot("97h-full-chalice");
+		java.util.UUID[] sorrowId = new java.util.UUID[1];
+		assertServer(singleplayer, "the Full Chalice on a dried ghast raises the Spectral Sorrow (110 health) and comes back empty", server -> {
+			ServerPlayer player = player(server);
+			var level = player.level();
+			var pos = spawnerPos[0];
+			level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.DRIED_GHAST.defaultBlockState());
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, player.getOffhandItem().copy());
+			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, net.minecraft.world.item.ItemStack.EMPTY);
+			boolean fed = com.huntlike.path.WildfirePath.feedDriedGhast(player, pos, net.minecraft.world.InteractionHand.MAIN_HAND);
+			var found = level.getEntitiesOfClass(com.huntlike.path.SpectralSorrow.class, player.getBoundingBox().inflate(16));
+			boolean empty = player.getMainHandItem().is(com.huntlike.path.ModPaths.CHALICE_ITEM);
+			HuntLike.LOGGER.info("[test] dried ghast fed {} sorrows {} chalice back {} block {}", fed, found.size(), empty, level.getBlockState(pos));
+			if (found.isEmpty()) {
+				return false;
+			}
+			var sorrow = found.getFirst();
+			sorrow.setNoAi(true);
+			sorrow.snapTo(player.getX() + 0.5, player.getY() + 1.0, player.getZ() + 12.0, 180.0F, 0.0F);
+			sorrowId[0] = sorrow.getUUID();
+			return fed && empty && sorrow.getMaxHealth() == 110.0F && level.getBlockState(pos).isAir();
+		});
+		context.getInput().lookAt(new net.minecraft.core.BlockPos(0, -57, 12));
+		context.waitTicks(10);
+		context.takeScreenshot("97j-spectral-sorrow");
+		for (int i = 0; i < 12; i++) {
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = player(server);
+				if (player.level().getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow) {
+					sorrow.ray(player.level(), new net.minecraft.world.phys.Vec3(-1.0, -0.15, -0.6).normalize(), false);
+				}
+			});
+			context.waitTicks(1);
+		}
+		context.takeScreenshot("97k-spectral-sorrow-ray");
+		assertServer(singleplayer, "the Spectral Sorrow's ray deals 6 damage and sets on fire", server -> {
+			ServerPlayer player = player(server);
+			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+			player.setHealth(player.getMaxHealth());
+			player.clearFire();
+			float before = player.getHealth();
+			if (!(player.level().getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
+				return false;
+			}
+			var dir = player.getEyePosition().subtract(sorrow.position().add(0.0, 1.6, 0.0)).normalize();
+			sorrow.ray(player.level(), dir, true);
+			float after = player.getHealth();
+			boolean burning = player.isOnFire();
+			HuntLike.LOGGER.info("[test] sorrow ray health {} -> {} burning {}", before, after, burning);
+			player.setHealth(player.getMaxHealth());
+			player.clearFire();
+			return before - after >= 5.0F && burning;
+		});
+		assertServer(singleplayer, "defeating the Spectral Sorrow reaches goal 8 and drops a Blood Crystallization", server -> {
+			ServerPlayer player = player(server);
+			var level = player.level();
+			if (!(level.getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
+				return false;
+			}
+			sorrow.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			boolean drop = !level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, sorrow.getBoundingBox().inflate(4),
+					e -> e.getItem().is(com.huntlike.path.ModPaths.BLOOD_CRYSTALLIZATION)).isEmpty();
+			int goals = QuestManager.data(player).wildfireGoals;
+			HuntLike.LOGGER.info("[test] sorrow dead {} drop {} goals {}", !sorrow.isAlive(), drop, goals);
+			return !sorrow.isAlive() && drop && goals == 8;
+		});
+		context.waitTicks(70);
+		context.takeScreenshot("97l-canavar");
 		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
 		// Cursor in a corner, so no tooltip covers the Path.
 		context.getInput().setCursorPos(2, 2);

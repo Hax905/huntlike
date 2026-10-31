@@ -8,7 +8,9 @@
 		"HaxIguess"
 	],
 	"contact": {
-		"sources": "https://github.com/Hax905/huntlike"
+		"homepage": "https://modrinth.com/mod/huntlike",
+		"sources": "https://github.com/HaxIguess/huntlike",
+		"issues": "https://github.com/HaxIguess/huntlike/issues"
 	},
 	"license": "All-Rights-Reserved",
 	"icon": "assets/huntlike/icon.png",

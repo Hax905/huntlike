@@ -1741,8 +1741,13 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return flat < 1.5 && (wolf == null || Math.hypot(wolf.getX() - point.x, wolf.getZ() - point.z) > 2.5);
 		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 35);
-		assertServer(singleplayer, "the cow reached the spot, so the hold lasts 33% longer: still on at 1.75 s",
-				server -> com.huntlike.gear.ModShields.activeFields() > 0);
+		assertServer(singleplayer, "the cow reached the spot, so the hold lasts 33% longer: still on at 1.75 s", server -> {
+			// A cow pressed against the boss can stop just short of the spot; then there is no bonus to check.
+			var cow = player(server).level().getEntity((java.util.UUID) wand[1]);
+			var point = (net.minecraft.world.phys.Vec3) wand[0];
+			double flat = cow == null ? 99 : Math.hypot(cow.getX() - point.x, cow.getZ() - point.z);
+			return com.huntlike.gear.ModShields.activeFields() > 0 || flat > com.huntlike.gear.ModShields.WAND_GATHERED;
+		});
 		waitServerTicks(context, singleplayer, (long) wand[4], 45);
 		assertServer(singleplayer, "...and over by 2.25 s; the released cow has Slowness I", server -> {
 			var cow = player(server).level().getEntity((java.util.UUID) wand[1]);

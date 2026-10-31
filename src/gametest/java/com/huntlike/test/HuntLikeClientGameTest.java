@@ -256,13 +256,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
 			player.getInventory().clearContent();
 			player.teleportTo(600.5, player.getY(), 600.5);
-			player.level().setDayTime(6000);
 			base[0] = 600.5;
 			base[1] = player.getY();
 			base[2] = 600.5;
 		});
 		context.waitTicks(40);
-		context.runOnClient(client -> client.options.hideGui = true);
 		for (var type : types) {
 			String name = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).getPath();
 			java.util.UUID[] id = new java.util.UUID[1];
@@ -283,7 +281,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					mob.setYHeadRot(210.0F);
 					mob.yBodyRot = 210.0F;
 				}
-				entity.setInvulnerable(true);
 				level.addFreshEntity(entity);
 				id[0] = entity.getUUID();
 				pitch[0] = (float) Math.toDegrees(Math.atan2(1.62 - h / 2.0, d));
@@ -301,7 +298,6 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				}
 			});
 		}
-		context.runOnClient(client -> client.options.hideGui = false);
 	}
 
 	/** Tier V: Herd Call, its immunity, Soul Strike, Apex Instinct and the Lunge. */

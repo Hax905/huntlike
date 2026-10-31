@@ -3263,7 +3263,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			if (demon != null) {
 				demon.discard();
 			}
-			var pos = player.blockPosition().offset(0, 0, 4);
+			var pos = player.blockPosition().offset(0, 1, 4);
 			spawnerPos[0] = pos;
 			var level = player.level();
 			level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.SPAWNER.defaultBlockState());
@@ -3316,7 +3316,8 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			return seen[0] == 6 && player.level().getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE) && data.wildfireGoals == 6;
 		});
 		context.getInput().lookAt(spawnerPos[0]);
-		context.waitTicks(10);
+		// Let the smoke and ash settle.
+		context.waitTicks(60);
 		context.takeScreenshot("97g-chalice");
 		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (not from skeletons) and becomes a Full Chalice at 100", server -> {
 			ServerPlayer player = player(server);

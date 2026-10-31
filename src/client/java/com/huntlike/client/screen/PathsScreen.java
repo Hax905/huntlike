@@ -126,7 +126,7 @@ public class PathsScreen extends Screen {
 		int[] p = progressPanel();
 		lavaFrame(g, p);
 		g.enableScissor(p[0], p[1], p[2], p[3]);
-		drawFloor(g, p, SOUL_FLOOR, 0, (int) -scroll, 0x55000000);
+		drawFloor(g, p, SOUL_FLOOR, 0, (int) -scroll, 0x88000000);
 		List<Component> t = drawProgress(g, data, p, mouseX, mouseY);
 		g.disableScissor();
 		if (t != null && in(p, mouseX, mouseY)) {
@@ -287,8 +287,8 @@ public class PathsScreen extends Screen {
 	static final String[] BRICKS = {"nether_bricks", "nether_bricks", "nether_bricks", "red_nether_bricks", "cracked_nether_bricks",
 			"chiseled_nether_bricks"};
 	/** Mostly soul sand, some soul soil, a little bone. */
-	static final String[] SOUL_FLOOR = {"soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_soil", "soul_soil",
-			"bone_block_side"};
+	static final String[] SOUL_FLOOR = {"soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand", "soul_sand",
+			"soul_sand", "soul_soil", "soul_soil", "soul_soil", "bone_block_side"};
 	static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
 	private static final net.minecraft.resources.Identifier END_PORTAL =

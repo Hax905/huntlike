@@ -233,8 +233,75 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("94-aurochs-horns");
 			context.setScreen(() -> null);
+			modelGallery(context, singleplayer);
 			HuntLike.LOGGER.info("[test] HuntLike client game test passed");
 		}
+	}
+
+	/** Every mob of the mod alone on clean ground, from a three-quarter view, for checking the models. */
+	private static void modelGallery(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+		java.util.List<net.minecraft.world.entity.EntityType<?>> types = java.util.List.of(
+				com.huntlike.entity.ModEntities.SYLVIORNIS, com.huntlike.entity.ModEntities.HYLOCHOERUS, com.huntlike.entity.ModEntities.OVIS_AMMON,
+				com.huntlike.entity.ModEntities.AUROCHS, com.huntlike.entity.ModEntities.EPICYON_HAYDENI, com.huntlike.entity.ModEntities.BOS_TAURUS,
+				com.huntlike.entity.ModEntities.CANIS_LUPUS, com.huntlike.entity.ModEntities.CUBERT, com.huntlike.entity.ModEntities.BLUCKY,
+				com.huntlike.entity.ModEntities.HOT_HEAD, com.huntlike.entity.ModEntities.VARIANCE_SLIME, com.huntlike.entity.ModEntities.VARIANCE_MAGMA,
+				com.huntlike.entity.ModEntities.THE_VILE, com.huntlike.entity.ModEntities.PET_SLIME, com.huntlike.entity.ModEntities.PET_MAGMA,
+				com.huntlike.entity.ModEntities.ROGUE_HUNTER, com.huntlike.entity.ModEntities.TOWERNAAR_UNDEAD,
+				com.huntlike.interlude.ModInterlude.BARTHOLOMEW, com.huntlike.interlude.ModInterlude.POM, com.huntlike.interlude.ModInterlude.REMAINS_HORSE,
+				com.huntlike.path.ModPaths.BLAZING_PIGLIN, com.huntlike.path.ModPaths.BLAZING_WITHER_SKELETON, com.huntlike.path.ModPaths.DEMONLING,
+				com.huntlike.path.ModPaths.IMP, com.huntlike.path.ModPaths.SPECTRAL_SORROW);
+		double[] base = new double[3];
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+			player.getInventory().clearContent();
+			player.teleportTo(600.5, player.getY(), 600.5);
+			player.level().setDayTime(6000);
+			base[0] = 600.5;
+			base[1] = player.getY();
+			base[2] = 600.5;
+		});
+		context.waitTicks(40);
+		context.runOnClient(client -> client.options.hideGui = true);
+		for (var type : types) {
+			String name = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).getPath();
+			java.util.UUID[] id = new java.util.UUID[1];
+			float[] pitch = new float[1];
+			singleplayer.getServer().runOnServer(server -> {
+				ServerPlayer player = player(server);
+				var level = player.level();
+				net.minecraft.world.entity.Entity entity = type.create(level, EntitySpawnReason.COMMAND);
+				if (entity == null) {
+					return;
+				}
+				double w = entity.getBbWidth();
+				double h = entity.getBbHeight();
+				double d = 2.5 + Math.max(w, h) * 1.3;
+				entity.snapTo(base[0], base[1], base[2] + d, 210.0F, 0.0F);
+				if (entity instanceof Mob mob) {
+					mob.setNoAi(true);
+					mob.setYHeadRot(210.0F);
+					mob.yBodyRot = 210.0F;
+				}
+				entity.setInvulnerable(true);
+				level.addFreshEntity(entity);
+				id[0] = entity.getUUID();
+				pitch[0] = (float) Math.toDegrees(Math.atan2(1.62 - h / 2.0, d));
+			});
+			context.runOnClient(client -> {
+				client.player.setYRot(0.0F);
+				client.player.setXRot(pitch[0]);
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("99z-model-" + name);
+			singleplayer.getServer().runOnServer(server -> {
+				var entity = player(server).level().getEntity(id[0]);
+				if (entity != null) {
+					entity.discard();
+				}
+			});
+		}
+		context.runOnClient(client -> client.options.hideGui = false);
 	}
 
 	/** Tier V: Herd Call, its immunity, Soul Strike, Apex Instinct and the Lunge. */

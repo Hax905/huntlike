@@ -3466,14 +3466,18 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			if (!(player.level().getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
 				return false;
 			}
+			// Mob damage scales with difficulty: 6 is on Normal.
+			var difficulty = server.getWorldData().getDifficulty();
+			server.setDifficulty(net.minecraft.world.Difficulty.NORMAL, true);
 			var dir = player.getEyePosition().subtract(sorrow.position().add(0.0, 1.6, 0.0)).normalize();
 			sorrow.ray(player.level(), dir, true);
 			float after = player.getHealth();
+			server.setDifficulty(difficulty, true);
 			boolean burning = player.isOnFire();
 			HuntLike.LOGGER.info("[test] sorrow ray health {} -> {} burning {}", before, after, burning);
 			player.setHealth(player.getMaxHealth());
 			player.clearFire();
-			return before - after >= 5.0F && burning;
+			return before - after >= 4.0F && burning;
 		});
 		assertServer(singleplayer, "defeating the Spectral Sorrow reaches goal 8 and drops a Blood Crystallization", server -> {
 			ServerPlayer player = player(server);

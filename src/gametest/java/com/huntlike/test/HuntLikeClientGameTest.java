@@ -297,6 +297,16 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(10);
 			context.takeScreenshot("99z-model-" + name);
+			if (type == com.huntlike.path.ModPaths.SPECTRAL_SORROW) {
+				// Its shooting face.
+				singleplayer.getServer().runOnServer(server -> {
+					if (player(server).level().getEntity(id[0]) instanceof com.huntlike.path.SpectralSorrow sorrow) {
+						sorrow.setCharging(true);
+					}
+				});
+				context.waitTicks(5);
+				context.takeScreenshot("99z-model-" + name + "-shooting");
+			}
 			singleplayer.getServer().runOnServer(server -> {
 				var entity = player(server).level().getEntity(id[0]);
 				if (entity != null) {

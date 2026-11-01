@@ -57,11 +57,13 @@ public class HuntLikeClient implements ClientModInitializer {
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.DEMONLING, DemonlingRenderer::new);
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.IMP, ImpRenderer::new);
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.SPECTRAL_SORROW, SpectralSorrowRenderer::new);
+		EntityRendererRegistry.register(com.huntlike.path.ModPaths.EVILBORN, com.huntlike.client.entity.EvilbornRenderer::new);
 		EntityRendererRegistry.register(com.huntlike.path.ModPaths.BLAZING_WITHER_SKELETON,
 				net.minecraft.client.renderer.entity.WitherSkeletonRenderer::new);
 		com.huntlike.path.WildfirePath.clientWarmHeart = () -> com.huntlike.path.WildfirePath.has(ClientHuntState.data,
 				com.huntlike.path.WildfirePath.Buff.WARM_HEART);
 		com.huntlike.client.entity.horns.Horns.registerLayers();
+		ImpRenderer.registerLayer();
 		EntityRendererRegistry.register(com.huntlike.interlude.ModInterlude.POM, context -> new net.minecraft.client.renderer.entity.UndeadHorseRenderer(
 				context, net.minecraft.client.resources.model.EquipmentClientInfo.LayerType.ZOMBIE_HORSE_SADDLE,
 				net.minecraft.client.model.geom.ModelLayers.ZOMBIE_HORSE_SADDLE, net.minecraft.client.renderer.entity.UndeadHorseRenderer.Type.ZOMBIE,

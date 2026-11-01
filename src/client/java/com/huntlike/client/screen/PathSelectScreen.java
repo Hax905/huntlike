@@ -15,8 +15,8 @@ import com.huntlike.hunt.HuntData;
 import com.huntlike.path.WildfirePath;
 
 /**
- * The Paths, opened from the soul in the Soul Nexus: every Path on one line over the starfield (drag to move). A
- * discovered Path opens on click; one not found yet is a crying obsidian square.
+ * The Paths, opened from the soul in the Soul Nexus: the Paths you have discovered, side by side over the starfield
+ * (drag to move); a click opens one. Paths not discovered yet aren't shown at all.
  */
 public class PathSelectScreen extends Screen {
 	private static final int W = 300;
@@ -25,13 +25,16 @@ public class PathSelectScreen extends Screen {
 	private static final int GAP = 110;
 	private static final int WHITE = 0xFFFFFFFF;
 
-	/** The Paths in order: name, color, frame block, inner block once discovered. */
-	private record Entry(String name, int color, String frame, String inner) {
+	/**
+	 * The Paths in order: name, color, frame block, the block of a reached step and of the current one. The Path of the
+	 * Wildfire: lava around obsidian and crying obsidian; Tundra's Path: spruce wood around blue ice and ice.
+	 */
+	private record Entry(String name, int color, String frame, String reached, String current) {
 	}
 
 	private static final List<Entry> PATHS = List.of(
-			new Entry(WildfirePath.NAME, WildfirePath.COLOR, "lava_still", "obsidian"),
-			new Entry("Tundra's Path", 0x9AD8FF, "blue_ice", "packed_ice"));
+			new Entry(WildfirePath.NAME, WildfirePath.COLOR, "lava_still", "obsidian", "crying_obsidian"),
+			new Entry("Tundra's Path", 0x9AD8FF, "spruce_log", "blue_ice", "ice"));
 
 	private final Screen parent;
 	private int left;
@@ -60,9 +63,21 @@ public class PathSelectScreen extends Screen {
 		return new int[] {left + 10, top + 20, left + W - 10, top + H - 10};
 	}
 
-	private int[] node(int i) {
+	/** The discovered Paths, as indexes into PATHS. */
+	private static List<Integer> shown(HuntData data) {
+		List<Integer> list = new java.util.ArrayList<>();
+		for (int i = 0; i < PATHS.size(); i++) {
+			if (discovered(data, i)) {
+				list.add(i);
+			}
+		}
+		return list;
+	}
+
+	/** The box of the n-th shown Path (of `count`). */
+	private int[] node(int n, int count) {
 		int[] m = map();
-		int cx = (m[0] + m[2]) / 2 - (PATHS.size() - 1) * GAP / 2 + i * GAP + (int) panX;
+		int cx = (m[0] + m[2]) / 2 - (count - 1) * GAP / 2 + n * GAP + (int) panX;
 		int cy = (m[1] + m[3]) / 2 - 6 + (int) panY;
 		return new int[] {cx - NODE / 2, cy - NODE / 2, NODE, NODE};
 	}
@@ -84,30 +99,25 @@ public class PathSelectScreen extends Screen {
 		PathsScreen.drawStarfield(g, m[0], m[1], m[2], m[3], panX, panY);
 		g.enableScissor(m[0], m[1], m[2], m[3]);
 		List<Component> tooltip = null;
-		// The line the Paths sit on.
-		int[] first = node(0);
-		int[] last = node(PATHS.size() - 1);
-		int lineY = first[1] + NODE / 2;
-		g.fill(first[0] + NODE + 3, lineY - 1, last[0] - 3, lineY + 1, 0xFF7A7A86);
-		for (int i = 0; i < PATHS.size(); i++) {
-			Entry entry = PATHS.get(i);
-			int[] b = node(i);
-			boolean found = discovered(data, i);
+		List<Integer> shown = shown(data);
+		if (shown.isEmpty()) {
+			Component none = Component.literal("No Paths discovered yet...").withStyle(style -> style.withItalic(true)).withColor(0x808080);
+			g.text(this.font, none, (m[0] + m[2]) / 2 - this.font.width(none) / 2, (m[1] + m[3]) / 2 - 4, WHITE, true);
+		}
+		for (int n = 0; n < shown.size(); n++) {
+			Entry entry = PATHS.get(shown.get(n));
+			int[] b = node(n, shown.size());
 			var frame = PathsScreen.block(entry.frame());
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, frame, b[0] - 3, b[1] - 3, NODE + 6, 3);
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, frame, b[0] - 3, b[1] + NODE, NODE + 6, 3);
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, frame, b[0] - 3, b[1], 3, NODE);
 			g.blitSprite(RenderPipelines.GUI_TEXTURED, frame, b[0] + NODE, b[1], 3, NODE);
-			g.blitSprite(RenderPipelines.GUI_TEXTURED, PathsScreen.block(found ? entry.inner() : "crying_obsidian"), b[0], b[1], NODE, NODE);
-			Component name = found || i > 0 ? Component.literal(entry.name()).withColor(entry.color())
-					: Component.literal("???").withColor(0x808080);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, PathsScreen.block(entry.reached()), b[0], b[1], NODE, NODE);
+			Component name = Component.literal(entry.name()).withColor(entry.color());
 			g.text(this.font, name, b[0] + NODE / 2 - this.font.width(name) / 2, b[1] + NODE + 7, WHITE, true);
 			boolean hover = mouseX >= b[0] - 3 && mouseX < b[0] + NODE + 3 && mouseY >= b[1] - 3 && mouseY < b[1] + NODE + 3;
 			if (hover) {
-				tooltip = found ? List.of(Component.literal(entry.name()).withColor(entry.color()),
-						Component.literal("Click to open").withColor(0xAAAAAA))
-						: List.of(Component.literal(i == 0 ? "???" : entry.name()).withColor(i == 0 ? 0x808080 : entry.color()),
-								Component.literal("Not discovered yet...").withStyle(style -> style.withItalic(true)).withColor(0x808080));
+				tooltip = List.of(Component.literal(entry.name()).withColor(entry.color()), Component.literal("Click to open").withColor(0xAAAAAA));
 			}
 		}
 		g.disableScissor();
@@ -142,10 +152,12 @@ public class PathSelectScreen extends Screen {
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
 		if (dragging && dragged < 3) {
-			for (int i = 0; i < PATHS.size(); i++) {
-				int[] b = node(i);
+			List<Integer> shown = shown(ClientHuntState.data);
+			for (int n = 0; n < shown.size(); n++) {
+				int[] b = node(n, shown.size());
+				// Only the Path of the Wildfire has a screen so far.
 				if (event.x() >= b[0] - 3 && event.x() < b[0] + NODE + 3 && event.y() >= b[1] - 3 && event.y() < b[1] + NODE + 3
-						&& discovered(ClientHuntState.data, i)) {
+						&& shown.get(n) == 0) {
 					dragging = false;
 					this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
 							net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));

@@ -249,7 +249,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				com.huntlike.entity.ModEntities.ROGUE_HUNTER, com.huntlike.entity.ModEntities.TOWERNAAR_UNDEAD,
 				com.huntlike.interlude.ModInterlude.BARTHOLOMEW, com.huntlike.interlude.ModInterlude.POM, com.huntlike.interlude.ModInterlude.REMAINS_HORSE,
 				com.huntlike.path.ModPaths.BLAZING_PIGLIN, com.huntlike.path.ModPaths.BLAZING_WITHER_SKELETON, com.huntlike.path.ModPaths.DEMONLING,
-				com.huntlike.path.ModPaths.IMP, com.huntlike.path.ModPaths.SPECTRAL_SORROW);
+				com.huntlike.path.ModPaths.IMP, com.huntlike.path.ModPaths.SPECTRAL_SORROW, com.huntlike.path.ModPaths.EVILBORN);
 		double[] base = new double[3];
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -3302,7 +3302,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR)).isEmpty();
 			return player.level().getEntity(mob[0]) == null && !star;
 		});
-		assertServer(singleplayer, "a Blazing Heart \u2605\u2605 turns a blaze into a Demonling (100 health, 15 damage); it drops a Blazing Heart \u2605\u2605\u2605",
+		assertServer(singleplayer, "a Blazing Heart \u2605\u2605 turns a blaze into a Demonling (100 health, 15 damage); it drops a Blazing Heart \u2605\u2605\u2605 and reaches goal 6",
 				server -> {
 					ServerPlayer player = player(server);
 					for (var item : player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(16))) {
@@ -3323,7 +3323,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					demon.hurtServer(player.level(), player.level().damageSources().playerAttack(player), 1000.0F);
 					boolean star3 = !player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
 							player.getBoundingBox().inflate(12), e -> e.getItem().is(com.huntlike.path.ModPaths.BLAZING_HEART_STAR3)).isEmpty();
-					return stats && star3;
+					return stats && star3 && QuestManager.data(player).wildfireGoals == 6;
 				});
 		singleplayer.getServer().runOnServer(server -> {
 			ServerPlayer player = player(server);
@@ -3390,11 +3390,11 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			}
 			context.waitTicks(20);
 		}
-		assertServer(singleplayer, "3 rounds of Imps (1, 2, 3) burn the spawner out into a Chalice and reach goal 6", server -> {
+		assertServer(singleplayer, "3 rounds of Imps (1, 2, 3) burn the spawner out into a Chalice and reach goal 7", server -> {
 			ServerPlayer player = player(server);
 			HuntData data = QuestManager.data(player);
 			HuntLike.LOGGER.info("[test] imps killed {} block {} goals {}", seen[0], player.level().getBlockState(spawnerPos[0]), data.wildfireGoals);
-			return seen[0] == 6 && player.level().getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE) && data.wildfireGoals == 6;
+			return seen[0] == 6 && player.level().getBlockState(spawnerPos[0]).is(com.huntlike.path.ModPaths.CHALICE) && data.wildfireGoals == 7;
 		});
 		java.util.UUID[] shown = new java.util.UUID[1];
 		singleplayer.getServer().runOnServer(server -> {
@@ -3409,7 +3409,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 		// Let the smoke and ash settle.
 		context.waitTicks(60);
 		context.takeScreenshot("97g-chalice");
-		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (not from skeletons) and becomes a Full Chalice at 100 (goal 7)", server -> {
+		assertServer(singleplayer, "a Chalice in the off-hand fills with blood from fleshy kills (fish count; skeletons and bees don't) and becomes a Full Chalice at 100 (goal 8)", server -> {
 			ServerPlayer player = player(server);
 			var level = player.level();
 			level.setBlockAndUpdate(spawnerPos[0], net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
@@ -3423,8 +3423,12 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			skeleton.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
 			level.addFreshEntity(skeleton);
 			skeleton.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			var bee = EntityTypes.BEE.create(level, EntitySpawnReason.COMMAND);
+			bee.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
+			level.addFreshEntity(bee);
+			bee.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
 			int afterSkeleton = com.huntlike.path.ChaliceItem.blood(player.getOffhandItem());
-			var cow = EntityTypes.COW.create(level, EntitySpawnReason.COMMAND);
+			var cow = EntityTypes.COD.create(level, EntitySpawnReason.COMMAND);
 			cow.snapTo(player.getX() + 2, player.getY(), player.getZ(), 0.0F, 0.0F);
 			level.addFreshEntity(cow);
 			cow.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
@@ -3434,10 +3438,10 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			level.addFreshEntity(pig);
 			pig.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
 			boolean full = player.getOffhandItem().is(com.huntlike.path.ModPaths.FULL_CHALICE);
-			HuntLike.LOGGER.info("[test] blood after skeleton {} after cow {} full {}", afterSkeleton, afterCow, full);
+			HuntLike.LOGGER.info("[test] blood after skeleton and bee {} after cod {} full {}", afterSkeleton, afterCow, full);
 			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(8)).forEach(e -> e.discard());
 			player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
-			return afterSkeleton == 98 && afterCow == 99 && full && QuestManager.data(player).wildfireGoals == 7;
+			return afterSkeleton == 98 && afterCow == 99 && full && QuestManager.data(player).wildfireGoals == 8;
 		});
 		context.waitTicks(5);
 		context.takeScreenshot("97h-full-chalice");
@@ -3515,7 +3519,7 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 			sorrow.snapTo(homeX + 0.5, homeY + 1.0, homeZ + 12.0, 180.0F, 0.0F);
 			return before - after >= 4.0F && burning;
 		});
-		assertServer(singleplayer, "defeating the Spectral Sorrow reaches goal 8 and drops a Blood Crystallization", server -> {
+		assertServer(singleplayer, "defeating the Spectral Sorrow reaches goal 9 and drops a Blood Crystallization", server -> {
 			ServerPlayer player = player(server);
 			var level = player.level();
 			if (!(level.getEntity(sorrowId[0]) instanceof com.huntlike.path.SpectralSorrow sorrow)) {
@@ -3526,10 +3530,53 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 					e -> e.getItem().is(com.huntlike.path.ModPaths.BLOOD_CRYSTALLIZATION)).isEmpty();
 			int goals = QuestManager.data(player).wildfireGoals;
 			HuntLike.LOGGER.info("[test] sorrow dead {} drop {} goals {}", !sorrow.isAlive(), drop, goals);
-			return !sorrow.isAlive() && drop && goals == 8;
+			return !sorrow.isAlive() && drop && goals == 9;
 		});
 		context.waitTicks(70);
 		context.takeScreenshot("97l-canavar");
+		java.util.UUID[] evilbornId = new java.util.UUID[1];
+		assertServer(singleplayer, "the Blood Crystallization (100 uses) turns a villager into an Evilborn and loses one use", server -> {
+			ServerPlayer player = player(server);
+			var level = player.level();
+			var crystal = new net.minecraft.world.item.ItemStack(com.huntlike.path.ModPaths.BLOOD_CRYSTALLIZATION);
+			player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, crystal);
+			var villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.COMMAND);
+			villager.snapTo(player.getX() + 0.5, player.getY(), player.getZ() + 3.5, 180.0F, 0.0F);
+			level.addFreshEntity(villager);
+			boolean turned = com.huntlike.path.WildfirePath.corrupt(player, villager, net.minecraft.world.InteractionHand.MAIN_HAND);
+			var found = level.getEntitiesOfClass(com.huntlike.path.Evilborn.class, player.getBoundingBox().inflate(8));
+			var held = player.getMainHandItem();
+			HuntLike.LOGGER.info("[test] evilborn turned {} found {} villager removed {} crystal damage {}/{}", turned, found.size(),
+					villager.isRemoved(), held.getDamageValue(), held.getMaxDamage());
+			if (found.isEmpty()) {
+				return false;
+			}
+			found.getFirst().setNoAi(true);
+			evilbornId[0] = found.getFirst().getUUID();
+			return turned && villager.isRemoved() && held.getMaxDamage() == 100 && held.getDamageValue() == 1;
+		});
+		context.getInput().lookAt(new net.minecraft.core.BlockPos(0, -58, 3));
+		context.waitTicks(10);
+		context.takeScreenshot("97m-evilborn");
+		singleplayer.getServer().runOnServer(server -> {
+			ServerPlayer player = player(server);
+			var level = player.level();
+			for (int i = 0; i < com.huntlike.path.WildfirePath.EVILBORNS; i++) {
+				var evilborn = i == 0 ? (com.huntlike.path.Evilborn) level.getEntity(evilbornId[0])
+						: com.huntlike.path.ModPaths.EVILBORN.create(level, EntitySpawnReason.COMMAND);
+				if (i > 0) {
+					evilborn.snapTo(player.getX() + 2, player.getY(), player.getZ() + 2, 0.0F, 0.0F);
+					level.addFreshEntity(evilborn);
+				}
+				evilborn.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F);
+			}
+			level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(8)).forEach(e -> e.discard());
+		});
+		check(singleplayer, "10 Evilborns slain: Canavar speaks first, the goal comes after his last line", data -> data.wildfireEvilborns == 10
+				&& data.wildfireGoals == 9);
+		context.waitTicks(com.huntlike.path.WildfirePath.CANAVAR_STORY.size() * com.huntlike.path.WildfirePath.STORY_LINE_TICKS + 20);
+		check(singleplayer, "after Canavar's story the tenth goal is reached", data -> data.wildfireGoals == 10);
+		context.takeScreenshot("97n-canavar-story");
 		context.setScreen(() -> new com.huntlike.client.screen.PathsScreen(null));
 		// Cursor in a corner, so no tooltip covers the Path.
 		context.getInput().setCursorPos(2, 2);

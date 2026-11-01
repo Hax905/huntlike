@@ -58,6 +58,8 @@ public final class HuntData {
 	/** Path of the Wildfire: goals reached (0 = undiscovered), blazes slain on the Slay goal, buffs bought (bits). */
 	public int wildfireGoals;
 	public int wildfireBlazes;
+	/** Evilborns slain on the tenth goal. */
+	public int wildfireEvilborns;
 	public int wildfireBuffs;
 	/** Daily Quest charges left today (0-5), and the world day they were last refilled on. */
 	public int dailyCharges = DAILY_CHARGES;
@@ -125,6 +127,7 @@ public final class HuntData {
 		tag.putInt("nexusDamage", nexusDamage);
 		tag.putInt("wildfireGoals", wildfireGoals);
 		tag.putInt("wildfireBlazes", wildfireBlazes);
+		tag.putInt("wildfireEvilborns", wildfireEvilborns);
 		tag.putInt("wildfireBuffs", wildfireBuffs);
 		tag.putInt("dailyCharges", dailyCharges);
 		tag.putLong("dailyDay", dailyDay);
@@ -186,6 +189,7 @@ public final class HuntData {
 		data.nexusDamage = tag.getIntOr("nexusDamage", 0);
 		data.wildfireGoals = tag.getIntOr("wildfireGoals", 0);
 		data.wildfireBlazes = tag.getIntOr("wildfireBlazes", 0);
+		data.wildfireEvilborns = tag.getIntOr("wildfireEvilborns", 0);
 		data.wildfireBuffs = tag.getIntOr("wildfireBuffs", 0);
 		data.dailyCharges = tag.getIntOr("dailyCharges", DAILY_CHARGES);
 		data.dailyDay = tag.getLongOr("dailyDay", -1L);

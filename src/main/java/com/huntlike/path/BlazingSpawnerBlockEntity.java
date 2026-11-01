@@ -101,7 +101,7 @@ public class BlazingSpawnerBlockEntity extends BlockEntity {
 		ServerPlayer player = owner == null ? null : level.getServer().getPlayerList().getPlayer(owner);
 		if (player != null) {
 			player.sendSystemMessage(Messages.c("The spawner burns out... and leaves a chalice behind.", WildfirePath.COLOR));
-			WildfirePath.reach(player, QuestManager.data(player), 5);
+			WildfirePath.reach(player, QuestManager.data(player), 6);
 		}
 	}
 

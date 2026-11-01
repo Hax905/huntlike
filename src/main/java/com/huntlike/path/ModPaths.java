@@ -73,9 +73,10 @@ public final class ModPaths {
 	public static final Item FULL_CHALICE = ModItems.register("full_chalice", FullChaliceItem::new, new Item.Properties()
 			.rarity(Rarity.EPIC).stacksTo(1).component(DataComponents.LORE, new ItemLore(Lore.wrapGray("Something stirs in the blood..."))));
 
-	/** Dropped by the Spectral Sorrow. */
+	/** Dropped by the Spectral Sorrow. Each villager it turns into an Evilborn costs one use. */
+	public static final int BLOOD_CRYSTALLIZATION_USES = 100;
 	public static final Item BLOOD_CRYSTALLIZATION = ModItems.register("blood_crystallization", Item::new, new Item.Properties()
-			.rarity(Rarity.EPIC).stacksTo(16).fireResistant());
+			.rarity(Rarity.EPIC).durability(BLOOD_CRYSTALLIZATION_USES).fireResistant());
 
 	public static final net.minecraft.world.level.block.entity.BlockEntityType<BlazingSpawnerBlockEntity> BLAZING_SPAWNER_ENTITY =
 			Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, HuntLike.id("blazing_spawner"),
@@ -104,6 +105,9 @@ public final class ModPaths {
 			EntityType.Builder.<SpectralSorrow>of(SpectralSorrow::new, MobCategory.MONSTER).sized(4.0F, 4.0F).eyeHeight(2.6F).fireImmune()
 					.clientTrackingRange(10));
 
+	public static final EntityType<Evilborn> EVILBORN = entity("evilborn",
+			EntityType.Builder.<Evilborn>of(Evilborn::new, MobCategory.MONSTER).sized(0.6F, 1.95F).fireImmune().clientTrackingRange(8));
+
 	private static <T extends net.minecraft.world.entity.Entity> EntityType<T> entity(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HuntLike.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -115,6 +119,7 @@ public final class ModPaths {
 		FabricDefaultAttributeRegistry.register(DEMONLING, Demonling.createAttributes());
 		FabricDefaultAttributeRegistry.register(IMP, Imp.createAttributes());
 		FabricDefaultAttributeRegistry.register(SPECTRAL_SORROW, SpectralSorrow.createAttributes());
+		FabricDefaultAttributeRegistry.register(EVILBORN, Evilborn.createAttributes());
 		WildfirePath.initialize();
 	}
 }

@@ -161,10 +161,12 @@ public class PathsScreen extends Screen {
 			String text = done ? WildfirePath.GOALS.get(i) : WildfirePath.HINTS.get(i);
 			List<FormattedCharSequence> lines = this.font.split(done ? Component.literal(text).withColor(0xFFFFFF)
 					: Component.literal(text).withStyle(style -> style.withItalic(true)).withColor(0xC8B8A8), textW);
-			if (!done && i == 2) {
+			// Goals with a count show it under the hint: "X/50".
+			if (!done && (i == 2 || i == 9)) {
+				int count = i == 2 ? Math.min(WildfirePath.BLAZES, data.wildfireBlazes) : Math.min(WildfirePath.EVILBORNS, data.wildfireEvilborns);
+				int total = i == 2 ? WildfirePath.BLAZES : WildfirePath.EVILBORNS;
 				lines = new ArrayList<>(lines);
-				lines.addAll(this.font.split(Component.literal("Blazes: " + Math.min(WildfirePath.BLAZES, data.wildfireBlazes) + "/"
-						+ WildfirePath.BLAZES).withColor(0xFFCC66), textW));
+				lines.addAll(this.font.split(Component.literal(count + "/" + total).withColor(0xFFCC66), textW));
 			}
 			int[] box = {p[0] + 6, y, NODE, NODE};
 			if (previous != null) {
@@ -180,10 +182,7 @@ public class PathsScreen extends Screen {
 			if (inside(box, mouseX, mouseY)) {
 				List<Component> tip = new ArrayList<>();
 				tip.add(Component.literal(done ? WildfirePath.GOALS.get(i) : "Next goal").withColor(WildfirePath.COLOR));
-				tip.add(Component.literal("+1 Wildfire point").withColor(0xFFCC66));
-				if (i < WildfirePath.BONUS_GOALS) {
-					tip.add(Component.literal("Blazing Heart drop chance +1%").withColor(0xFFCC66));
-				}
+				tip.add(Component.literal("Increased affinity with the Path of the Wildfire.").withColor(0xFFCC66));
 				tooltip = tip;
 			}
 			previous = box;
@@ -196,8 +195,8 @@ public class PathsScreen extends Screen {
 	/** The points counter and the buff tree. A buff whose parent isn't taken stays a nameless crying obsidian square. */
 	private List<Component> drawSkills(GuiGraphicsExtractor g, HuntData data, int[] s, int mouseX, int mouseY) {
 		List<Component> tooltip = null;
-		// The points: [to spend / most], centered at the top of the panel.
-		String count = WildfirePath.free(data) + "/" + WildfirePath.maxPoints();
+		// The points: [earned / most] (spending them doesn't lower it), centered at the top of the panel.
+		String count = WildfirePath.points(data) + "/" + WildfirePath.maxPoints();
 		int pw = this.font.width(count) + 10;
 		int px = (s[0] + s[2]) / 2 - pw / 2 + (int) panX;
 		int py = s[1] + 10 + (int) panY;

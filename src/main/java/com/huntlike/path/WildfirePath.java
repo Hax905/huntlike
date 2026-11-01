@@ -52,9 +52,17 @@ public final class WildfirePath {
 
 	public static final String NAME = "Path of the Wildfire";
 	public static final int COLOR = 0xFF8A2A;
-	public static final List<String> GOALS = List.of("Find a Blazing Heart", "Consume a Blazing Heart", "Slay 50 blazes",
-			"Defeat a Blazing Piglin", "Defeat a Blazing Wither Skeleton", "Survive the Blazing Spawner",
-			"Fill Canavar's Chalice with 100 kills of fleshy mobs", "Defeat the Spectral Sorrow");
+	public static final List<String> GOALS = List.of(
+			"Find a Blazing Heart",
+			"Consume a Blazing Heart",
+			"Slay 50 blazes",
+			"Defeat a Blazing Piglin",
+			"Defeat a Blazing Wither Skeleton",
+			"Defeat a Demonling",
+			"Survive the Blazing Spawner",
+			"Fill Canavar's Chalice with 100 kills of fleshy mobs",
+			"Defeat the Spectral Sorrow",
+			"Slay 10 Evilborns");
 	/** The hint each goal shows while it's the next one. */
 	public static final List<String> HINTS = List.of(
 			"Deep within the Nether, dark fortresses are home to burning souls. Some of them still keep a pounding heart inside their demonic bodies.",
@@ -62,10 +70,14 @@ public final class WildfirePath {
 			"One flame lights a torch, but many can set a forest ablaze in a screaming wildfire.",
 			"Let the body of a greedy soul burn in the hue that shines within the metal it desires.",
 			"Charred souls corroded by anger, withering remains of what were once warriors. Let them burn in the color their souls once burned with in rage.",
+			"A heart that has burned twice still remembers the fire it came from. Return it to a burning soul, and face the demon it awakens.",
 			"Into the cruel cages that trap suffering, fiery souls, bring a sign of life and redemption: the organ of burning blood, which must burn once more before it perishes. Give the organ to the cage, and let the mightiest sorrowing souls rise to trial whoever dared to wake them.",
 			"Fill the ornament with neither rage nor fire, though it was born of both. Let it hold what makes us human, and what makes others what they are. Even in those who are human no more, the nectar of life still flows through their flesh.",
-			"To what lies dry and suffering in hell, thirsting for the liquid it lost, offer the fruit of your effort. From it will come forth all that suffering can make of a creature.");
+			"To what lies dry and suffering in hell, thirsting for the liquid it lost, offer the fruit of your effort. From it will come forth all that suffering can make of a creature.",
+			"Convert one of those who reasons, thinks, works and brings food to feed their family. Forcefully, one of nature's creations of flesh will convert to one of ashes, one of fire, one of evil. Then, strip various of the evilborns of their life.");
 	public static final int BLAZES = 50;
+	/** Evilborns to slay on the tenth goal. */
+	public static final int EVILBORNS = 10;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;
 	public static final int BONUS_GOALS = 3;
@@ -166,10 +178,8 @@ public final class WildfirePath {
 		if (index == 0) {
 			player.sendSystemMessage(Messages.c("You discovered the " + NAME + "! (Soul Nexus)", COLOR));
 		}
-		String reward = index < BONUS_GOALS ? " +1 Wildfire point, Blazing Heart chance +1%" : " +1 Wildfire point";
-		player.sendSystemMessage(Messages.c(NAME + ": " + GOALS.get(index) + "!" + reward, COLOR));
-		player.level().playSound(null, player.blockPosition(), SoundEvents.BLAZE_AMBIENT, SoundSource.PLAYERS, 1.0F, 1.4F);
-		QuestManager.playSound(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F);
+		player.sendSystemMessage(Messages.c("Your affinity to the Path of the Wildfire has grown...", COLOR));
+		QuestManager.playSound(player, SoundEvents.LAVA_EXTINGUISH, 1.0F);
 		QuestManager.sync(player);
 	}
 
@@ -305,10 +315,19 @@ public final class WildfirePath {
 			reach(player, data, 3);
 		} else if (entity instanceof BlazingWitherSkeleton) {
 			reach(player, data, 4);
+		} else if (entity instanceof Demonling) {
+			reach(player, data, 5);
 		} else if (entity instanceof SpectralSorrow) {
 			say(player, "Canavar: This was my daily routine...", 0);
 			say(player, "Canavar: You are strong indeed, young one...", 60);
-			reach(player, data, 7);
+			reach(player, data, 8);
+		} else if (entity instanceof Evilborn && data.wildfireGoals == 9 && data.wildfireEvilborns < EVILBORNS) {
+			data.wildfireEvilborns++;
+			player.setAttached(QuestManager.DATA, data);
+			QuestManager.sync(player);
+			if (data.wildfireEvilborns >= EVILBORNS) {
+				canavarsStory(player);
+			}
 		}
 	}
 
@@ -356,6 +375,12 @@ public final class WildfirePath {
 			return InteractionResult.PASS;
 		}
 		ItemStack stack = player.getItemInHand(hand);
+		if (stack.is(ModPaths.BLOOD_CRYSTALLIZATION) && mob.getType() == EntityTypes.VILLAGER) {
+			if (player instanceof ServerPlayer serverPlayer) {
+				corrupt(serverPlayer, mob, hand);
+			}
+			return InteractionResult.SUCCESS;
+		}
 		if (!stack.is(ModPaths.BLAZING_HEART) && !stack.is(ModPaths.BLAZING_HEART_STAR) && !stack.is(ModPaths.BLAZING_HEART_STAR2)) {
 			return InteractionResult.PASS;
 		}
@@ -388,13 +413,21 @@ public final class WildfirePath {
 		return true;
 	}
 
-	/** Creatures with flesh: animals (hoglins and striders too), zombies of every kind, piglins, villagers and illagers. */
+	/** Creatures with flesh: animals (not bees or skeleton horses), zombies, piglins, villagers, illagers, fish, dolphins, squids, creepers and guardians. */
 	public static boolean hasFlesh(LivingEntity entity) {
+		if (entity.getType() == EntityTypes.BEE || entity.getType() == EntityTypes.SKELETON_HORSE) {
+			return false;
+		}
 		return entity instanceof net.minecraft.world.entity.animal.Animal || entity instanceof net.minecraft.world.entity.monster.zombie.Zombie
 				|| entity instanceof net.minecraft.world.entity.monster.Zoglin
 				|| entity instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin
 				|| entity instanceof net.minecraft.world.entity.npc.villager.AbstractVillager
-				|| entity instanceof net.minecraft.world.entity.raid.Raider;
+				|| entity instanceof net.minecraft.world.entity.raid.Raider
+				|| entity instanceof net.minecraft.world.entity.animal.fish.AbstractFish
+				|| entity instanceof net.minecraft.world.entity.animal.dolphin.Dolphin
+				|| entity instanceof net.minecraft.world.entity.animal.squid.Squid
+				|| entity instanceof net.minecraft.world.entity.monster.Creeper
+				|| entity instanceof net.minecraft.world.entity.monster.Guardian;
 	}
 
 	/** A fleshy kill with the Chalice in the off-hand: one drop of blood; at 100 it becomes the Full Chalice. */
@@ -407,7 +440,7 @@ public final class WildfirePath {
 		if (blood >= ChaliceItem.MAX_BLOOD) {
 			player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new ItemStack(ModPaths.FULL_CHALICE));
 			player.sendSystemMessage(Messages.c("The chalice is full.", 0xAA0000));
-			reach(player, QuestManager.data(player), 6);
+			reach(player, QuestManager.data(player), 7);
 			player.level().playSound(null, player.blockPosition(), SoundEvents.BOTTLE_FILL, SoundSource.PLAYERS, 1.0F, 0.5F);
 			return;
 		}
@@ -440,27 +473,80 @@ public final class WildfirePath {
 		return true;
 	}
 
-	/** Chat lines sent later: player, game tick, text. */
+	/** Things done later for a player: player, game tick, action. */
 	private static final java.util.List<Object[]> LATER = new java.util.ArrayList<>();
 
+	private static void later(ServerPlayer player, int delay, java.util.function.Consumer<ServerPlayer> action) {
+		LATER.add(new Object[] {player.getUUID(), player.level().getServer().getTickCount() + delay, action});
+	}
+
+	/** A line from Canavar (dark red), now or after `delay` ticks. */
 	private static void say(ServerPlayer player, String text, int delay) {
 		if (delay <= 0) {
 			player.sendSystemMessage(Messages.c(text, 0xAA0000));
 		} else {
-			LATER.add(new Object[] {player.getUUID(), player.level().getServer().getTickCount() + delay, text});
+			later(player, delay, p -> p.sendSystemMessage(Messages.c(text, 0xAA0000)));
 		}
 	}
 
+	/** Canavar's lines after the tenth Evilborn, 2 s apart; the goal is reached after the last one. */
+	public static final List<String> CANAVAR_STORY = List.of(
+			"Canavar: You are one of those hunters that seeks power no matter what...",
+			"Canavar: Either for it to let you save more people than you take",
+			"Canavar: Or for your own good...",
+			"Canavar: I won't suspect of you...",
+			"Canavar: But I hope you are on life's side...",
+			"Canavar: I wasn't when I was alive",
+			"Canavar: But now I wish I was",
+			"Canavar: ...",
+			"Canavar: By now I'm seeking for someone to pass the torch to...",
+			"Canavar: I was a champion of our race",
+			"Canavar: I wish to not make my knowledge vanish...");
+	public static final int STORY_LINE_TICKS = 40;
+
+	private static void canavarsStory(ServerPlayer player) {
+		for (int i = 0; i < CANAVAR_STORY.size(); i++) {
+			say(player, CANAVAR_STORY.get(i), i * STORY_LINE_TICKS);
+		}
+		later(player, CANAVAR_STORY.size() * STORY_LINE_TICKS, p -> reach(p, QuestManager.data(p), 9));
+	}
+
+	/** The Blood Crystallization on a villager: it turns into an Evilborn (one use). */
+	public static boolean corrupt(ServerPlayer player, Mob villager, InteractionHand hand) {
+		ItemStack stack = player.getItemInHand(hand);
+		if (!stack.is(ModPaths.BLOOD_CRYSTALLIZATION) || villager.getType() != EntityTypes.VILLAGER) {
+			return false;
+		}
+		ServerLevel level = player.level();
+		Evilborn evilborn = villager.convertTo(ModPaths.EVILBORN, net.minecraft.world.entity.ConversionParams.single(villager, false, false),
+				e -> e.setPersistenceRequired());
+		if (evilborn == null) {
+			return false;
+		}
+		stack.hurtAndBreak(1, player, hand);
+		level.sendParticles(new net.minecraft.core.particles.DustParticleOptions(0x8A0303, 1.6F), evilborn.getX(), evilborn.getY() + 1.0,
+				evilborn.getZ(), 40, 0.4, 0.8, 0.4, 0.0);
+		level.sendParticles(ParticleTypes.ASH, evilborn.getX(), evilborn.getY() + 1.0, evilborn.getZ(), 60, 0.5, 0.9, 0.5, 0.02);
+		level.sendParticles(ParticleTypes.FLAME, evilborn.getX(), evilborn.getY() + 1.0, evilborn.getZ(), 20, 0.4, 0.8, 0.4, 0.03);
+		level.playSound(null, evilborn.blockPosition(), SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.HOSTILE, 1.2F, 0.5F);
+		return true;
+	}
+
 	private static void tickLater(MinecraftServer server) {
+		List<Object[]> due = new java.util.ArrayList<>();
 		for (Iterator<Object[]> it = LATER.iterator(); it.hasNext();) {
-			Object[] line = it.next();
-			if (server.getTickCount() < (int) line[1]) {
-				continue;
+			Object[] entry = it.next();
+			if (server.getTickCount() >= (int) entry[1]) {
+				it.remove();
+				due.add(entry);
 			}
-			it.remove();
-			ServerPlayer player = server.getPlayerList().getPlayer((UUID) line[0]);
+		}
+		for (Object[] entry : due) {
+			ServerPlayer player = server.getPlayerList().getPlayer((UUID) entry[0]);
 			if (player != null) {
-				player.sendSystemMessage(Messages.c((String) line[2], 0xAA0000));
+				@SuppressWarnings("unchecked")
+				java.util.function.Consumer<ServerPlayer> action = (java.util.function.Consumer<ServerPlayer>) entry[2];
+				action.accept(player);
 			}
 		}
 	}

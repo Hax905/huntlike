@@ -22,7 +22,7 @@ import com.huntlike.path.Imp;
 
 /**
  * The Imp: a very dark red demon with a blaze's head, six thick rods circling it in two rings (turning opposite ways)
- * and a big horn. Its own 64x32 sheet: head at 0,0 (8x8x8), rods at 0,16 (3x10x3). Always fully lit.
+ * and two small horns. Its own 64x32 sheet: head at 0,0 (8x8x8), rods at 0,16 (3x10x3). Always fully lit.
  */
 public class ImpRenderer extends MobRenderer<Imp, LivingEntityRenderState, ImpRenderer.ImpModel> {
 	private static final Identifier TEXTURE = HuntLike.id("textures/entity/path/imp.png");

@@ -57,14 +57,14 @@ public final class WildfirePath {
 			"Fill Canavar's Chalice with 100 kills of fleshy mobs", "Defeat the Spectral Sorrow");
 	/** The hint each goal shows while it's the next one. */
 	public static final List<String> HINTS = List.of(
-			"Deep inside the Nether, fortresses of dark colors let the burning souls inhabit. Some of the souls keep their pounding hearts in their demonic bodies.",
-			"Taste the beating remnants of a burning soul and feel the pain within their sorrow.",
-			"One flame lights a torch but many can light a forest in a screaming wildfire.",
+			"Deep within the Nether, dark fortresses are home to burning souls. Some of them still keep a pounding heart inside their demonic bodies.",
+			"Taste the beating remnant of a burning soul, and feel the pain held within its sorrow.",
+			"One flame lights a torch, but many can set a forest ablaze in a screaming wildfire.",
 			"Let the body of a greedy soul burn in the hue that shines within the metal it desires.",
-			"Charred souls corroded by anger, withering bodies of what was once a warrior. Let them burn in the color their soul so burned for anger.",
-			"Inside the cruel cages that trap suffering fiery souls can be brought a sign of life and redemption, the organ of burning blood that must burn more before perishing. May life continue by giving the organ to the cage and letting the most powerful sorrowing souls take over, trialing whoever dared to wake them.",
-			"Fill the ornament with neither rage nor fire that originated from both. Let it contain what makes us be human and what makes others be as well. Even for those that are no more human, the nectar of life still flows through their flesh.",
-			"To what is dry and suffers in hell, that is thirsty for liquid and fell, feed with your effort. Forth will come what suffering can cause to something.");
+			"Charred souls corroded by anger, withering remains of what were once warriors. Let them burn in the color their souls once burned with in rage.",
+			"Into the cruel cages that trap suffering, fiery souls, bring a sign of life and redemption: the organ of burning blood, which must burn once more before it perishes. Give the organ to the cage, and let the mightiest sorrowing souls rise to trial whoever dared to wake them.",
+			"Fill the ornament with neither rage nor fire, though it was born of both. Let it hold what makes us human, and what makes others what they are. Even in those who are human no more, the nectar of life still flows through their flesh.",
+			"To what lies dry and suffering in hell, thirsting for the liquid it lost, offer the fruit of your effort. From it will come forth all that suffering can make of a creature.");
 	public static final int BLAZES = 50;
 	/** Blazing Heart from a blaze: 2%, +1% per Looting level, +1% for each of the first three goals reached. */
 	public static final int BASE_CHANCE = 2;

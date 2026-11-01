@@ -94,7 +94,7 @@ public final class Horns {
 			new Segment(1, 2, 8, 8, 0.55F, 0.0F, 0.0F)), 16, 16);
 
 	/** Evilborn: a pair on top of the illager's head, out to the sides and then up (its own 16x16 sheet). */
-	public static final Spec EVILBORN = new Spec("evilborn", -2.5F, -9.5F, -1.0F, List.of(
+	public static final Spec EVILBORN = new Spec("evilborn", -2.5F, -8.0F, -1.0F, List.of(
 			new Segment(2, 3, 0, 0, -0.2F, 0.0F, -0.45F),
 			new Segment(1, 3, 0, 8, -0.3F, 0.0F, 0.55F)), 16, 16);
 

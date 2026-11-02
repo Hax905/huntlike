@@ -1,0 +1,108 @@
+Calculating task graph as no cached configuration is available for tasks: runServer
+
+> Configure project :
+Fabric Loom: 1.18.4
+
+> Task :deleteGameTestRunDir UP-TO-DATE
+> Task :generateLog4jConfig
+> Task :processResources UP-TO-DATE
+> Task :acceptGameTestEula
+> Task :compileJava UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :generateDLIConfig
+> Task :configureLaunch
+
+> Task :runServer
+[03:06:51] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 26.3 with Fabric Loader 0.19.5
+[03:06:51] [main/INFO] (FabricLoader/Mappings) Mappings not present!
+[03:06:51] [main/INFO] (FabricLoader) Loading 45 mods:
+	- fabric-advancement-api-v1 1.0.1+38c7a2d55d
+	- fabric-api 0.165.0+26.3
+	- fabric-api-base 2.0.6+fcdff87f5d
+	- fabric-api-lookup-api-v1 2.0.24+3434d6d95d
+	- fabric-biome-api-v1 20.1.1+85210bca5d
+	- fabric-block-api-v1 3.1.0+0ae6f9115d
+	- fabric-block-getter-api-v2 2.0.9+3434d6d95d
+	- fabric-command-api-v2 3.1.2+fcdff87f5d
+	- fabric-content-registries-v0 15.0.6+74ed1ea55d
+	- fabric-convention-tags-v2 4.10.5+187b64905d
+	- fabric-crash-report-info-v1 1.0.7+fcdff87f5d
+	- fabric-creative-tab-api-v1 5.0.22+fcdff87f5d
+	- fabric-data-attachment-api-v1 2.2.33+b9b88df45d
+	- fabric-data-generation-api-v1 27.4.2+187b64905d
+	- fabric-debug-api-v1 1.0.5+5af7744b5d
+	- fabric-dimensions-v1 5.1.20+5af7744b5d
+	- fabric-entity-events-v1 6.0.4+3434d6d95d
+	- fabric-events-interaction-v0 5.3.9+b9b88df45d
+	- fabric-game-rule-api-v1 4.0.10+3434d6d95d
+	- fabric-gametest-api-v1 4.0.35+3434d6d95d
+	- fabric-item-api-v1 14.8.0+d1c0d72b5d
+	- fabric-lifecycle-events-v1 4.1.9+ffef5f675d
+	- fabric-loot-api-v3 4.0.9+4068fd645d
+	- fabric-menu-api-v1 2.0.30+ed66f0a35d
+	- fabric-message-api-v1 7.0.10+3434d6d95d
+	- fabric-networking-api-v1 6.4.0+a21c9eb65d
+	- fabric-object-builder-api-v1 24.1.12+e2f63d3e5d
+	- fabric-particles-v1 5.0.27+3434d6d95d
+	- fabric-permission-api-v1 1.0.8+fcdff87f5d
+	- fabric-recipe-api-v1 10.0.11+b9b88df45d
+	- fabric-registry-sync-v0 8.0.4+1ca9f6365d
+	- fabric-rendering-fluids-v1 6.0.6+3434d6d95d
+	- fabric-resource-conditions-api-v1 6.2.0+0d124ae85d
+	- fabric-resource-loader-v0 3.3.27+4fc5413f5d
+	- fabric-resource-loader-v1 3.1.0+5af7744b5d
+	- fabric-serialization-api-v1 2.0.7+74ed1ea55d
+	- fabric-tag-api-v1 2.1.11+fcdff87f5d
+	- fabric-transfer-api-v1 8.0.25+fcdff87f5d
+	- fabric-transitive-access-wideners-v1 8.1.17+e2f63d3e5d
+	- fabricloader 0.19.5
+	- huntlike 0.23.0
+	- java 25
+	- jei 31.0.0.3
+	- minecraft 26.3
+	- mixinextras 0.5.5
+[03:06:51] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/5f66cc9f59b8efaa942155a3d5a30599bf6640dd/sponge-mixin-0.17.4+mixin.0.8.7.jar Service=Knot/Fabric Env=SERVER
+[03:06:52] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.5).
+[03:06:58] [main/INFO] (huntlike) HuntLike loaded. The Alpha Altar is listening...
+[03:06:58] [main/INFO] (Minecraft) Environment: Environment[discoveryUrl=https://discovery.minecraftservices.com/minecraft/client, name=PROD]
+[03:06:59] [Worker-Main-2/INFO] (Minecraft) No existing world data, creating new world
+[03:06:59] [Worker-Main-2/ERROR] (Minecraft) No key layers in MapLike[{}]
+[03:07:00] [Worker-Main-1/INFO] (Minecraft) Loaded 1895 advancements
+[03:07:00] [main/INFO] (BiomeModificationImpl) Applied 0 biome modifications to 0 of 67 new biomes in 1.339 ms
+[03:07:00] [Server thread/INFO] (Minecraft) Starting minecraft server version 26.3
+[03:07:00] [Server thread/INFO] (Minecraft) Loading properties
+[03:07:00] [Server thread/INFO] (Minecraft) Default game type: SURVIVAL
+[03:07:00] [Server thread/INFO] (Minecraft) Generating keypair
+[03:07:00] [Server thread/INFO] (Minecraft) Starting Minecraft server on *:25565
+[03:07:00] [Server thread/WARN] (Minecraft) **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[03:07:00] [Server thread/WARN] (Minecraft) The server will make no attempt to authenticate usernames. Beware.
+[03:07:00] [Server thread/WARN] (Minecraft) While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[03:07:00] [Server thread/WARN] (Minecraft) To change this, set "online-mode" to "true" in the server.properties file.
+[03:07:00] [Server thread/INFO] (Minecraft) Preparing level "world"
+[03:07:00] [Server thread/INFO] (Minecraft) Selecting global world spawn...
+[03:07:01] [Server thread/INFO] (Minecraft) Loading 0 persistent chunks...
+[03:07:01] [Server thread/INFO] (Minecraft) Preparing spawn area: 100%
+[03:07:01] [Server thread/INFO] (Minecraft) Time elapsed: 419 ms
+[03:07:01] [Server thread/INFO] (Minecraft) Done (0.575s)! For help, type "help"
+[03:07:01] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[03:07:01] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[03:07:01] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[03:07:01] [Server thread/WARN] (TranslationConventionLogWarnings) 
+	Dev warning - Untranslated Item Tags detected. Please translate your item tags so other mods such as recipe viewers can properly display your tag's name.
+	The format desired is tag.item.<namespace>.<path> for the translation key with slashes in path turned into periods.
+	To disable this message, set this system property in your runs: `-Dfabric-tag-conventions-v2.missingTagTranslationWarning=SILENCED`.
+	To see individual untranslated item tags found, set the system property to `-Dfabric-tag-conventions-v2.missingTagTranslationWarning=VERBOSE`.
+	Default is `SHORT`.
+
+[03:08:01] [Server thread/INFO] (Minecraft) Server empty for 60 seconds, pausing
+[03:09:19] [Server thread/INFO] (Minecraft) System chat: Stopping the server
+[03:09:19] [Server thread/INFO] (Minecraft) Stopping server
+[03:09:19] [Server thread/INFO] (Minecraft) Saving players
+[03:09:19] [Server thread/INFO] (Minecraft) Saving worlds
+[03:09:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[03:09:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[03:09:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+
+BUILD SUCCESSFUL in 2m 30s
+7 actionable tasks: 4 executed, 3 up-to-date
+Configuration cache entry stored.

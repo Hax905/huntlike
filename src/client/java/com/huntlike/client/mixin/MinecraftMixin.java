@@ -39,8 +39,9 @@ public abstract class MinecraftMixin {
 			cir.setReturnValue(client.player != null && hunted.equals(client.player.getUUID()));
 			return;
 		}
-		// The Blazing mobs: a white outline for now, until their own sprites are ready.
-		if (entity instanceof com.huntlike.path.BlazingPiglin || entity instanceof com.huntlike.path.BlazingWitherSkeleton) {
+		// The Blazing mobs: an outline cycling through fire colors for now (see EntityMixin), until their own sprites are ready.
+		if (entity instanceof com.huntlike.path.BlazingPiglin || entity instanceof com.huntlike.path.BlazingWitherSkeleton
+				|| entity instanceof com.huntlike.path.Demonling) {
 			cir.setReturnValue(true);
 			return;
 		}

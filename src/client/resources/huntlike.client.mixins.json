@@ -4,7 +4,8 @@
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"EntityMixin",
-		"MinecraftMixin"
+		"MinecraftMixin",
+		"EquipmentLayerRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

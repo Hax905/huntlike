@@ -314,32 +314,33 @@ public class HuntLikeClientGameTest implements FabricClientGameTest {
 				}
 			});
 		}
-		// The Rotten armor on an armor stand.
-		java.util.UUID[] stand = new java.util.UUID[1];
-		singleplayer.getServer().runOnServer(server -> {
-			var level = player(server).level();
-			var armorStand = EntityTypes.ARMOR_STAND.create(level, EntitySpawnReason.COMMAND);
-			armorStand.snapTo(base[0], base[1], base[2] + 3.0, 210.0F, 0.0F);
-			var set = com.huntlike.gear.ModGear.ROTTEN;
-			armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(set.helmet()));
-			armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(set.chestplate()));
-			armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(set.leggings()));
-			armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(set.boots()));
-			level.addFreshEntity(armorStand);
-			stand[0] = armorStand.getUUID();
-		});
-		context.runOnClient(client -> {
-			client.player.setYRot(0.0F);
-			client.player.setXRot(10.0F);
-		});
-		context.waitTicks(10);
-		context.takeScreenshot("99z-armor-rotten");
-		singleplayer.getServer().runOnServer(server -> {
-			var entity = player(server).level().getEntity(stand[0]);
-			if (entity != null) {
-				entity.discard();
-			}
-		});
+		// Armor sets on an armor stand (the Cluster ones are see-through).
+		for (var set : java.util.List.of(com.huntlike.gear.ModGear.ROTTEN, com.huntlike.gear.ModGear.GEL, com.huntlike.gear.ModGear.THERMODYNAMIC)) {
+			java.util.UUID[] stand = new java.util.UUID[1];
+			singleplayer.getServer().runOnServer(server -> {
+				var level = player(server).level();
+				var armorStand = EntityTypes.ARMOR_STAND.create(level, EntitySpawnReason.COMMAND);
+				armorStand.snapTo(base[0], base[1], base[2] + 3.0, 210.0F, 0.0F);
+				armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(set.helmet()));
+				armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(set.chestplate()));
+				armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(set.leggings()));
+				armorStand.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(set.boots()));
+				level.addFreshEntity(armorStand);
+				stand[0] = armorStand.getUUID();
+			});
+			context.runOnClient(client -> {
+				client.player.setYRot(0.0F);
+				client.player.setXRot(10.0F);
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("99z-armor-" + set.id());
+			singleplayer.getServer().runOnServer(server -> {
+				var entity = player(server).level().getEntity(stand[0]);
+				if (entity != null) {
+					entity.discard();
+				}
+			});
+		}
 	}
 
 	/** Tier V: Herd Call, its immunity, Soul Strike, Apex Instinct and the Lunge. */

@@ -41,7 +41,7 @@ public abstract class MinecraftMixin {
 		}
 		// The Blazing mobs: an outline cycling through fire colors for now (see EntityMixin), until their own sprites are ready.
 		if (entity instanceof com.huntlike.path.BlazingPiglin || entity instanceof com.huntlike.path.BlazingWitherSkeleton
-				|| entity instanceof com.huntlike.path.Demonling) {
+				|| entity instanceof com.huntlike.path.Demonling || entity instanceof com.huntlike.path.Evilborn) {
 			cir.setReturnValue(true);
 			return;
 		}

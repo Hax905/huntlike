@@ -7,8 +7,8 @@ import net.minecraft.world.entity.monster.illager.Vindicator;
 import net.minecraft.world.level.Level;
 
 /**
- * An Evilborn: a villager turned by the Blood Crystallization into one of ashes, fire and evil. A vindicator with horns
- * that never burns; slaying 10 is the Path of the Wildfire's tenth goal.
+ * An Evilborn: a villager turned by the Blood Crystallization into one of ashes, fire and evil. Fights like a vindicator,
+ * looks like a villager with red eyes (for now), never burns; slaying 10 is the Path of the Wildfire's tenth goal.
  */
 public class Evilborn extends Vindicator {
 	public static final float HEALTH = 30.0F;

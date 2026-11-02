@@ -31,6 +31,10 @@ public abstract class EntityMixin {
 			cir.setReturnValue(FIRE_CYCLE[(int) (entity.level().getGameTime() / FIRE_STEP_TICKS % FIRE_CYCLE.length)]);
 			return;
 		}
+		if (entity instanceof com.huntlike.path.Evilborn) {
+			cir.setReturnValue(0xAA0000);
+			return;
+		}
 		Long until = ClientHuntState.highlights.get(entity.getId());
 		if (until != null && entity.level().getGameTime() < until) {
 			cir.setReturnValue(ClientHuntState.SPIRIT_COLOR);

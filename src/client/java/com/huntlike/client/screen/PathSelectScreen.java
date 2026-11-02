@@ -27,14 +27,14 @@ public class PathSelectScreen extends Screen {
 
 	/**
 	 * The Paths in order: name, color, frame block, the block of a reached step and of the current one. The Path of the
-	 * Wildfire: lava around obsidian and crying obsidian; Tundra's Path: spruce wood around blue ice and ice.
+	 * Wildfire: lava around obsidian and crying obsidian; Path of the Tundra: spruce wood around blue ice and ice.
 	 */
 	private record Entry(String name, int color, String frame, String reached, String current) {
 	}
 
 	private static final List<Entry> PATHS = List.of(
 			new Entry(WildfirePath.NAME, WildfirePath.COLOR, "lava_still", "obsidian", "crying_obsidian"),
-			new Entry("Tundra's Path", 0x9AD8FF, "spruce_log", "blue_ice", "ice"));
+			new Entry("Path of the Tundra", 0x9AD8FF, "spruce_log", "blue_ice", "ice"));
 
 	private final Screen parent;
 	private int left;

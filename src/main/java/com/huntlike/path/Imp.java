@@ -24,7 +24,7 @@ public class Imp extends Blaze {
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
-		return Blaze.createAttributes().add(Attributes.MAX_HEALTH, 40.0).add(Attributes.ATTACK_DAMAGE, 12.0).add(Attributes.SCALE, 0.8);
+		return Blaze.createAttributes().add(Attributes.MAX_HEALTH, 40.0).add(Attributes.ATTACK_DAMAGE, 12.0);
 	}
 
 	@Override

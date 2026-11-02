@@ -110,7 +110,7 @@ public class ImpRenderer extends MobRenderer<Imp, LivingEntityRenderState, ImpRe
 	}
 
 	public ImpRenderer(EntityRendererProvider.Context context) {
-		super(context, new ImpModel(context.bakeLayer(LAYER)), 0.4F);
+		super(context, new ImpModel(context.bakeLayer(LAYER)), 0.5F);
 	}
 
 	@Override
